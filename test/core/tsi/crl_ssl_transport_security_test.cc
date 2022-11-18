@@ -33,6 +33,7 @@
 #include "test/core/tsi/transport_security_test_lib.h"
 #include "test/core/util/test_config.h"
 #include <openssl/x509v3.h>
+#include <openssl/x509.h>
 
 extern "C" {
 #include <openssl/crypto.h>
@@ -66,6 +67,15 @@ class CrlSslTransportSecurityTest
     void Run() {
       tsi_test_do_handshake(&base_);
       tsi_test_fixture_destroy(&base_);
+    }
+
+    static char* LoadFile(absl::string_view file_path) {
+      grpc_slice slice;
+      GPR_ASSERT(grpc_load_file(file_path.data(), 1, &slice) ==
+                 absl::OkStatus());
+      char* data = grpc_slice_to_c_string(slice);
+      grpc_slice_unref(slice);
+      return data;
     }
 
    private:
@@ -227,14 +237,6 @@ class CrlSslTransportSecurityTest
       delete self;
     }
 
-    static char* LoadFile(absl::string_view file_path) {
-      grpc_slice slice;
-      GPR_ASSERT(grpc_load_file(file_path.data(), 1, &slice) ==
-                 absl::OkStatus());
-      char* data = grpc_slice_to_c_string(slice);
-      grpc_slice_unref(slice);
-      return data;
-    }
 
     static struct tsi_test_fixture_vtable kVtable;
 
@@ -298,16 +300,27 @@ TEST_P(CrlSslTransportSecurityTest, MyTest) {
   BIO *in = nullptr;
   X509_CRL *x = nullptr;
   in = BIO_new(BIO_s_file());
+
   std::string filename_str = absl::StrCat(kSslTsiTestCrlSupportedCredentialsDir, "ab06acdd.r0");
   const char *c_filename = filename_str.c_str();
   BIO_read_filename(in, c_filename);
-  // absl::StrCat(kSslTsiTestCrlSupportedCredentialsDir, "ab06acdd.r0")
   x = PEM_read_bio_X509_CRL(in, nullptr, nullptr, nullptr);
+
+  BIO *in2 = BIO_new(BIO_s_file());
+  std::string cert_str = absl::StrCat(kSslTsiTestCrlSupportedCredentialsDir, "ab06acdd.r0");
+  const char *cert_name = cert_str.c_str();
+  BIO_read_filename(in, cert_name);
+  X509 *cert = PEM_read_bio_X509(in2, nullptr, nullptr, nullptr);
+
   X509_STORE_add_crl(store, x);
+  X509_STORE_add_cert(store, cert);
   X509_STORE_CTX *ctx = X509_STORE_CTX_new();
   GPR_ASSERT(X509_STORE_CTX_init(ctx, store, nullptr, nullptr) == 1);
-
-  
+  X509_STORE_CTX_cert_crl_fn cert_crl_fn = X509_STORE_get_cert_crl(store);
+  GPR_ASSERT(cert_crl_fn != nullptr);
+  int valid = cert_crl_fn(ctx, x, cert);
+  GPR_ASSERT(valid == 0);
+  // TODO check out the tests in OpenSSL for this
 }
 
 std::string TestNameSuffix(
