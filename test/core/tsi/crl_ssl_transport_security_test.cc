@@ -15,10 +15,12 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+
 #include <cstddef>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <openssl/x509v3.h>
 
 #include <grpc/grpc.h>
 #include <grpc/support/alloc.h>
@@ -32,7 +34,6 @@
 #include "src/core/tsi/transport_security_interface.h"
 #include "test/core/tsi/transport_security_test_lib.h"
 #include "test/core/util/test_config.h"
-#include <openssl/x509v3.h>
 
 extern "C" {
 #include <openssl/crypto.h>
@@ -293,21 +294,18 @@ TEST_P(CrlSslTransportSecurityTest, MyTest) {
   // X509_load_crl_file(X509_LOOKUP *ctx, const char *file, int type)
   // X509_STORE_add_crl(store, )
 
-
-
-  BIO *in = nullptr;
-  X509_CRL *x = nullptr;
+  BIO* in = nullptr;
+  X509_CRL* x = nullptr;
   in = BIO_new(BIO_s_file());
-  std::string filename_str = absl::StrCat(kSslTsiTestCrlSupportedCredentialsDir, "ab06acdd.r0");
-  const char *c_filename = filename_str.c_str();
+  std::string filename_str =
+      absl::StrCat(kSslTsiTestCrlSupportedCredentialsDir, "ab06acdd.r0");
+  const char* c_filename = filename_str.c_str();
   BIO_read_filename(in, c_filename);
   // absl::StrCat(kSslTsiTestCrlSupportedCredentialsDir, "ab06acdd.r0")
   x = PEM_read_bio_X509_CRL(in, nullptr, nullptr, nullptr);
   X509_STORE_add_crl(store, x);
-  X509_STORE_CTX *ctx = X509_STORE_CTX_new();
+  X509_STORE_CTX* ctx = X509_STORE_CTX_new();
   GPR_ASSERT(X509_STORE_CTX_init(ctx, store, nullptr, nullptr) == 1);
-
-  
 }
 
 std::string TestNameSuffix(
