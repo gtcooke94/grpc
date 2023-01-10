@@ -63,12 +63,16 @@ char* CopyCoreString(char* src, size_t length) {
 }
 
 void PendingVerifierRequestInit(
-    const char* target_name, tsi_peer peer,
+    const char* target_name, tsi_peer peer, const char* subject_organization,
     grpc_tls_custom_verification_check_request* request) {
   GPR_ASSERT(request != nullptr);
   // The verifier holds a ref to the security connector, so it's fine to
   // directly point this to the name cached in the security connector.
   request->target_name = target_name;
+  if (subject_organization != nullptr) {
+    // request subject = subject_organization
+    request->root_subject_organization = subject_organization;
+  }
   // TODO(ZhenLian): avoid the copy when the underlying core implementation used
   // the null-terminating string.
   bool has_common_name = false;
@@ -224,7 +228,7 @@ tsi_ssl_pem_key_cert_pair* ConvertToTsiPemKeyCertPair(
   return tsi_pairs;
 }
 
-void parse_organization_from_cert_subject(absl::string_view pem_cert) {
+char* parse_organization_from_cert_subject(absl::string_view pem_cert) {
   X509* cert = nullptr;
   BIO* pem;
   size_t pem_root_len = pem_cert.length();
@@ -235,9 +239,14 @@ void parse_organization_from_cert_subject(absl::string_view pem_cert) {
   X509_NAME* subject = X509_get_subject_name(cert);
   GPR_ASSERT(subject != nullptr);
   int ind = X509_NAME_get_index_by_NID(subject, NID_organizationName, -1);
+  if (ind == -1) {
+    return nullptr;
+  }
   X509_NAME_ENTRY *e = X509_NAME_get_entry(subject, ind);
   ASN1_STRING *organization = X509_NAME_ENTRY_get_data(e);
   GPR_ASSERT(organization->length != 0);
+  char* org = reinterpret_cast<char*>(organization->data);
+  return org;
 }
 
 }  // namespace
@@ -384,12 +393,12 @@ void TlsChannelSecurityConnector::check_peer(
   *auth_context =
       grpc_ssl_peer_to_auth_context(&peer, GRPC_TLS_TRANSPORT_SECURITY_TYPE);
   GPR_ASSERT(options_->certificate_verifier() != nullptr);
-  {
-    MutexLock lock(&mu_);
-    absl::string_view root_cert = pem_root_certs_.value();
-    parse_organization_from_cert_subject(root_cert);
-    GPR_ASSERT(!root_cert.empty());
-  }
+  // {
+  //   MutexLock lock(&mu_);
+  //   absl::string_view root_cert = pem_root_certs_.value();
+  //   parse_organization_from_cert_subject(root_cert);
+  //   GPR_ASSERT(!root_cert.empty());
+  // }
   auto* pending_request = new ChannelPendingVerifierRequest(
       Ref(), on_peer_checked, peer, target_name);
   {
@@ -499,7 +508,13 @@ TlsChannelSecurityConnector::ChannelPendingVerifierRequest::
       on_peer_checked_(on_peer_checked) {
   // security_connector_ has the root info in pem_root_certs_
   // This needs to make it into this request_ object
-  PendingVerifierRequestInit(target_name, peer, &request_);
+  char* org;
+  {
+    MutexLock lock(&security_connector_->mu_);
+    absl::string_view root_cert = security_connector_->pem_root_certs_.value();
+    org = parse_organization_from_cert_subject(root_cert);
+  }
+  PendingVerifierRequestInit(target_name, peer, org, &request_);
   tsi_peer_destruct(&peer);
 }
 
@@ -774,7 +789,13 @@ TlsServerSecurityConnector::ServerPendingVerifierRequest::
         grpc_closure* on_peer_checked, tsi_peer peer)
     : security_connector_(std::move(security_connector)),
       on_peer_checked_(on_peer_checked) {
-  PendingVerifierRequestInit(nullptr, peer, &request_);
+  char* org;
+  {
+    MutexLock lock(&security_connector_->mu_);
+    absl::string_view root_cert = security_connector_->pem_root_certs_.value();
+    org = parse_organization_from_cert_subject(root_cert);
+  }
+  PendingVerifierRequestInit(nullptr, peer, org, &request_);
   tsi_peer_destruct(&peer);
 }
 
