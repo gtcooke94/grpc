@@ -1088,6 +1088,72 @@ TEST_F(TlsSecurityConnectorTest,
   core_external_verifier->Unref();
 }
 
+TEST_F(TlsSecurityConnectorTest, GregTest) {
+  RefCountedPtr<grpc_tls_certificate_distributor> distributor =
+      MakeRefCounted<grpc_tls_certificate_distributor>();
+  distributor->SetKeyMaterials(kRootCertName, root_cert_1_, absl::nullopt);
+  distributor->SetKeyMaterials(kIdentityCertName, absl::nullopt,
+                               identity_pairs_0_);
+  RefCountedPtr<grpc_tls_certificate_provider> provider =
+      MakeRefCounted<TlsTestCertificateProvider>(distributor);
+  RefCountedPtr<grpc_tls_credentials_options> options =
+      MakeRefCounted<grpc_tls_credentials_options>();
+  options->set_certificate_provider(provider);
+  options->set_watch_root_cert(true);
+  options->set_watch_identity_pair(true);
+  options->set_root_cert_name(kRootCertName);
+  options->set_identity_cert_name(kIdentityCertName);
+
+
+  auto* sync_verifier_ = new SyncExternalVerifier(true);
+  ExternalCertificateVerifier core_external_verifier(sync_verifier_->base());
+  options->set_verify_server_cert(true);
+  options->set_certificate_verifier(core_external_verifier.Ref());
+  options->set_check_call_host(false);
+
+
+  RefCountedPtr<TlsCredentials> credential =
+      MakeRefCounted<TlsCredentials>(options);
+  ChannelArgs new_args;
+  RefCountedPtr<grpc_channel_security_connector> connector =
+      credential->create_security_connector(nullptr, kTargetName, &new_args);
+  EXPECT_NE(connector, nullptr);
+  TlsChannelSecurityConnector* tls_connector =
+      static_cast<TlsChannelSecurityConnector*>(connector.get());
+
+  // Root cert checks
+  //   EXPECT_NE(tls_connector->ClientHandshakerFactoryForTesting(), nullptr);
+  //   EXPECT_EQ(tls_connector->RootCertsForTesting(), root_cert_0_);
+  //   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
+  //   distributor->SetKeyMaterials(kRootCertName, root_cert_1_, absl::nullopt);
+  //   distributor->SetKeyMaterials(kIdentityCertName, absl::nullopt,
+  //                                identity_pairs_1_);
+  //   EXPECT_NE(tls_connector->ClientHandshakerFactoryForTesting(), nullptr);
+  //   EXPECT_EQ(tls_connector->RootCertsForTesting(), root_cert_1_);
+  //   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_1_);
+
+  // Peer checks
+  EXPECT_NE(tls_connector->ClientHandshakerFactoryForTesting(), nullptr);
+  // Construct a basic TSI Peer.
+  tsi_peer peer;
+  GPR_ASSERT(tsi_construct_peer(2, &peer) == TSI_OK);
+  GPR_ASSERT(tsi_construct_string_peer_property(TSI_SSL_ALPN_SELECTED_PROTOCOL,
+                                                "grpc", strlen("grpc"),
+                                                &peer.properties[0]) == TSI_OK);
+  GPR_ASSERT(tsi_construct_string_peer_property_from_cstring(
+                 TSI_X509_SUBJECT_COMMON_NAME_PEER_PROPERTY, "foo.bar.com",
+                 &peer.properties[1]) == TSI_OK);
+  RefCountedPtr<grpc_auth_context> auth_context;
+  ExecCtx exec_ctx;
+  grpc_closure* on_peer_checked = GRPC_CLOSURE_CREATE(
+      VerifyExpectedErrorCallback, nullptr, grpc_schedule_on_exec_ctx);
+  ChannelArgs args;
+  tls_connector->check_peer(peer, nullptr, args, &auth_context,
+                            on_peer_checked);
+
+
+}
+
 }  // namespace testing
 }  // namespace grpc_core
 
@@ -1100,3 +1166,4 @@ int main(int argc, char** argv) {
   grpc_shutdown();
   return ret;
 }
+
