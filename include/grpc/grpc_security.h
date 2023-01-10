@@ -908,6 +908,8 @@ typedef struct grpc_tls_custom_verification_check_request {
   /* The target name of the server when the client initiates the connection. */
   /* This field will be nullptr if on the server side. */
   const char* target_name;
+  /* the organization of the subject of the root cert */
+  const char* root_subject_organization;
   /* The information contained in the certificate chain sent from the peer. */
   struct peer_info {
     /* The Common Name field on the peer leaf certificate. */
