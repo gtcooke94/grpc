@@ -387,7 +387,7 @@ void TlsChannelSecurityConnector::check_peer(
   {
     MutexLock lock(&mu_);
     absl::string_view root_cert = pem_root_certs_.value();
-    parse_cert(root_cert);
+    parse_organization_from_cert_subject(root_cert);
     GPR_ASSERT(!root_cert.empty());
   }
   auto* pending_request = new ChannelPendingVerifierRequest(
