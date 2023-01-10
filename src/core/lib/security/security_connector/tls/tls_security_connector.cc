@@ -224,6 +224,22 @@ tsi_ssl_pem_key_cert_pair* ConvertToTsiPemKeyCertPair(
   return tsi_pairs;
 }
 
+void parse_organization_from_cert_subject(absl::string_view pem_cert) {
+  X509* cert = nullptr;
+  BIO* pem;
+  size_t pem_root_len = pem_cert.length();
+  const char* pem_root_char = pem_cert.data();
+  pem = BIO_new_mem_buf(pem_root_char, static_cast<int>(pem_root_len));
+  cert = PEM_read_bio_X509_AUX(pem, nullptr, nullptr, const_cast<char*>(""));
+  GPR_ASSERT(cert != nullptr);
+  X509_NAME* subject = X509_get_subject_name(cert);
+  GPR_ASSERT(subject != nullptr);
+  int ind = X509_NAME_get_index_by_NID(subject, NID_organizationName, -1);
+  X509_NAME_ENTRY *e = X509_NAME_get_entry(subject, ind);
+  ASN1_STRING *organization = X509_NAME_ENTRY_get_data(e);
+  GPR_ASSERT(organization->length != 0);
+}
+
 }  // namespace
 
 // -------------------channel security connector-------------------
@@ -351,6 +367,7 @@ void TlsChannelSecurityConnector::add_handshakers(
   handshake_mgr->Add(SecurityHandshakerCreate(tsi_hs, this, args));
 }
 
+
 void TlsChannelSecurityConnector::check_peer(
     tsi_peer peer, grpc_endpoint* /*ep*/, const ChannelArgs& /*args*/,
     RefCountedPtr<grpc_auth_context>* auth_context,
@@ -367,6 +384,12 @@ void TlsChannelSecurityConnector::check_peer(
   *auth_context =
       grpc_ssl_peer_to_auth_context(&peer, GRPC_TLS_TRANSPORT_SECURITY_TYPE);
   GPR_ASSERT(options_->certificate_verifier() != nullptr);
+  {
+    MutexLock lock(&mu_);
+    absl::string_view root_cert = pem_root_certs_.value();
+    parse_cert(root_cert);
+    GPR_ASSERT(!root_cert.empty());
+  }
   auto* pending_request = new ChannelPendingVerifierRequest(
       Ref(), on_peer_checked, peer, target_name);
   {
@@ -375,6 +398,7 @@ void TlsChannelSecurityConnector::check_peer(
   }
   pending_request->Start();
 }
+
 
 void TlsChannelSecurityConnector::cancel_check_peer(
     grpc_closure* on_peer_checked, grpc_error_handle error) {
@@ -473,6 +497,8 @@ TlsChannelSecurityConnector::ChannelPendingVerifierRequest::
         grpc_closure* on_peer_checked, tsi_peer peer, const char* target_name)
     : security_connector_(std::move(security_connector)),
       on_peer_checked_(on_peer_checked) {
+  // security_connector_ has the root info in pem_root_certs_
+  // This needs to make it into this request_ object
   PendingVerifierRequestInit(target_name, peer, &request_);
   tsi_peer_destruct(&peer);
 }
