@@ -239,6 +239,7 @@ char* parse_organization_from_cert_subject(absl::string_view pem_cert) {
   X509_NAME* subject = X509_get_subject_name(cert);
   GPR_ASSERT(subject != nullptr);
   int ind = X509_NAME_get_index_by_NID(subject, NID_organizationName, -1);
+  // Organization is not in the Subject
   if (ind == -1) {
     return nullptr;
   }
@@ -393,12 +394,6 @@ void TlsChannelSecurityConnector::check_peer(
   *auth_context =
       grpc_ssl_peer_to_auth_context(&peer, GRPC_TLS_TRANSPORT_SECURITY_TYPE);
   GPR_ASSERT(options_->certificate_verifier() != nullptr);
-  // {
-  //   MutexLock lock(&mu_);
-  //   absl::string_view root_cert = pem_root_certs_.value();
-  //   parse_organization_from_cert_subject(root_cert);
-  //   GPR_ASSERT(!root_cert.empty());
-  // }
   auto* pending_request = new ChannelPendingVerifierRequest(
       Ref(), on_peer_checked, peer, target_name);
   {
@@ -509,10 +504,10 @@ TlsChannelSecurityConnector::ChannelPendingVerifierRequest::
   // security_connector_ has the root info in pem_root_certs_
   // This needs to make it into this request_ object
   char* org;
-  {
-    MutexLock lock(&security_connector_->mu_);
-    absl::string_view root_cert = security_connector_->pem_root_certs_.value();
-    org = parse_organization_from_cert_subject(root_cert);
+  if (security_connector_->pem_root_certs_.has_value()) {
+      MutexLock lock(&security_connector_->mu_);
+      absl::string_view root_cert = security_connector_->pem_root_certs_.value();
+      org = parse_organization_from_cert_subject(root_cert);
   }
   PendingVerifierRequestInit(target_name, peer, org, &request_);
   tsi_peer_destruct(&peer);
@@ -790,7 +785,7 @@ TlsServerSecurityConnector::ServerPendingVerifierRequest::
     : security_connector_(std::move(security_connector)),
       on_peer_checked_(on_peer_checked) {
   char* org;
-  {
+  if (security_connector_->pem_root_certs_.has_value()) {
     MutexLock lock(&security_connector_->mu_);
     absl::string_view root_cert = security_connector_->pem_root_certs_.value();
     org = parse_organization_from_cert_subject(root_cert);
