@@ -1111,8 +1111,6 @@ tsi_result tsi_ssl_get_cert_chain_contents(STACK_OF(X509) * peer_chain,
 }
 
 // --- tsi_handshaker_result methods implementation. ---
-// TODO(@gregorycooke) - this is where peer will be populated?
-// SSL_get0_verified_chain
 static tsi_result ssl_handshaker_result_extract_peer(
     const tsi_handshaker_result* self, tsi_peer* peer) {
   tsi_result result = TSI_OK;
@@ -1512,7 +1510,6 @@ static tsi_result ssl_handshaker_next(tsi_handshaker* self,
     if (status == TSI_OK) {
       // Indicates that the handshake has completed and that a handshaker_result
       // has been created.
-      // GREG NOTE this is where the handshake is done?
       self->handshaker_result_created = true;
     }
   }
@@ -1995,7 +1992,6 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
   if (options->skip_server_certificate_verification) {
     SSL_CTX_set_verify(ssl_context, SSL_VERIFY_PEER, NullVerifyCallback);
   } else {
-    // @gregorycooke extract root cert here too
     SSL_CTX_set_verify(ssl_context, SSL_VERIFY_PEER, RootCertExtractCallback);
   }
 
@@ -2175,12 +2171,10 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
                              SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
                              NullVerifyCallback);
           break;
-          // @gregorycooke this is the case where we need to pull the root cert info
         case TSI_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY:
           SSL_CTX_set_verify(impl->ssl_contexts[i],
                              SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
                              RootCertExtractCallback);
-                             
           break;
       }
 
