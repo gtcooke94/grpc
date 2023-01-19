@@ -195,7 +195,7 @@ static void init_openssl(void) {
       SSL_CTX_get_ex_new_index(0, nullptr, nullptr, nullptr, nullptr);
   GPR_ASSERT(g_ssl_ctx_ex_factory_index != -1);
 
-  g_ssl_ex_ca_cert_index = SSL_CTX_get_ex_new_index(0, nullptr, nullptr, nullptr, nullptr);
+  g_ssl_ex_ca_cert_index = SSL_get_ex_new_index(0, nullptr, nullptr, nullptr, nullptr);
   GPR_ASSERT(g_ssl_ex_ca_cert_index != -1);
 }
 
@@ -873,12 +873,18 @@ static int RootCertExtractCallback(int preverify_ok, X509_STORE_CTX* ctx) {
   // Get the verified chain from the X509_STORE_CTX and put it on the SSL object
   // so that we have access to it when populating the tsi_peer
   STACK_OF(X509) *chain = X509_STORE_CTX_get0_chain(ctx);
+  if (chain == nullptr) {
+    // What does this mean?
+    return 1;
+  }
 
   // The ca cert is the last in the chain
   X509 *ca_cert = sk_X509_value(chain, sk_X509_num(chain) - 1);
 
   SSL *ssl = static_cast<SSL*>(X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
   SSL_set_ex_data(ssl, g_ssl_ex_ca_cert_index, ca_cert);
+  // Do I need to do this?
+  X509_free(ca_cert);
   return 1;
 }
 
@@ -1176,10 +1182,16 @@ static tsi_result ssl_handshaker_result_extract_peer(
   if (result != TSI_OK) return result;
   peer->property_count++;
 
+  gpr_log(GPR_ERROR, "gregorycooke1");
   X509* ca_cert = static_cast<X509*>(SSL_get_ex_data(impl->ssl, g_ssl_ex_ca_cert_index));
-  result = peer_property_from_x509_subject(ca_cert, &peer->properties[peer->property_count], true);
-  if (result != TSI_OK) return result;
-  peer->property_count++;
+  gpr_log(GPR_ERROR, "gregorycooke2");
+  if (ca_cert != nullptr) {
+    result = peer_property_from_x509_subject(ca_cert, &peer->properties[peer->property_count], true);
+    gpr_log(GPR_ERROR, "gregorycooke3");
+    if (result != TSI_OK) return result;
+    peer->property_count++;
+    X509_free(ca_cert);
+  }
 
   return result;
 }
