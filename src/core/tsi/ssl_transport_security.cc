@@ -884,7 +884,7 @@ static int RootCertExtractCallback(int preverify_ok, X509_STORE_CTX* ctx) {
   SSL *ssl = static_cast<SSL*>(X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
   SSL_set_ex_data(ssl, g_ssl_ex_ca_cert_index, ca_cert);
   // Do I need to do this?
-  X509_free(ca_cert);
+  // X509_free(ca_cert);
   return 1;
 }
 
@@ -1142,10 +1142,13 @@ static tsi_result ssl_handshaker_result_extract_peer(
   // peer's certificate; When called on the server side,
   // the peer's certificate is not present in the stack
   STACK_OF(X509)* peer_chain = SSL_get_peer_cert_chain(impl->ssl);
+
+  X509* ca_cert = static_cast<X509*>(SSL_get_ex_data(impl->ssl, g_ssl_ex_ca_cert_index));
   // 1 is for session reused property.
   size_t new_property_count = peer->property_count + 3;
   if (alpn_selected != nullptr) new_property_count++;
   if (peer_chain != nullptr) new_property_count++;
+  if (ca_cert != nullptr) new_property_count++;
   tsi_peer_property* new_properties = static_cast<tsi_peer_property*>(
       gpr_zalloc(sizeof(*new_properties) * new_property_count));
   for (size_t i = 0; i < peer->property_count; i++) {
@@ -1183,11 +1186,9 @@ static tsi_result ssl_handshaker_result_extract_peer(
   peer->property_count++;
 
   gpr_log(GPR_ERROR, "gregorycooke1");
-  X509* ca_cert = static_cast<X509*>(SSL_get_ex_data(impl->ssl, g_ssl_ex_ca_cert_index));
-  gpr_log(GPR_ERROR, "gregorycooke2");
   if (ca_cert != nullptr) {
     result = peer_property_from_x509_subject(ca_cert, &peer->properties[peer->property_count], true);
-    gpr_log(GPR_ERROR, "gregorycooke3");
+    gpr_log(GPR_ERROR, "gregorycooke2");
     if (result != TSI_OK) return result;
     peer->property_count++;
     X509_free(ca_cert);
