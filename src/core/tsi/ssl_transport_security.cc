@@ -860,7 +860,7 @@ static tsi_result build_alpn_protocol_name_list(
 // the server's certificate, but we need to pull it anyway, in case a higher
 // layer wants to look at it. In this case the verification may fail, but
 // we don't really care.
-static int NullVerifyCallback(int /*preverify_ok*/, X509_STORE_CTX* ctx) {
+static int NullVerifyCallback(int /*preverify_ok*/, X509_STORE_CTX* /*ctx*/) {
   return 1;
 }
 
@@ -1191,7 +1191,7 @@ static tsi_result ssl_handshaker_result_extract_peer(
     gpr_log(GPR_ERROR, "gregorycooke2");
     if (result != TSI_OK) return result;
     peer->property_count++;
-    X509_free(ca_cert);
+    // X509_free(ca_cert);
   }
 
   return result;
