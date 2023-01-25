@@ -169,14 +169,15 @@ static unsigned long openssl_thread_id_cb(void) {
 #endif
 
 // Both new_func() and free_func() take the same parameters. The parent is the
-// pointer to the structure that contains the exdata. The ptr is the current exdata
-// item; for new_func() this will typically be NULL. The r parameter is a pointer
-// to the exdata field of the object. The idx is the index and is the value
-// returned when the callbacks were initially registered via
-// CRYPTO_get_ex_new_index() and can be used if the same callback handles different
-// types of exdata.
+// pointer to the structure that contains the exdata. The ptr is the current
+// exdata item; for new_func() this will typically be NULL. The r parameter is a
+// pointer to the exdata field of the object. The idx is the index and is the
+// value returned when the callbacks were initially registered via
+// CRYPTO_get_ex_new_index() and can be used if the same callback handles
+// different types of exdata.
 // @gregorycooke callback for freeing the cert that is duped
-// static void free_x509_ex_data_callback(void* /*parent*/, void* ptr, CRYPTO_EX_DATA* /*ad*/,
+// static void free_x509_ex_data_callback(void* /*parent*/, void* ptr,
+// CRYPTO_EX_DATA* /*ad*/,
 //                           int /*index*/, long /*argl*/, void* /*argp*/) {
 //   X509 *cert = static_cast<X509*>(ptr);
 //   X509_free(cert);
@@ -209,7 +210,8 @@ static void init_openssl(void) {
       SSL_CTX_get_ex_new_index(0, nullptr, nullptr, nullptr, nullptr);
   GPR_ASSERT(g_ssl_ctx_ex_factory_index != -1);
 
-  g_ssl_ex_ca_cert_index = SSL_get_ex_new_index(0, nullptr, nullptr, nullptr, nullptr);
+  g_ssl_ex_ca_cert_index =
+      SSL_get_ex_new_index(0, nullptr, nullptr, nullptr, nullptr);
   GPR_ASSERT(g_ssl_ex_ca_cert_index != -1);
 }
 
@@ -324,7 +326,8 @@ static tsi_result peer_property_from_x509_common_name(
 
 // Gets the subject of an X509 cert as a tsi_peer_property.
 static tsi_result peer_property_from_x509_subject(X509* cert,
-                                                  tsi_peer_property* property, bool is_ca_cert) {
+                                                  tsi_peer_property* property,
+                                                  bool is_ca_cert) {
   X509_NAME* subject_name = X509_get_subject_name(cert);
   if (subject_name == nullptr) {
     gpr_log(GPR_INFO, "Could not get subject name from certificate.");
@@ -886,7 +889,7 @@ static int RootCertExtractCallback(int preverify_ok, X509_STORE_CTX* ctx) {
   // If we're here, verification was successful
   // Get the verified chain from the X509_STORE_CTX and put it on the SSL object
   // so that we have access to it when populating the tsi_peer
-  STACK_OF(X509) *chain = X509_STORE_CTX_get0_chain(ctx);
+  STACK_OF(X509)* chain = X509_STORE_CTX_get0_chain(ctx);
   if (chain == nullptr) {
     // What does this mean?
     return 1;
@@ -897,14 +900,14 @@ static int RootCertExtractCallback(int preverify_ok, X509_STORE_CTX* ctx) {
   // There'll be some helper for it
   // X509_dup
   // Run e2e tests with TSAN to check for race conditions with this
-  // There's a flag with bazel/blaze to run things multiple times --runs_per_test=100
-  // X509 *ca_cert_in_stack = sk_X509_value(chain, sk_X509_num(chain) - 1);
-  // X509 *ca_cert = X509_dup(ca_cert_in_stack);
+  // There's a flag with bazel/blaze to run things multiple times
+  // --runs_per_test=100 X509 *ca_cert_in_stack = sk_X509_value(chain,
+  // sk_X509_num(chain) - 1); X509 *ca_cert = X509_dup(ca_cert_in_stack);
 
-  X509 *ca_cert = sk_X509_value(chain, sk_X509_num(chain) - 1);
+  X509* ca_cert = sk_X509_value(chain, sk_X509_num(chain) - 1);
 
-
-  SSL *ssl = static_cast<SSL*>(X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
+  SSL* ssl = static_cast<SSL*>(
+      X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
   SSL_set_ex_data(ssl, g_ssl_ex_ca_cert_index, ca_cert);
   return 1;
 }
@@ -1164,7 +1167,8 @@ static tsi_result ssl_handshaker_result_extract_peer(
   // the peer's certificate is not present in the stack
   STACK_OF(X509)* peer_chain = SSL_get_peer_cert_chain(impl->ssl);
 
-  X509* ca_cert = static_cast<X509*>(SSL_get_ex_data(impl->ssl, g_ssl_ex_ca_cert_index));
+  X509* ca_cert =
+      static_cast<X509*>(SSL_get_ex_data(impl->ssl, g_ssl_ex_ca_cert_index));
   // 1 is for session reused property.
   size_t new_property_count = peer->property_count + 3;
   if (alpn_selected != nullptr) new_property_count++;
@@ -1207,7 +1211,8 @@ static tsi_result ssl_handshaker_result_extract_peer(
   peer->property_count++;
 
   if (ca_cert != nullptr) {
-    result = peer_property_from_x509_subject(ca_cert, &peer->properties[peer->property_count], true);
+    result = peer_property_from_x509_subject(
+        ca_cert, &peer->properties[peer->property_count], true);
     if (result != TSI_OK) return result;
     peer->property_count++;
     // X509_free(ca_cert);
