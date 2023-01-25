@@ -191,13 +191,16 @@ static void ssl_test_setup_handshakers(tsi_test_fixture* fixture) {
       TSI_OK);
 }
 
-static void check_ca_cert_subject(ssl_tsi_test_fixture* ssl_fixture, const tsi_peer* peer) {
-  const tsi_peer_property* ca_cert_subject = tsi_peer_get_property_by_name(peer, TSI_X509_CA_SUBJECT_PEER_PROPERTY);
+static void check_ca_cert_subject(ssl_tsi_test_fixture* ssl_fixture,
+                                  const tsi_peer* peer) {
+  const tsi_peer_property* ca_cert_subject =
+      tsi_peer_get_property_by_name(peer, TSI_X509_CA_SUBJECT_PEER_PROPERTY);
   ASSERT_NE(ca_cert_subject, nullptr);
-  const char* expected_match = "CN=testca,O=Internet Widgits Pty Ltd,ST=Some-State,C=AU";
+  const char* expected_match =
+      "CN=testca,O=Internet Widgits Pty Ltd,ST=Some-State,C=AU";
   ASSERT_EQ(memcmp(ca_cert_subject->value.data, expected_match,
-                    ca_cert_subject->value.length),
-              0);
+                   ca_cert_subject->value.length),
+            0);
 }
 
 static void check_alpn(ssl_tsi_test_fixture* ssl_fixture,
