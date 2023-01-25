@@ -1206,10 +1206,8 @@ static tsi_result ssl_handshaker_result_extract_peer(
   if (result != TSI_OK) return result;
   peer->property_count++;
 
-  gpr_log(GPR_ERROR, "gregorycooke1");
   if (ca_cert != nullptr) {
     result = peer_property_from_x509_subject(ca_cert, &peer->properties[peer->property_count], true);
-    gpr_log(GPR_ERROR, "gregorycooke2");
     if (result != TSI_OK) return result;
     peer->property_count++;
     // X509_free(ca_cert);
