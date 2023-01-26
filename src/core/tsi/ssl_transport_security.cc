@@ -168,21 +168,6 @@ static unsigned long openssl_thread_id_cb(void) {
 }
 #endif
 
-// Both new_func() and free_func() take the same parameters. The parent is the
-// pointer to the structure that contains the exdata. The ptr is the current
-// exdata item; for new_func() this will typically be NULL. The r parameter is a
-// pointer to the exdata field of the object. The idx is the index and is the
-// value returned when the callbacks were initially registered via
-// CRYPTO_get_ex_new_index() and can be used if the same callback handles
-// different types of exdata.
-// @gregorycooke callback for freeing the cert that is duped
-// static void free_x509_ex_data_callback(void* /*parent*/, void* ptr,
-// CRYPTO_EX_DATA* /*ad*/,
-//                           int /*index*/, long /*argl*/, void* /*argp*/) {
-//   X509 *cert = static_cast<X509*>(ptr);
-//   X509_free(cert);
-// }
-
 static void init_openssl(void) {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
   OPENSSL_init_ssl(0, nullptr);
@@ -891,19 +876,10 @@ static int RootCertExtractCallback(int preverify_ok, X509_STORE_CTX* ctx) {
   // so that we have access to it when populating the tsi_peer
   STACK_OF(X509)* chain = X509_STORE_CTX_get0_chain(ctx);
   if (chain == nullptr) {
-    // What does this mean?
     return 1;
   }
 
   // The ca cert is the last in the chain
-  // Do we need a copy here?
-  // There'll be some helper for it
-  // X509_dup
-  // Run e2e tests with TSAN to check for race conditions with this
-  // There's a flag with bazel/blaze to run things multiple times
-  // --runs_per_test=100 X509 *ca_cert_in_stack = sk_X509_value(chain,
-  // sk_X509_num(chain) - 1); X509 *ca_cert = X509_dup(ca_cert_in_stack);
-
   X509* ca_cert = sk_X509_value(chain, sk_X509_num(chain) - 1);
 
   SSL* ssl = static_cast<SSL*>(
@@ -1215,7 +1191,6 @@ static tsi_result ssl_handshaker_result_extract_peer(
         ca_cert, &peer->properties[peer->property_count], true);
     if (result != TSI_OK) return result;
     peer->property_count++;
-    // X509_free(ca_cert);
   }
 
   return result;
