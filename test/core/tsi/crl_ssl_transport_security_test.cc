@@ -44,6 +44,8 @@ const int kSslTsiTestRevokedKeyCertPairsNum = 1;
 const int kSslTsiTestValidKeyCertPairsNum = 1;
 const char* kSslTsiTestCrlSupportedCredentialsDir =
     "test/core/tsi/test_creds/crl_data/";
+const char* kSslTsiTestCrlSupportedCrlDir =
+    "test/core/tsi/test_creds/crl_data/crls/";
 const char* kSslTsiTestFaultyCrlsDir = "bad_path/";
 
 class CrlSslTransportSecurityTest
@@ -131,7 +133,7 @@ class CrlSslTransportSecurityTest
       if (use_faulty_crl_directory_) {
         client_options.crl_directory = kSslTsiTestFaultyCrlsDir;
       } else {
-        client_options.crl_directory = kSslTsiTestCrlSupportedCredentialsDir;
+        client_options.crl_directory = kSslTsiTestCrlSupportedCrlDir;
       }
       client_options.root_store = root_store_;
       client_options.min_tls_version = GetParam();
@@ -149,7 +151,7 @@ class CrlSslTransportSecurityTest
         server_options.num_key_cert_pairs = kSslTsiTestValidKeyCertPairsNum;
       }
       server_options.pem_client_root_certs = root_cert_;
-      server_options.crl_directory = kSslTsiTestCrlSupportedCredentialsDir;
+      server_options.crl_directory = kSslTsiTestCrlSupportedCrlDir;
       server_options.client_certificate_request =
           TSI_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
       server_options.session_ticket_key = nullptr;
