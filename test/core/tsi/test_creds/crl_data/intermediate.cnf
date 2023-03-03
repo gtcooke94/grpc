@@ -7,6 +7,6 @@ prompt = no
 CN = intermediatecert.example.com
 
 [v3_req]
-keyUsage = critical, digitalSignature, keyEncipherment, keyCertSign
+keyUsage = critical, digitalSignature, keyEncipherment, keyCertSign, cRLSign
 extendedKeyUsage = clientAuth, serverAuth
 basicConstraints = critical, CA:true
