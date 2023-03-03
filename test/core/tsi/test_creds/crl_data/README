@@ -60,9 +60,15 @@ openssl req -key leaf_signed_by_intermediate.key -new -out temp.csr -config leaf
 openssl x509 -req -days 3650 -in temp.csr -CA intermediate_ca.pem -CAkey intermediate_ca.key -CAcreateserial -out leaf_signed_by_intermediate.pem -extfile leaf_signed_by_intermediate.cnf -extensions 'v3_req'
 cat leaf_signed_by_intermediate.pem intermediate_ca.pem > leaf_and_intermediate_chain.pem
 
+
+$ openssl ca -revoke intermediate_ca.pem -keyfile ca.key -cert ca.pem -days 3650
+$ openssl ca -gencrl -out current.crl -keyfile ca.key -cert ca.pem -crldays 3650
+
 openssl ca -gencrl -out intermediate.crl -keyfile intermediate_ca.key -cert intermediate_ca.pem -crldays 3650
 cp *.crl ./crls/
 openssl rehash ./crls/
+
+openssl verify -verbose -CAfile ca_cert.pem -CRLfile client_revoked.crl -crl_check_all client_cert_revoked.pem
 
 
 Clean up:
