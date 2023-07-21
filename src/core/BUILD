@@ -3066,6 +3066,8 @@ grpc_cc_library(
         "lib/security/credentials/tls/grpc_tls_crl_provider.h",
     ],
     external_deps = [
+        "absl/status",
+        "absl/status:statusor",
         "libcrypto",
         "libssl",
     ],
