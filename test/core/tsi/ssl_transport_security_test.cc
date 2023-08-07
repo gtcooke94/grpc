@@ -1241,8 +1241,8 @@ TEST(SslTransportSecurityTest, MainTest) {
       ssl_tsi_test_do_handshake_with_bad_server_cert();
       ssl_tsi_test_do_handshake_with_bad_client_cert();
 #ifdef OPENSSL_IS_BORINGSSL
-      // BoringSSL and OpenSSL have different behaviors on mismatched
-      ALPN.ssl_tsi_test_do_handshake_alpn_client_no_server();
+      // BoringSSL and OpenSSL have different behaviors on mismatched ALPN.
+      ssl_tsi_test_do_handshake_alpn_client_no_server();
       ssl_tsi_test_do_handshake_alpn_client_server_mismatch();
       // These tests fail with openssl3 and openssl111 currently but not
       // boringssl
