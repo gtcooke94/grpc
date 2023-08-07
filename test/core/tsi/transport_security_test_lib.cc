@@ -759,7 +759,7 @@ std::string GenerateSelfSignedCertificate(
   const uint8_t* data = nullptr;
   size_t len = 0;
 
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_IS_BORINGSSL
   GPR_ASSERT(BIO_mem_contents(bio, &data, &len));
 #else
   len = BIO_get_mem_data(bio, &data);
