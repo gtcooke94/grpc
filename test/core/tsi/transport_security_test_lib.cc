@@ -688,6 +688,8 @@ std::string GenerateSelfSignedCertificate(
   BIGNUM* n = BN_new();
   GPR_ASSERT(BN_set_word(n, 2048));
   EVP_PKEY* key = EVP_PKEY_new();
+  // Create the X509 object.
+  X509* x509 = X509_new();
 
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
   RSA* rsa = RSA_new();
@@ -695,6 +697,7 @@ std::string GenerateSelfSignedCertificate(
   GPR_ASSERT(
       RSA_generate_key_ex(rsa, /*key_size=*/2048, bignum, /*cb=*/nullptr));
   GPR_ASSERT(EVP_PKEY_assign_RSA(key, rsa));
+  GPR_ASSERT(X509_set_version(x509, 2));  // TODO(gtcooke94) make a const
 #else
   // EVP_PKEY_CTX* ctx = nullptr;
   // OSSL_PARAM params[3] = {};
@@ -713,12 +716,10 @@ std::string GenerateSelfSignedCertificate(
   // GPR_ASSERT(out == 1);
   // EVP_PKEY_CTX_free(ctx);
   key = EVP_RSA_gen(2048);
+  GPR_ASSERT(X509_set_version(x509, X509_VERSION_3));
 #endif
   BN_free(n);
 
-  // Create the X509 object.
-  X509* x509 = X509_new();
-  GPR_ASSERT(X509_set_version(x509, X509_VERSION_3));
   // Set the not_before/after fields to infinite past/future. The value for
   // infinite future is from RFC 5280 Section 4.1.2.5.1.
   ASN1_UTCTIME* infinite_past = ASN1_UTCTIME_new();

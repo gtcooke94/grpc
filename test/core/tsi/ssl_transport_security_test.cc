@@ -1227,26 +1227,26 @@ TEST(SslTransportSecurityTest, MainTest) {
     test_tls_version = tls_versions[i];
     for (bool send_client_ca_list : {true, false}) {
       test_send_client_ca_list = send_client_ca_list;
-//       ssl_tsi_test_do_handshake_tiny_handshake_buffer();
-//       ssl_tsi_test_do_handshake_small_handshake_buffer();
-//       ssl_tsi_test_do_handshake();
-//       ssl_tsi_test_do_handshake_with_root_store();
-//       ssl_tsi_test_do_handshake_with_large_server_handshake_messages(
-//           trust_bundle);
-//       ssl_tsi_test_do_handshake_with_client_authentication();
-//       ssl_tsi_test_do_handshake_with_client_authentication_and_root_store();
-//       ssl_tsi_test_do_handshake_with_server_name_indication_exact_domain();
-//       ssl_tsi_test_do_handshake_with_server_name_indication_wild_star_domain();
-//       ssl_tsi_test_do_handshake_with_wrong_server_name_indication();
-//       ssl_tsi_test_do_handshake_with_bad_server_cert();
-//       ssl_tsi_test_do_handshake_with_bad_client_cert();
-// #ifdef OPENSSL_IS_BORINGSSL
-//       // BoringSSL and OpenSSL have different behaviors on mismatched
-//       ALPN.ssl_tsi_test_do_handshake_alpn_client_no_server();
-//       ssl_tsi_test_do_handshake_alpn_client_server_mismatch();
-//       // This test fails with openssl3 and openssl111 currently
-//       ssl_tsi_test_do_handshake_session_cache();
-#endif
+      //       ssl_tsi_test_do_handshake_tiny_handshake_buffer();
+      //       ssl_tsi_test_do_handshake_small_handshake_buffer();
+      //       ssl_tsi_test_do_handshake();
+      //       ssl_tsi_test_do_handshake_with_root_store();
+      //       ssl_tsi_test_do_handshake_with_large_server_handshake_messages(
+      //           trust_bundle);
+      //       ssl_tsi_test_do_handshake_with_client_authentication();
+      //       ssl_tsi_test_do_handshake_with_client_authentication_and_root_store();
+      //       ssl_tsi_test_do_handshake_with_server_name_indication_exact_domain();
+      //       ssl_tsi_test_do_handshake_with_server_name_indication_wild_star_domain();
+      //       ssl_tsi_test_do_handshake_with_wrong_server_name_indication();
+      //       ssl_tsi_test_do_handshake_with_bad_server_cert();
+      //       ssl_tsi_test_do_handshake_with_bad_client_cert();
+      // #ifdef OPENSSL_IS_BORINGSSL
+      //       // BoringSSL and OpenSSL have different behaviors on mismatched
+      //       ALPN.ssl_tsi_test_do_handshake_alpn_client_no_server();
+      //       ssl_tsi_test_do_handshake_alpn_client_server_mismatch();
+      //       // This test fails with openssl3 and openssl111 currently
+      //       ssl_tsi_test_do_handshake_session_cache();
+      // #endif
       // ssl_tsi_test_do_handshake_alpn_server_no_client();
       // ssl_tsi_test_do_handshake_alpn_client_server_ok();
       ssl_tsi_test_do_round_trip_for_all_configs();
