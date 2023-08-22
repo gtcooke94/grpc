@@ -21,7 +21,6 @@
 #include <stdio.h>
 
 #include <openssl/crypto.h>
-#include <openssl/evp.h>
 
 #include "absl/base/thread_annotations.h"
 #include "gtest/gtest.h"
