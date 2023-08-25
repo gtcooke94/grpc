@@ -49,7 +49,6 @@ grpc_ssl_credentials::grpc_ssl_credentials(
     const grpc_ssl_verify_peer_options* verify_options) {
   build_config(pem_root_certs, pem_key_cert_pair, verify_options);
   const tsi_ssl_root_certs_store* root_store;
-  // TODO(gtcooke94) handle ssl_session_cache
 }
 
 grpc_ssl_credentials::~grpc_ssl_credentials() {
