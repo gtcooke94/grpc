@@ -39,6 +39,7 @@
 #include "src/core/lib/surface/api_trace.h"
 #include "src/core/tsi/ssl/session_cache/ssl_session_cache.h"
 #include "src/core/tsi/ssl_transport_security.h"
+#include "src/core/tsi/transport_security_interface.h"
 
 //
 // SSL Channel Credentials.
