@@ -84,7 +84,7 @@ class grpc_ssl_channel_security_connector final
       grpc_core::RefCountedPtr<grpc_call_credentials> request_metadata_creds,
       const grpc_ssl_config* config, const char* target_name,
       const char* overridden_target_name,
-      grpc_core::RefCountedPtr<tsi::SslSessionLRUCache> session_cache)
+      tsi::SslSessionLRUCache* session_cache)
       : grpc_channel_security_connector(GRPC_SSL_URL_SCHEME,
                                         std::move(channel_creds),
                                         std::move(request_metadata_creds)),
@@ -96,6 +96,7 @@ class grpc_ssl_channel_security_connector final
     absl::string_view port;
     grpc_core::SplitHostPort(target_name, &host, &port);
     target_name_ = std::string(host);
+    tsi_ssl_session_cache_ref(session_cache_->c_ptr());
   }
 
   ~grpc_ssl_channel_security_connector() override {
@@ -186,7 +187,7 @@ class grpc_ssl_channel_security_connector final
   std::string target_name_;
   std::string overridden_target_name_;
   const verify_peer_options* verify_options_;
-  grpc_core::RefCountedPtr<tsi::SslSessionLRUCache> session_cache_;
+  tsi::SslSessionLRUCache* session_cache_;
 };
 
 class grpc_ssl_server_security_connector
@@ -396,13 +397,11 @@ grpc_ssl_channel_security_connector_create(
     return nullptr;
   }
   auto* lru_cache = reinterpret_cast<tsi::SslSessionLRUCache*>(session_cache);
-  grpc_core::RefCountedPtr<tsi::SslSessionLRUCache> cache =
-      grpc_core::RefCountedPtr<tsi::SslSessionLRUCache>(lru_cache);
 
   grpc_core::RefCountedPtr<grpc_ssl_channel_security_connector> c =
       grpc_core::MakeRefCounted<grpc_ssl_channel_security_connector>(
           std::move(channel_creds), std::move(request_metadata_creds), config,
-          target_name, overridden_target_name, std::move(cache));
+          target_name, overridden_target_name, lru_cache);
   c->client_handshaker_factory_ =
       tsi_ssl_client_handshaker_factory_ref(client_factory);
   return c;

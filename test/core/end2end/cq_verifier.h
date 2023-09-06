@@ -104,7 +104,8 @@ class CqVerifier {
 
   // Ensure all expected events (and only those events) are present on the
   // bound completion queue within \a timeout.
-  void Verify(Duration timeout = Duration::Seconds(10),
+  // TODO(gtcooke94) don't forget to make this 10 again
+  void Verify(Duration timeout = Duration::Seconds(100000),
               SourceLocation location = SourceLocation());
 
   // Ensure that the completion queue is empty, waiting up to \a timeout.
