@@ -146,6 +146,7 @@ static gpr_once g_init_openssl_once = GPR_ONCE_INIT;
 static int g_ssl_ctx_ex_factory_index = -1;
 static const unsigned char kSslSessionIdContext[] = {'g', 'r', 'p', 'c'};
 static int g_ssl_ex_verified_root_cert_index = -1;
+static int g_ssl_ex_session_cache_index = -1;
 #if !defined(OPENSSL_IS_BORINGSSL) && !defined(OPENSSL_NO_ENGINE)
 static const char kSslEnginePrefix[] = "engine:";
 #endif
@@ -202,6 +203,10 @@ static void init_openssl(void) {
   g_ssl_ex_verified_root_cert_index =
       SSL_get_ex_new_index(0, nullptr, nullptr, nullptr, nullptr);
   GPR_ASSERT(g_ssl_ex_verified_root_cert_index != -1);
+
+  g_ssl_ex_session_cache_index =
+      SSL_get_ex_new_index(0, nullptr, nullptr, nullptr, nullptr);
+  GPR_ASSERT(g_ssl_ex_session_cache_index != -1);
 }
 
 // --- Ssl utils. ---
@@ -1643,12 +1648,11 @@ static void tsi_ssl_handshaker_resume_session(
   }
 }
 
-static tsi_result create_tsi_ssl_handshaker(SSL_CTX* ctx, int is_client,
-                                            const char* server_name_indication,
-                                            size_t network_bio_buf_size,
-                                            size_t ssl_bio_buf_size,
-                                            tsi_ssl_handshaker_factory* factory,
-                                            tsi_handshaker** handshaker) {
+static tsi_result create_tsi_ssl_handshaker(
+    SSL_CTX* ctx, int is_client, const char* server_name_indication,
+    size_t network_bio_buf_size, size_t ssl_bio_buf_size,
+    tsi_ssl_handshaker_factory* factory, tsi_ssl_session_cache* session_cache,
+    tsi_handshaker** handshaker) {
   SSL* ssl = SSL_new(ctx);
   BIO* network_io = nullptr;
   BIO* ssl_io = nullptr;
@@ -1682,11 +1686,12 @@ static tsi_result create_tsi_ssl_handshaker(SSL_CTX* ctx, int is_client,
         return TSI_INTERNAL_ERROR;
       }
     }
-    tsi_ssl_client_handshaker_factory* client_factory =
-        reinterpret_cast<tsi_ssl_client_handshaker_factory*>(factory);
-    if (client_factory->session_cache != nullptr) {
-      tsi_ssl_handshaker_resume_session(ssl,
-                                        client_factory->session_cache.get());
+    // tsi_ssl_client_handshaker_factory* client_factory =
+    //     reinterpret_cast<tsi_ssl_client_handshaker_factory*>(factory);
+    // TODO(gtcooke94) session caching being stored on SSL
+    if (session_cache != nullptr) {
+      auto* cache = reinterpret_cast<tsi::SslSessionLRUCache*>(session_cache);
+      tsi_ssl_handshaker_resume_session(ssl, cache);
     }
     ERR_clear_error();
     ssl_result = SSL_do_handshake(ssl);
@@ -1714,6 +1719,7 @@ static tsi_result create_tsi_ssl_handshaker(SSL_CTX* ctx, int is_client,
   impl->base.vtable = &handshaker_vtable;
   impl->factory_ref = tsi_ssl_handshaker_factory_ref(factory);
   *handshaker = &impl->base;
+  SSL_set_ex_data(ssl, g_ssl_ex_session_cache_index, session_cache);
   return TSI_OK;
 }
 
@@ -1750,10 +1756,20 @@ static int select_protocol_list(const unsigned char** out,
 tsi_result tsi_ssl_client_handshaker_factory_create_handshaker(
     tsi_ssl_client_handshaker_factory* factory,
     const char* server_name_indication, size_t network_bio_buf_size,
+    size_t ssl_bio_buf_size, tsi_ssl_session_cache* session_cache,
+    tsi_handshaker** handshaker) {
+  return create_tsi_ssl_handshaker(
+      factory->ssl_context, 1, server_name_indication, network_bio_buf_size,
+      ssl_bio_buf_size, &factory->base, session_cache, handshaker);
+}
+
+tsi_result tsi_ssl_client_handshaker_factory_create_handshaker(
+    tsi_ssl_client_handshaker_factory* factory,
+    const char* server_name_indication, size_t network_bio_buf_size,
     size_t ssl_bio_buf_size, tsi_handshaker** handshaker) {
   return create_tsi_ssl_handshaker(
       factory->ssl_context, 1, server_name_indication, network_bio_buf_size,
-      ssl_bio_buf_size, &factory->base, handshaker);
+      ssl_bio_buf_size, &factory->base, nullptr, handshaker);
 }
 
 void tsi_ssl_client_handshaker_factory_unref(
@@ -1799,9 +1815,11 @@ tsi_result tsi_ssl_server_handshaker_factory_create_handshaker(
   if (factory->ssl_context_count == 0) return TSI_INVALID_ARGUMENT;
   // Create the handshaker with the first context. We will switch if needed
   // because of SNI in ssl_server_handshaker_factory_servername_callback.
+  // TODO(gtcooke94) - client specific caching means passing a nullptr of
+  // session cache here
   return create_tsi_ssl_handshaker(factory->ssl_contexts[0], 0, nullptr,
                                    network_bio_buf_size, ssl_bio_buf_size,
-                                   &factory->base, handshaker);
+                                   &factory->base, nullptr, handshaker);
 }
 
 void tsi_ssl_server_handshaker_factory_unref(
@@ -1924,18 +1942,18 @@ static int server_handshaker_factory_npn_advertised_callback(
 /// It returns 1 if callback takes ownership over \a session and 0 otherwise.
 static int server_handshaker_factory_new_session_callback(
     SSL* ssl, SSL_SESSION* session) {
-  SSL_CTX* ssl_context = SSL_get_SSL_CTX(ssl);
-  if (ssl_context == nullptr) {
-    return 0;
-  }
-  void* arg = SSL_CTX_get_ex_data(ssl_context, g_ssl_ctx_ex_factory_index);
-  tsi_ssl_client_handshaker_factory* factory =
-      static_cast<tsi_ssl_client_handshaker_factory*>(arg);
+  // TODO(gtcooke94) - Store session cache in the SSL instead of SSL_CTX
+  // SSL used for handshake and record protocol
+  // Session tickets arrive from server after handshaker is destroyed, but on
+  // the same connection as the SSL
+  void* arg = SSL_get_ex_data(ssl, g_ssl_ex_session_cache_index);
+  tsi::SslSessionLRUCache* cache = static_cast<tsi::SslSessionLRUCache*>(arg);
+
   const char* server_name = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
   if (server_name == nullptr) {
     return 0;
   }
-  factory->session_cache->Put(server_name, tsi::SslSessionPtr(session));
+  cache->Put(server_name, tsi::SslSessionPtr(session));
   // Return 1 to indicate transferred ownership over the given session.
   return 1;
 }
@@ -1991,6 +2009,7 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
 #else
   ssl_context = SSL_CTX_new(TLSv1_2_method());
 #endif
+  gpr_log(GPR_ERROR, "GREG: SSL_CTX_new called");
   if (ssl_context == nullptr) {
     grpc_core::LogSslErrorStack();
     gpr_log(GPR_ERROR, "Could not create ssl context.");
@@ -2006,6 +2025,8 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
   tsi_ssl_handshaker_factory_init(&impl->base);
   impl->base.vtable = &client_handshaker_factory_vtable;
   impl->ssl_context = ssl_context;
+
+  // TODO(gtcooke94) session cache stuff
   if (options->session_cache != nullptr) {
     // Unref is called manually on factory destruction.
     impl->session_cache =
@@ -2029,6 +2050,7 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
 
   if (options->session_cache != nullptr || options->key_logger != nullptr) {
     // Need to set factory at g_ssl_ctx_ex_factory_index
+    // gtcooke94 session cache
     SSL_CTX_set_ex_data(ssl_context, g_ssl_ctx_ex_factory_index, impl);
   }
 

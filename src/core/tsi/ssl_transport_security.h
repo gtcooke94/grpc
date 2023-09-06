@@ -221,6 +221,14 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
 tsi_result tsi_ssl_client_handshaker_factory_create_handshaker(
     tsi_ssl_client_handshaker_factory* factory,
     const char* server_name_indication, size_t network_bio_buf_size,
+    size_t ssl_bio_buf_size, tsi_ssl_session_cache* session_cache,
+    tsi_handshaker** handshaker);
+
+// TODO(gtcooke94) how to handle session cache across usages, right now just
+// passing nullptr
+tsi_result tsi_ssl_client_handshaker_factory_create_handshaker(
+    tsi_ssl_client_handshaker_factory* factory,
+    const char* server_name_indication, size_t network_bio_buf_size,
     size_t ssl_bio_buf_size, tsi_handshaker** handshaker);
 
 // Increments reference count of the client handshaker factory.

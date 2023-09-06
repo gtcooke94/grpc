@@ -53,6 +53,7 @@
 #include "src/core/lib/security/security_connector/ssl_utils.h"
 #include "src/core/lib/security/transport/security_handshaker.h"
 #include "src/core/lib/transport/handshaker.h"
+#include "src/core/tsi/ssl/session_cache/ssl_session_cache.h"
 #include "src/core/tsi/ssl_transport_security.h"
 #include "src/core/tsi/transport_security.h"
 #include "src/core/tsi/transport_security_interface.h"
@@ -82,13 +83,15 @@ class grpc_ssl_channel_security_connector final
       grpc_core::RefCountedPtr<grpc_channel_credentials> channel_creds,
       grpc_core::RefCountedPtr<grpc_call_credentials> request_metadata_creds,
       const grpc_ssl_config* config, const char* target_name,
-      const char* overridden_target_name)
+      const char* overridden_target_name,
+      grpc_core::RefCountedPtr<tsi::SslSessionLRUCache> session_cache)
       : grpc_channel_security_connector(GRPC_SSL_URL_SCHEME,
                                         std::move(channel_creds),
                                         std::move(request_metadata_creds)),
         overridden_target_name_(
             overridden_target_name == nullptr ? "" : overridden_target_name),
-        verify_options_(&config->verify_options) {
+        verify_options_(&config->verify_options),
+        session_cache_(std::move(session_cache)) {
     absl::string_view host;
     absl::string_view port;
     grpc_core::SplitHostPort(target_name, &host, &port);
@@ -104,12 +107,18 @@ class grpc_ssl_channel_security_connector final
                        grpc_core::HandshakeManager* handshake_mgr) override {
     // Instantiate TSI handshaker.
     tsi_handshaker* tsi_hs = nullptr;
+    // TODO(gtcooke94) remove
+    // auto* ssl_session_cache = args.GetObject<tsi::SslSessionLRUCache>();
+
+    // tsi_ssl_session_cache* session_cache =
+    //     ssl_session_cache == nullptr ? nullptr : ssl_session_cache->c_ptr();
+
     tsi_result result = tsi_ssl_client_handshaker_factory_create_handshaker(
         client_handshaker_factory_,
         overridden_target_name_.empty() ? target_name_.c_str()
                                         : overridden_target_name_.c_str(),
         /*network_bio_buf_size=*/0,
-        /*ssl_bio_buf_size=*/0, &tsi_hs);
+        /*ssl_bio_buf_size=*/0, session_cache_->c_ptr(), &tsi_hs);
     if (result != TSI_OK) {
       gpr_log(GPR_ERROR, "Handshaker creation failed with error %s.",
               tsi_result_to_string(result));
@@ -177,6 +186,7 @@ class grpc_ssl_channel_security_connector final
   std::string target_name_;
   std::string overridden_target_name_;
   const verify_peer_options* verify_options_;
+  grpc_core::RefCountedPtr<tsi::SslSessionLRUCache> session_cache_;
 };
 
 class grpc_ssl_server_security_connector
@@ -379,16 +389,20 @@ grpc_ssl_channel_security_connector_create(
     grpc_core::RefCountedPtr<grpc_call_credentials> request_metadata_creds,
     const grpc_ssl_config* config, const char* target_name,
     const char* overridden_target_name,
-    tsi_ssl_client_handshaker_factory* client_factory) {
+    tsi_ssl_client_handshaker_factory* client_factory,
+    tsi_ssl_session_cache* session_cache) {
   if (config == nullptr || target_name == nullptr) {
     gpr_log(GPR_ERROR, "An ssl channel needs a config and a target name.");
     return nullptr;
   }
+  auto* lru_cache = reinterpret_cast<tsi::SslSessionLRUCache*>(session_cache);
+  grpc_core::RefCountedPtr<tsi::SslSessionLRUCache> cache =
+      grpc_core::RefCountedPtr<tsi::SslSessionLRUCache>(lru_cache);
 
   grpc_core::RefCountedPtr<grpc_ssl_channel_security_connector> c =
       grpc_core::MakeRefCounted<grpc_ssl_channel_security_connector>(
           std::move(channel_creds), std::move(request_metadata_creds), config,
-          target_name, overridden_target_name);
+          target_name, overridden_target_name, std::move(cache));
   c->client_handshaker_factory_ =
       tsi_ssl_client_handshaker_factory_ref(client_factory);
   return c;

@@ -68,7 +68,7 @@ grpc_ssl_credentials::create_security_connector(
   absl::optional<std::string> overridden_target_name =
       args->GetOwnedString(GRPC_SSL_TARGET_NAME_OVERRIDE_ARG);
   auto* ssl_session_cache = args->GetObject<tsi::SslSessionLRUCache>();
-  tsi_ssl_session_cache* tsi_ssl_session_cache =
+  tsi_ssl_session_cache* session_cache =
       ssl_session_cache == nullptr ? nullptr : ssl_session_cache->c_ptr();
 
   const tsi_ssl_root_certs_store* root_store;
@@ -91,17 +91,18 @@ grpc_ssl_credentials::create_security_connector(
   }
 
   grpc_security_status status = initialize_client_handshaker_factory(
-      &config_, config_.pem_root_certs, root_store, tsi_ssl_session_cache);
+      &config_, config_.pem_root_certs, root_store);
   if (status != GRPC_SECURITY_OK) {
     return nullptr;
   }
 
+  // TODO(gtcooke94) session cache here
   grpc_core::RefCountedPtr<grpc_channel_security_connector> sc =
       grpc_ssl_channel_security_connector_create(
           this->Ref(), std::move(call_creds), &config_, target,
           overridden_target_name.has_value() ? overridden_target_name->c_str()
                                              : nullptr,
-          client_handshaker_factory_);
+          client_handshaker_factory_, session_cache);
   if (sc == nullptr) {
     return sc;
   }
@@ -151,8 +152,7 @@ void grpc_ssl_credentials::set_max_tls_version(
 
 grpc_security_status grpc_ssl_credentials::initialize_client_handshaker_factory(
     const grpc_ssl_config* config, const char* pem_root_certs,
-    const tsi_ssl_root_certs_store* root_store,
-    tsi_ssl_session_cache* ssl_session_cache) {
+    const tsi_ssl_root_certs_store* root_store) {
   if (client_handshaker_factory_ != nullptr) {
     return GRPC_SECURITY_OK;
   }
@@ -170,7 +170,6 @@ grpc_security_status grpc_ssl_credentials::initialize_client_handshaker_factory(
     options.pem_key_cert_pair = config->pem_key_cert_pair;
   }
   options.cipher_suites = grpc_get_ssl_cipher_suites();
-  options.session_cache = ssl_session_cache;
   options.min_tls_version = grpc_get_tsi_tls_version(config->min_tls_version);
   options.max_tls_version = grpc_get_tsi_tls_version(config->max_tls_version);
   const tsi_result result =

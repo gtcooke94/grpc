@@ -71,8 +71,7 @@ class grpc_ssl_credentials : public grpc_channel_credentials {
 
   grpc_security_status initialize_client_handshaker_factory(
       const grpc_ssl_config* config, const char* pem_root_certs,
-      const tsi_ssl_root_certs_store* root_store,
-      tsi_ssl_session_cache* ssl_session_cache);
+      const tsi_ssl_root_certs_store* root_store);
 
   grpc_ssl_config config_;
   tsi_ssl_client_handshaker_factory* client_handshaker_factory_ = nullptr;
