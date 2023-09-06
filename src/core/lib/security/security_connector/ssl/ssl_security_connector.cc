@@ -96,7 +96,9 @@ class grpc_ssl_channel_security_connector final
     absl::string_view port;
     grpc_core::SplitHostPort(target_name, &host, &port);
     target_name_ = std::string(host);
-    tsi_ssl_session_cache_ref(session_cache_->c_ptr());
+    if (session_cache_ != nullptr) {
+      tsi_ssl_session_cache_ref(session_cache_->c_ptr());
+    }
   }
 
   ~grpc_ssl_channel_security_connector() override {

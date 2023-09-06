@@ -1719,8 +1719,10 @@ static tsi_result create_tsi_ssl_handshaker(
   impl->base.vtable = &handshaker_vtable;
   impl->factory_ref = tsi_ssl_handshaker_factory_ref(factory);
   *handshaker = &impl->base;
-  SSL_set_ex_data(ssl, g_ssl_ex_session_cache_index, session_cache);
-  tsi_ssl_session_cache_ref(session_cache);
+  if (session_cache != nullptr) {
+    SSL_set_ex_data(ssl, g_ssl_ex_session_cache_index, session_cache);
+    tsi_ssl_session_cache_ref(session_cache);
+  }
   return TSI_OK;
 }
 
