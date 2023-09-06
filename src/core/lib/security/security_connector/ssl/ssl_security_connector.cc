@@ -91,7 +91,7 @@ class grpc_ssl_channel_security_connector final
         overridden_target_name_(
             overridden_target_name == nullptr ? "" : overridden_target_name),
         verify_options_(&config->verify_options),
-        session_cache_(std::move(session_cache)) {
+        session_cache_(session_cache) {
     absl::string_view host;
     absl::string_view port;
     grpc_core::SplitHostPort(target_name, &host, &port);

@@ -1947,6 +1947,9 @@ static int server_handshaker_factory_new_session_callback(
   // Session tickets arrive from server after handshaker is destroyed, but on
   // the same connection as the SSL
   void* arg = SSL_get_ex_data(ssl, g_ssl_ex_session_cache_index);
+  if (arg == nullptr) {
+    return 0;
+  }
   tsi::SslSessionLRUCache* cache = static_cast<tsi::SslSessionLRUCache*>(arg);
 
   const char* server_name = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
@@ -2027,15 +2030,18 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
   impl->ssl_context = ssl_context;
 
   // TODO(gtcooke94) session cache stuff
-  if (options->session_cache != nullptr) {
-    // Unref is called manually on factory destruction.
-    impl->session_cache =
-        reinterpret_cast<tsi::SslSessionLRUCache*>(options->session_cache)
-            ->Ref();
-    SSL_CTX_sess_set_new_cb(ssl_context,
-                            server_handshaker_factory_new_session_callback);
-    SSL_CTX_set_session_cache_mode(ssl_context, SSL_SESS_CACHE_CLIENT);
-  }
+  // if (options->session_cache != nullptr) {
+  //   // Unref is called manually on factory destruction.
+  //   // impl->session_cache =
+  //   //     reinterpret_cast<tsi::SslSessionLRUCache*>(options->session_cache)
+  //   //         ->Ref();
+  //   SSL_CTX_sess_set_new_cb(ssl_context,
+  //                           server_handshaker_factory_new_session_callback);
+  //   SSL_CTX_set_session_cache_mode(ssl_context, SSL_SESS_CACHE_CLIENT);
+  // }
+  SSL_CTX_sess_set_new_cb(ssl_context,
+                          server_handshaker_factory_new_session_callback);
+  SSL_CTX_set_session_cache_mode(ssl_context, SSL_SESS_CACHE_CLIENT);
 
 #if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
   if (options->key_logger != nullptr) {

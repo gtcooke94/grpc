@@ -96,7 +96,6 @@ grpc_ssl_credentials::create_security_connector(
     return nullptr;
   }
 
-  // TODO(gtcooke94) session cache here
   grpc_core::RefCountedPtr<grpc_channel_security_connector> sc =
       grpc_ssl_channel_security_connector_create(
           this->Ref(), std::move(call_creds), &config_, target,
