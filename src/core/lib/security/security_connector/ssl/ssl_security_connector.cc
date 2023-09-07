@@ -103,6 +103,7 @@ class grpc_ssl_channel_security_connector final
 
   ~grpc_ssl_channel_security_connector() override {
     tsi_ssl_client_handshaker_factory_unref(client_handshaker_factory_);
+    tsi_ssl_session_cache_unref(session_cache_->c_ptr());
   }
 
   void add_handshakers(const grpc_core::ChannelArgs& args,

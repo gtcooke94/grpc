@@ -91,7 +91,7 @@ grpc_ssl_credentials::create_security_connector(
   }
 
   grpc_security_status status = initialize_client_handshaker_factory(
-      &config_, config_.pem_root_certs, root_store);
+      &config_, config_.pem_root_certs, root_store, session_cache);
   if (status != GRPC_SECURITY_OK) {
     return nullptr;
   }
@@ -151,7 +151,8 @@ void grpc_ssl_credentials::set_max_tls_version(
 
 grpc_security_status grpc_ssl_credentials::initialize_client_handshaker_factory(
     const grpc_ssl_config* config, const char* pem_root_certs,
-    const tsi_ssl_root_certs_store* root_store) {
+    const tsi_ssl_root_certs_store* root_store,
+    tsi_ssl_session_cache* session_cache) {
   if (client_handshaker_factory_ != nullptr) {
     return GRPC_SECURITY_OK;
   }
@@ -171,6 +172,7 @@ grpc_security_status grpc_ssl_credentials::initialize_client_handshaker_factory(
   options.cipher_suites = grpc_get_ssl_cipher_suites();
   options.min_tls_version = grpc_get_tsi_tls_version(config->min_tls_version);
   options.max_tls_version = grpc_get_tsi_tls_version(config->max_tls_version);
+  options.session_cache = session_cache;
   const tsi_result result =
       tsi_create_ssl_client_handshaker_factory_with_options(
           &options, &client_handshaker_factory_);
