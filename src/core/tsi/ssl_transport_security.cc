@@ -1718,7 +1718,7 @@ static tsi_result create_tsi_ssl_handshaker(
   *handshaker = &impl->base;
   if (session_cache != nullptr) {
     SSL_set_ex_data(ssl, g_ssl_ex_session_cache_index, session_cache);
-    // tsi_ssl_session_cache_ref(session_cache);
+    tsi_ssl_session_cache_ref(session_cache);
   }
   return TSI_OK;
 }
