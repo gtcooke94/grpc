@@ -110,12 +110,6 @@ class grpc_ssl_channel_security_connector final
                        grpc_core::HandshakeManager* handshake_mgr) override {
     // Instantiate TSI handshaker.
     tsi_handshaker* tsi_hs = nullptr;
-    // TODO(gtcooke94) remove
-    // auto* ssl_session_cache = args.GetObject<tsi::SslSessionLRUCache>();
-
-    // tsi_ssl_session_cache* session_cache =
-    //     ssl_session_cache == nullptr ? nullptr : ssl_session_cache->c_ptr();
-
     tsi_result result;
     if (session_cache_ != nullptr) {
       result = tsi_ssl_client_handshaker_factory_create_handshaker(
