@@ -116,12 +116,22 @@ class grpc_ssl_channel_security_connector final
     // tsi_ssl_session_cache* session_cache =
     //     ssl_session_cache == nullptr ? nullptr : ssl_session_cache->c_ptr();
 
-    tsi_result result = tsi_ssl_client_handshaker_factory_create_handshaker(
-        client_handshaker_factory_,
-        overridden_target_name_.empty() ? target_name_.c_str()
-                                        : overridden_target_name_.c_str(),
-        /*network_bio_buf_size=*/0,
-        /*ssl_bio_buf_size=*/0, session_cache_->c_ptr(), &tsi_hs);
+    tsi_result result;
+    if (session_cache_ != nullptr) {
+      result = tsi_ssl_client_handshaker_factory_create_handshaker(
+          client_handshaker_factory_,
+          overridden_target_name_.empty() ? target_name_.c_str()
+                                          : overridden_target_name_.c_str(),
+          /*network_bio_buf_size=*/0,
+          /*ssl_bio_buf_size=*/0, session_cache_->c_ptr(), &tsi_hs);
+    } else {
+      result = tsi_ssl_client_handshaker_factory_create_handshaker(
+          client_handshaker_factory_,
+          overridden_target_name_.empty() ? target_name_.c_str()
+                                          : overridden_target_name_.c_str(),
+          /*network_bio_buf_size=*/0,
+          /*ssl_bio_buf_size=*/0, &tsi_hs);
+    }
     if (result != TSI_OK) {
       gpr_log(GPR_ERROR, "Handshaker creation failed with error %s.",
               tsi_result_to_string(result));
