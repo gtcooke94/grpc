@@ -196,7 +196,7 @@ static void ssl_test_setup_handshakers(tsi_test_fixture* fixture) {
           ssl_fixture->client_handshaker_factory,
           ssl_fixture->server_name_indication,
           ssl_fixture->network_bio_buf_size, ssl_fixture->ssl_bio_buf_size,
-          &ssl_fixture->base.client_handshaker),
+          ssl_fixture->session_cache, &ssl_fixture->base.client_handshaker),
       TSI_OK);
   ASSERT_EQ(
       tsi_ssl_server_handshaker_factory_create_handshaker(

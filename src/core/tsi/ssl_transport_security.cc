@@ -2015,7 +2015,6 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
 #else
   ssl_context = SSL_CTX_new(TLSv1_2_method());
 #endif
-  gpr_log(GPR_ERROR, "GREG: SSL_CTX_new called");
   if (ssl_context == nullptr) {
     grpc_core::LogSslErrorStack();
     gpr_log(GPR_ERROR, "Could not create ssl context.");
