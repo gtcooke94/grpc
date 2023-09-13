@@ -139,6 +139,7 @@ TEST_F(SslCredentialsTest, ConcurrentResumption) {
 
   DoRpc(server_addr_, ssl_options, cache, /*expect_session_reuse=*/false);
   std::vector<std::thread*> threads;
+  threads.reserve(10);
   for (int i = 0; i < 10; i++) {
     threads.push_back(new std::thread([&]() {
       DoRpc(server_addr_, ssl_options, cache, /*expect_session_reuse=*/true);
