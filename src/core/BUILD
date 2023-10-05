@@ -3067,14 +3067,18 @@ grpc_cc_library(
     ],
     external_deps = [
         "absl/container:flat_hash_map",
+        "absl/meta:type_traits",
         "absl/status",
         "absl/status:statusor",
         "absl/strings",
+        "absl/synchronization",
+        "absl/types:optional",
         "libcrypto",
         "libssl",
     ],
     deps = [
         "default_event_engine",
+        "error",
         "slice",
         "//:exec_ctx",
         "//:gpr",
