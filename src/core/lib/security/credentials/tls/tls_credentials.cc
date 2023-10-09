@@ -20,6 +20,7 @@
 
 #include "src/core/lib/security/credentials/tls/tls_credentials.h"
 
+#include <memory>
 #include <string>
 #include <utility>
 
