@@ -24,7 +24,6 @@
 
 #include <memory>
 #include <utility>
-#include <vector>
 
 #include <openssl/bio.h>
 #include <openssl/mem.h>
@@ -35,6 +34,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 
 namespace grpc_core {
 namespace experimental {
