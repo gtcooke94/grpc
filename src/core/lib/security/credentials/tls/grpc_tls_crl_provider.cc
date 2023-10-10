@@ -22,10 +22,15 @@
 
 #include <dirent.h>
 #include <limits.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 
+#include <algorithm>
+#include <initializer_list>
 #include <memory>
+#include <ratio>
 #include <utility>
 #include <vector>
 
@@ -35,13 +40,21 @@
 #include <openssl/x509.h>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 
+#include <grpc/slice.h>
+#include <grpc/support/log.h>
+#include <grpc/support/sync.h>
+
+#include "src/core/lib/iomgr/error.h"
 #include "src/core/lib/iomgr/exec_ctx.h"
 #include "src/core/lib/iomgr/load_file.h"
+#include "src/core/lib/slice/slice_internal.h"
 
 namespace grpc_core {
 namespace experimental {
