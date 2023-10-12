@@ -27,6 +27,7 @@
 
 #include <openssl/bio.h>
 #include <openssl/crypto.h>  // For OPENSSL_free
+#include <openssl/mem.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 
