@@ -26,6 +26,7 @@
 #include <utility>
 
 #include <openssl/bio.h>
+#include <openssl/mem.h>
 
 #ifdef OPENSSL_IS_BORING_SSL
 #include <openssl/mem.h>
