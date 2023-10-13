@@ -22,13 +22,13 @@
 
 #include <limits.h>
 
+#include <openssl/bio.h>
+// IWYU pragma: no_include "openssl/mem.h"
 #include <memory>
 #include <utility>
 
-#include <openssl/bio.h>
-
-// IWYU pragma: no_include "openssl/mem.h"
 #include <openssl/crypto.h>  // For OPENSSL_free
+#include <openssl/mem.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 
