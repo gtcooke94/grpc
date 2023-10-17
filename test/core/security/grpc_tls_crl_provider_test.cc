@@ -138,7 +138,7 @@ std::string MakeTempDir() {
 }
 
 std::string TempDirNameFromPath(absl::string_view dir_path) {
-  std::vector<std::string> split = absl::StrSplit(dir_path, "/");
+  std::vector<std::string> split = absl::StrSplit(dir_path, '/');
   return split[2] + "/";
 }
 
