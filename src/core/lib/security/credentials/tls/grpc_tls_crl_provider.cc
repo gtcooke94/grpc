@@ -21,14 +21,16 @@
 #include "src/core/lib/security/credentials/tls/grpc_tls_crl_provider.h"
 
 #include <limits.h>
-
-#include <memory>
-#include <utility>
-
 // IWYU pragma: no_include <openssl/mem.h>
 #include <dirent.h>
+#include <stdio.h>
 #include <sys/param.h>
 #include <sys/stat.h>
+
+#include <algorithm>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #include <openssl/bio.h>
 #include <openssl/crypto.h>  // IWYU pragma: keep
@@ -39,12 +41,17 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 
+#include <grpc/slice.h>
 #include <grpc/support/log.h>
+#include <grpc/support/sync.h>
 
+#include "src/core/lib/iomgr/error.h"
 #include "src/core/lib/iomgr/exec_ctx.h"
 #include "src/core/lib/iomgr/load_file.h"
+#include "src/core/lib/slice/slice_internal.h"
 
 namespace grpc_core {
 namespace experimental {
