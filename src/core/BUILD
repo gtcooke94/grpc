@@ -249,13 +249,14 @@ grpc_cc_library(
         "lib/gprpp/directory.h",
     ],
     external_deps = [
+        "absl/status",
         "absl/status:statusor",
-        "absl/strings:string_view",
+        "absl/strings",
+        "absl/strings:str_format",
     ],
     deps = [
         "//:gpr",
         "//:gpr_platform",
-        "//:grpc_base",
     ],
 )
 
@@ -3101,10 +3102,13 @@ grpc_cc_library(
         "lib/security/credentials/tls/grpc_tls_crl_provider.h",
     ],
     external_deps = [
+        "absl/base:core_headers",
         "absl/container:flat_hash_map",
         "absl/status",
         "absl/status:statusor",
         "absl/strings",
+        "absl/strings:str_format",
+        "absl/types:optional",
         "absl/types:span",
         "libcrypto",
         "libssl",
@@ -3113,6 +3117,8 @@ grpc_cc_library(
         "default_event_engine",
         "directory",
         "load_file",
+        "slice",
+        "time",
         "//:exec_ctx",
         "//:gpr",
         "//:grpc_base",

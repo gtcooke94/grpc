@@ -20,16 +20,15 @@
 
 #include "src/core/lib/security/credentials/tls/grpc_tls_crl_provider.h"
 
-#include <dirent.h>
 #include <limits.h>
-#include <sys/param.h>
 #include <sys/stat.h>
-
+// IWYU pragma: no_include <openssl/mem.h>
 #include <memory>
+#include <ratio>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
-// IWYU pragma: no_include <openssl/mem.h>
 #include <openssl/bio.h>
 #include <openssl/crypto.h>  // IWYU pragma: keep
 #include <openssl/pem.h>
@@ -39,13 +38,16 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 
 #include <grpc/support/log.h>
 
+#include "src/core/lib/event_engine/default_event_engine.h"
 #include "src/core/lib/gprpp/directory.h"
 #include "src/core/lib/gprpp/load_file.h"
 #include "src/core/lib/iomgr/exec_ctx.h"
+#include "src/core/lib/slice/slice.h"
 
 namespace grpc_core {
 namespace experimental {
@@ -221,7 +223,7 @@ absl::Status DirectoryReloaderCrlProvider::Update() {
     std::string issuer((*crl)->Issuer());
     new_crls[issuer] = std::move(*crl);
   }
-  grpc_core::MutexLock lock(&mu_);
+  MutexLock lock(&mu_);
   if (!all_files_successful) {
     // Need to make sure CRLs we read successfully into new_crls are still
     // in-place updated in crls_.
@@ -244,7 +246,7 @@ absl::Status DirectoryReloaderCrlProvider::Update() {
 
 std::shared_ptr<Crl> DirectoryReloaderCrlProvider::GetCrl(
     const CertificateInfo& certificate_info) {
-  grpc_core::MutexLock lock(&mu_);
+  MutexLock lock(&mu_);
   auto it = crls_.find(certificate_info.Issuer());
   if (it == crls_.end()) {
     return nullptr;
