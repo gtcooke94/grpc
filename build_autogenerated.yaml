@@ -9461,11 +9461,16 @@ targets:
   gtest: true
   build: test
   language: c++
-  headers: []
+  headers:
+  - test/core/event_engine/fuzzing_event_engine/fuzzing_event_engine.h
   src:
+  - test/core/event_engine/fuzzing_event_engine/fuzzing_event_engine.proto
+  - test/core/util/fuzz_config_vars.proto
+  - test/core/event_engine/fuzzing_event_engine/fuzzing_event_engine.cc
   - test/core/security/grpc_tls_crl_provider_test.cc
   deps:
   - gtest
+  - protobuf
   - grpc_test_util
 - name: grpc_tool_test
   gtest: true
