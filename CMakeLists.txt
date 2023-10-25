@@ -819,6 +819,9 @@ protobuf_generate_grpc_cpp_with_import_path_correction(
 protobuf_generate_grpc_cpp_with_import_path_correction(
   test/core/tsi/alts/fake_handshaker/transport_security_common.proto test/core/tsi/alts/fake_handshaker/transport_security_common.proto
 )
+protobuf_generate_grpc_cpp_with_import_path_correction(
+  test/core/util/fuzz_config_vars.proto test/core/util/fuzz_config_vars.proto
+)
 
 if(gRPC_BUILD_TESTS)
   add_custom_target(buildtests_c)
@@ -13423,6 +13426,15 @@ endif()
 if(gRPC_BUILD_TESTS)
 
 add_executable(grpc_tls_crl_provider_test
+  ${_gRPC_PROTO_GENS_DIR}/test/core/event_engine/fuzzing_event_engine/fuzzing_event_engine.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/test/core/event_engine/fuzzing_event_engine/fuzzing_event_engine.grpc.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/test/core/event_engine/fuzzing_event_engine/fuzzing_event_engine.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/test/core/event_engine/fuzzing_event_engine/fuzzing_event_engine.grpc.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/test/core/util/fuzz_config_vars.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/test/core/util/fuzz_config_vars.grpc.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/test/core/util/fuzz_config_vars.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/test/core/util/fuzz_config_vars.grpc.pb.h
+  test/core/event_engine/fuzzing_event_engine/fuzzing_event_engine.cc
   test/core/security/grpc_tls_crl_provider_test.cc
 )
 target_compile_features(grpc_tls_crl_provider_test PUBLIC cxx_std_14)
@@ -13448,6 +13460,7 @@ target_include_directories(grpc_tls_crl_provider_test
 target_link_libraries(grpc_tls_crl_provider_test
   ${_gRPC_ALLTARGETS_LIBRARIES}
   gtest
+  ${_gRPC_PROTOBUF_LIBRARIES}
   grpc_test_util
 )
 
