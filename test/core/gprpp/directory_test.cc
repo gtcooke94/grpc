@@ -16,6 +16,8 @@
 
 #include "src/core/lib/gprpp/directory.h"
 
+#include <stdio.h>
+
 #include "gtest/gtest.h"
 
 #include <grpc/support/alloc.h>
@@ -28,7 +30,7 @@ namespace grpc_core {
 namespace testing {
 namespace {
 
-static const char prefix[] = "file_test";
+const char prefix[] = "file_test";
 
 std::string DirectoryPathFromFilePath(const std::string& path) {
   int last_separator = path.find_last_of("/\\");
@@ -37,7 +39,7 @@ std::string DirectoryPathFromFilePath(const std::string& path) {
 
 TEST(DIRECTORY, DirectoryExists) {
   FILE* tmp = nullptr;
-  absl::StatusOr<grpc_core::Slice> result;
+  absl::StatusOr<Slice> result;
   char* tmp_name;
 
   tmp = gpr_tmpfile(prefix, &tmp_name);
