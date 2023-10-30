@@ -16,11 +16,12 @@
 //
 //
 
-#ifndef GRPC_SRC_CORE_LIB_GPRPP_DIRECTORY_H
-#define GRPC_SRC_CORE_LIB_GPRPP_DIRECTORY_H
+#ifndef GRPC_SRC_CORE_LIB_GPRPP_DIRECTORY_READER_H
+#define GRPC_SRC_CORE_LIB_GPRPP_DIRECTORY_READER_H
 
 #include <grpc/support/port_platform.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -44,4 +45,4 @@ std::unique_ptr<DirectoryReader> MakeDirectoryReader(
 
 }  // namespace grpc_core
 
-#endif  // GRPC_SRC_CORE_LIB_GPRPP_DIRECTORY_H
+#endif  // GRPC_SRC_CORE_LIB_GPRPP_DIRECTORY_READER_H

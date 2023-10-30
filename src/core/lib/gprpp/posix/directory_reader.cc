@@ -18,6 +18,10 @@
 
 #include <grpc/support/port_platform.h>
 
+#include <string.h>
+
+#include <memory>
+
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
@@ -27,12 +31,9 @@
     defined(GPR_APPLE)
 
 #include <dirent.h>
-#include <sys/stat.h>
 
 #include <string>
 #include <vector>
-
-#include <grpc/support/log.h>
 
 #include "src/core/lib/gprpp/directory_reader.h"
 
