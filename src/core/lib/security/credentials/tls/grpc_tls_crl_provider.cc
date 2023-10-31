@@ -21,13 +21,13 @@
 #include "src/core/lib/security/credentials/tls/grpc_tls_crl_provider.h"
 
 #include <limits.h>
-
+// IWYU pragma: no_include <openssl/mem.h>
 #include <memory>
+#include <ratio>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
-// IWYU pragma: no_include <openssl/mem.h>
 #include <openssl/bio.h>
 #include <openssl/crypto.h>  // IWYU pragma: keep
 #include <openssl/pem.h>
