@@ -2313,8 +2313,7 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
     //                                  nullptr);
   }
   // auto fn = BuildVerifyCallback(verify_fns);
-  SSL_CTX_set_cert_verify_callback(ssl_context,
-                                   &fn, nullptr));
+  SSL_CTX_set_cert_verify_callback(ssl_context, &fn, nullptr);
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
   if (options->crl_provider != nullptr) {
