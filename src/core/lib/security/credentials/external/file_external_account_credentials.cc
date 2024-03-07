@@ -104,7 +104,7 @@ void FileExternalAccountCredentials::RetrieveSubjectToken(
   // request because it may have changed since the last request.
   absl::StatusOr<Slice> content_slice;
   {
-    grpc_core::MutexLock l(&m_);
+    MutexLock l(&m_);
     content_slice = LoadFile(file_, /*add_null_terminator=*/false);
   }
   if (!content_slice.ok()) {
