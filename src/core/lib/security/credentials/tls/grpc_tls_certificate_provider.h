@@ -28,6 +28,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 
+#include <grpc/grpc_certificate_provider.h>
 #include <grpc/grpc_security.h>
 #include <grpc/support/log.h>
 #include <grpc/support/port_platform.h>
@@ -199,6 +200,75 @@ class FileWatcherCertificateProvider final
 //  whether the key/cert pair matches.
 absl::StatusOr<bool> PrivateKeyAndCertificateMatch(
     absl::string_view private_key, absl::string_view cert_chain);
+
+namespace compat {
+// A basic CertificateProviderInterface implementation that will load credential
+// data from static string during initialization. This provider will always
+// return the same certificate data for all cert names, and reloading is not
+// supported.
+class StaticDataCertificateProvider
+    : public grpc_core::compat::CertificateProviderInterface {
+ public:
+  StaticDataCertificateProvider(
+      absl::string_view root_certificate,
+      const absl::Span<IdentityKeyCertPair>& identity_key_cert_pairs);
+
+  explicit StaticDataCertificateProvider(absl::string_view root_certificate);
+
+  explicit StaticDataCertificateProvider(
+      const absl::Span<IdentityKeyCertPair>& identity_key_cert_pairs);
+};
+
+// A CertificateProviderInterface implementation that will watch the credential
+// changes on the file system. This provider will always return the up-to-date
+// certificate data for all the cert names callers set through
+// |TlsCredentialsBuilder|. Several things to note:
+// 1. This API only supports one key-certificate file and hence one set of
+// identity key-certificate pair, so SNI(Server Name Indication) is not
+// supported.
+// 2. The private key and identity certificate should always match. This API
+// guarantees atomic read, and it is the callers' responsibility to do atomic
+// updates. There are many ways to atomically update the key and certificates in
+// the file system. To name a few:
+//   1)  creating a new directory, renaming the old directory to a new name, and
+//   then renaming the new directory to the original name of the old directory.
+//   2)  using a symlink for the directory. When need to change, put new
+//   credential data in a new directory, and change symlink.
+class FileWatcherCertificateProvider final
+    : public grpc_core::compat::CertificateProviderInterface {
+ public:
+  // Constructor to get credential updates from root and identity file paths.
+  //
+  // @param private_key_path is the file path of the private key.
+  // @param identity_certificate_path is the file path of the identity
+  // certificate chain.
+  // @param root_cert_path is the file path to the root certificate bundle.
+  // @param refresh_interval_sec is the refreshing interval that we will check
+  // the files for updates.
+  FileWatcherCertificateProvider(absl::string_view private_key_path,
+                                 absl::string_view identity_certificate_path,
+                                 absl::string_view root_cert_path,
+                                 unsigned int refresh_interval_sec);
+
+  // Constructor to get credential updates from identity file paths only.
+  FileWatcherCertificateProvider(absl::string_view private_key_path,
+                                 absl::string_view identity_certificate_path,
+                                 unsigned int refresh_interval_sec);
+
+  // Constructor to get credential updates from root file path only.
+  FileWatcherCertificateProvider(absl::string_view root_cert_path,
+                                 unsigned int refresh_interval_sec);
+
+  ~FileWatcherCertificateProvider() override;
+
+ protected:
+  void OnWatchStarted(std::string name, CredentialType type) override;
+  void OnWatchStopped(std::string name, CredentialType type) override;
+};
+
+class TlsCertificateDistributor {}
+
+}  // namespace compat
 
 }  // namespace grpc_core
 

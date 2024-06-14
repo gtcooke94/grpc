@@ -20,6 +20,7 @@
 #include <time.h>
 
 #include <algorithm>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -27,6 +28,7 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 
+#include "grpc_tls_certificate_distributor.h"
 #include <grpc/credentials.h>
 #include <grpc/slice.h>
 #include <grpc/support/port_platform.h>
@@ -410,4 +412,8 @@ void grpc_tls_certificate_provider_release(
                  (provider));
   grpc_core::ExecCtx exec_ctx;
   if (provider != nullptr) provider->Unref();
+}
+
+void grpc_core::compat::CertificateProviderInterface::Start() {
+  distributor_ = std::make_unique<TlsCertificateDistributor>();
 }
