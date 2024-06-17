@@ -40,8 +40,7 @@ struct grpc_tls_identity_pairs {
 };
 
 // TLS certificate distributor.
-struct grpc_tls_certificate_distributor
-    : public grpc_core::RefCounted<grpc_tls_certificate_distributor> {
+class TlsCertificateDistributor {
  public:
   // Interface for watching TLS certificates update.
   class TlsCertificatesWatcherInterface {
@@ -112,7 +111,7 @@ struct grpc_tls_certificate_distributor
   void SetError(grpc_error_handle error);
 
   // Sets the TLS certificate watch status callback function. The
-  // grpc_tls_certificate_distributor will invoke this callback when a new
+  // TlsCertificateDistributor will invoke this callback when a new
   // certificate name is watched by a newly registered watcher, or when a
   // certificate name is no longer watched by any watchers.
   // Note that when the callback shows a cert is no longer being watched, the
@@ -212,5 +211,7 @@ struct grpc_tls_certificate_distributor
   std::map<std::string, CertificateInfo> certificate_info_map_
       ABSL_GUARDED_BY(mu_);
 };
+
+typedef TlsCertificateDistributor TlsCertificateDistributor;
 
 #endif  // GRPC_SRC_CORE_LIB_SECURITY_CREDENTIALS_TLS_GRPC_TLS_CERTIFICATE_DISTRIBUTOR_H
