@@ -205,7 +205,7 @@ class GrpcTlsCertificateProviderTest : public ::testing::Test {
 };
 
 TEST_F(GrpcTlsCertificateProviderTest, StaticDataCertificateProviderCreation) {
-  StaticDataCertificateProvider provider(
+  compat::StaticDataCertificateProvider provider(
       root_cert_, MakeCertKeyPairs(private_key_.c_str(), cert_chain_.c_str()));
   // Watcher watching both root and identity certs.
   WatcherState* watcher_state_1 =
@@ -233,8 +233,8 @@ TEST_F(GrpcTlsCertificateProviderTest, StaticDataCertificateProviderCreation) {
 
 TEST_F(GrpcTlsCertificateProviderTest,
        FileWatcherCertificateProviderWithGoodPaths) {
-  FileWatcherCertificateProvider provider(SERVER_KEY_PATH, SERVER_CERT_PATH,
-                                          CA_CERT_PATH, 1);
+  compat::FileWatcherCertificateProvider provider(
+      SERVER_KEY_PATH, SERVER_CERT_PATH, CA_CERT_PATH, 1);
   // Watcher watching both root and identity certs.
   WatcherState* watcher_state_1 =
       MakeWatcher(provider.distributor(), kCertName, kCertName);
@@ -261,8 +261,8 @@ TEST_F(GrpcTlsCertificateProviderTest,
 
 TEST_F(GrpcTlsCertificateProviderTest,
        FileWatcherCertificateProviderWithBadPaths) {
-  FileWatcherCertificateProvider provider(INVALID_PATH, INVALID_PATH,
-                                          INVALID_PATH, 1);
+  compat::FileWatcherCertificateProvider provider(INVALID_PATH, INVALID_PATH,
+                                                  INVALID_PATH, 1);
   // Watcher watching both root and identity certs.
   WatcherState* watcher_state_1 =
       MakeWatcher(provider.distributor(), kCertName, kCertName);
@@ -295,9 +295,9 @@ TEST_F(GrpcTlsCertificateProviderTest,
   TmpFile tmp_identity_key(private_key_);
   TmpFile tmp_identity_cert(cert_chain_);
   // Create FileWatcherCertificateProvider.
-  FileWatcherCertificateProvider provider(tmp_identity_key.name(),
-                                          tmp_identity_cert.name(),
-                                          tmp_root_cert.name(), 1);
+  compat::FileWatcherCertificateProvider provider(tmp_identity_key.name(),
+                                                  tmp_identity_cert.name(),
+                                                  tmp_root_cert.name(), 1);
   WatcherState* watcher_state_1 =
       MakeWatcher(provider.distributor(), kCertName, kCertName);
   // Expect to see the credential data.
@@ -330,9 +330,9 @@ TEST_F(GrpcTlsCertificateProviderTest,
   TmpFile tmp_identity_key(private_key_);
   TmpFile tmp_identity_cert(cert_chain_);
   // Create FileWatcherCertificateProvider.
-  FileWatcherCertificateProvider provider(tmp_identity_key.name(),
-                                          tmp_identity_cert.name(),
-                                          tmp_root_cert.name(), 1);
+  compat::FileWatcherCertificateProvider provider(tmp_identity_key.name(),
+                                                  tmp_identity_cert.name(),
+                                                  tmp_root_cert.name(), 1);
   WatcherState* watcher_state_1 =
       MakeWatcher(provider.distributor(), kCertName, kCertName);
   // Expect to see the credential data.
@@ -363,9 +363,9 @@ TEST_F(GrpcTlsCertificateProviderTest,
   TmpFile tmp_identity_key(private_key_);
   TmpFile tmp_identity_cert(cert_chain_);
   // Create FileWatcherCertificateProvider.
-  FileWatcherCertificateProvider provider(tmp_identity_key.name(),
-                                          tmp_identity_cert.name(),
-                                          tmp_root_cert.name(), 1);
+  compat::FileWatcherCertificateProvider provider(tmp_identity_key.name(),
+                                                  tmp_identity_cert.name(),
+                                                  tmp_root_cert.name(), 1);
   WatcherState* watcher_state_1 =
       MakeWatcher(provider.distributor(), kCertName, kCertName);
   // Expect to see the credential data.
@@ -397,9 +397,9 @@ TEST_F(GrpcTlsCertificateProviderTest,
   auto tmp_identity_key = std::make_unique<TmpFile>(private_key_);
   auto tmp_identity_cert = std::make_unique<TmpFile>(cert_chain_);
   // Create FileWatcherCertificateProvider.
-  FileWatcherCertificateProvider provider(tmp_identity_key->name(),
-                                          tmp_identity_cert->name(),
-                                          tmp_root_cert->name(), 1);
+  compat::FileWatcherCertificateProvider provider(tmp_identity_key->name(),
+                                                  tmp_identity_cert->name(),
+                                                  tmp_root_cert->name(), 1);
   WatcherState* watcher_state_1 =
       MakeWatcher(provider.distributor(), kCertName, kCertName);
   // The initial data is all good, so we expect to have successful credential
@@ -431,9 +431,9 @@ TEST_F(GrpcTlsCertificateProviderTest,
   TmpFile tmp_identity_key(private_key_);
   TmpFile tmp_identity_cert(cert_chain_);
   // Create FileWatcherCertificateProvider.
-  FileWatcherCertificateProvider provider(tmp_identity_key.name(),
-                                          tmp_identity_cert.name(),
-                                          tmp_root_cert->name(), 1);
+  compat::FileWatcherCertificateProvider provider(tmp_identity_key.name(),
+                                                  tmp_identity_cert.name(),
+                                                  tmp_root_cert->name(), 1);
   WatcherState* watcher_state_1 =
       MakeWatcher(provider.distributor(), kCertName, kCertName);
   // The initial data is all good, so we expect to have successful credential
@@ -463,9 +463,9 @@ TEST_F(GrpcTlsCertificateProviderTest,
   auto tmp_identity_key = std::make_unique<TmpFile>(private_key_);
   auto tmp_identity_cert = std::make_unique<TmpFile>(cert_chain_);
   // Create FileWatcherCertificateProvider.
-  FileWatcherCertificateProvider provider(tmp_identity_key->name(),
-                                          tmp_identity_cert->name(),
-                                          tmp_root_cert.name(), 1);
+  compat::FileWatcherCertificateProvider provider(tmp_identity_key->name(),
+                                                  tmp_identity_cert->name(),
+                                                  tmp_root_cert.name(), 1);
   WatcherState* watcher_state_1 =
       MakeWatcher(provider.distributor(), kCertName, kCertName);
   // The initial data is all good, so we expect to have successful credential
@@ -491,8 +491,8 @@ TEST_F(GrpcTlsCertificateProviderTest,
 
 TEST_F(GrpcTlsCertificateProviderTest,
        FileWatcherCertificateProviderTooShortRefreshIntervalIsOverwritten) {
-  FileWatcherCertificateProvider provider(SERVER_KEY_PATH, SERVER_CERT_PATH,
-                                          CA_CERT_PATH, 0);
+  compat::FileWatcherCertificateProvider provider(
+      SERVER_KEY_PATH, SERVER_CERT_PATH, CA_CERT_PATH, 0);
   ASSERT_THAT(provider.TestOnlyGetRefreshIntervalSecond(), 1);
 }
 

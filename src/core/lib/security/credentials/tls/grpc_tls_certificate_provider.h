@@ -195,13 +195,13 @@ class FileWatcherCertificateProvider final
   std::map<std::string, WatcherInfo> watcher_info_ ABSL_GUARDED_BY(mu_);
 };
 
+}  // namespace compat
+
 //  Checks if the private key matches the certificate's public key.
 //  Returns a not-OK status on failure, or a bool indicating
 //  whether the key/cert pair matches.
 absl::StatusOr<bool> PrivateKeyAndCertificateMatch(
     absl::string_view private_key, absl::string_view cert_chain);
-
-}  // namespace compat
 
 // A basic CertificateProviderInterface implementation that will load credential
 // data from static string during initialization. This provider will always

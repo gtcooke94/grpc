@@ -121,7 +121,7 @@ FileWatcherCertificateProviderFactory::CreateCertificateProvider(
   }
   auto* file_watcher_config =
       static_cast<FileWatcherCertificateProviderFactory::Config*>(config.get());
-  return MakeRefCounted<FileWatcherCertificateProvider>(
+  return MakeRefCounted<compat::FileWatcherCertificateProvider>(
       file_watcher_config->private_key_file(),
       file_watcher_config->identity_cert_file(),
       file_watcher_config->root_cert_file(),
