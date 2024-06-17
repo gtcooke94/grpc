@@ -55,7 +55,8 @@
 struct grpc_tls_certificate_provider
     : public grpc_core::RefCounted<grpc_tls_certificate_provider> {
  public:
-  virtual std::shared_ptr<TlsCertificateDistributor> distributor() const = 0;
+  virtual std::shared_ptr<TlsCertificateDistributorImpl> distributor()
+      const = 0;
 
   // Compares this grpc_tls_certificate_provider object with \a other.
   // If this method returns 0, it means that gRPC can treat the two certificate
@@ -104,7 +105,7 @@ class StaticDataCertificateProvider final
 
   ~StaticDataCertificateProvider() override;
 
-  std::shared_ptr<TlsCertificateDistributor> distributor() const override {
+  std::shared_ptr<TlsCertificateDistributorImpl> distributor() const override {
     return distributor_;
   }
 
@@ -122,7 +123,7 @@ class StaticDataCertificateProvider final
                         other);
   }
 
-  std::shared_ptr<TlsCertificateDistributor> distributor_;
+  std::shared_ptr<TlsCertificateDistributorImpl> distributor_;
   std::string root_certificate_;
   PemKeyCertPairList pem_key_cert_pairs_;
   // Guards members below.
@@ -143,7 +144,7 @@ class FileWatcherCertificateProvider final
 
   ~FileWatcherCertificateProvider() override;
 
-  std::shared_ptr<TlsCertificateDistributor> distributor() const override {
+  std::shared_ptr<TlsCertificateDistributorImpl> distributor() const override {
     return distributor_;
   }
 
@@ -180,7 +181,7 @@ class FileWatcherCertificateProvider final
   std::string root_cert_path_;
   int64_t refresh_interval_sec_ = 0;
 
-  std::shared_ptr<TlsCertificateDistributor> distributor_;
+  std::shared_ptr<TlsCertificateDistributorImpl> distributor_;
   Thread refresh_thread_;
   gpr_event shutdown_event_;
 
@@ -203,38 +204,54 @@ class FileWatcherCertificateProvider final
 absl::StatusOr<bool> PrivateKeyAndCertificateMatch(
     absl::string_view private_key, absl::string_view cert_chain);
 
-// A basic CertificateProviderInterface implementation that will load credential
-// data from static string during initialization. This provider will always
-// return the same certificate data for all cert names, and reloading is not
-// supported.
+// A basic CertificateProviderInterface implementation that will load
+// credential data from static string during initialization. This provider
+// will always return the same certificate data for all cert names, and
+// reloading is not supported.
 class StaticDataCertificateProvider
     : public grpc_core::CertificateProviderInterface {
  public:
   StaticDataCertificateProvider(
       absl::string_view root_certificate,
-      const absl::Span<IdentityKeyCertPair>& identity_key_cert_pairs);
+      const absl::Span<PemKeyCertPair>& identity_key_cert_pairs);
 
   explicit StaticDataCertificateProvider(absl::string_view root_certificate);
 
   explicit StaticDataCertificateProvider(
-      const absl::Span<IdentityKeyCertPair>& identity_key_cert_pairs);
+      const absl::Span<PemKeyCertPair>& identity_key_cert_pairs);
+
+  void OnWatchStarted(absl::string_view name, CredentialType type) override;
+  void OnWatchStopped(absl::string_view name, CredentialType type) override;
+
+ private:
+  struct WatcherInfo {
+    bool root_being_watched = false;
+    bool identity_being_watched = false;
+  };
+  std::string root_certificate_;
+  absl::Span<PemKeyCertPair> pem_key_cert_pairs_;
+  // Guards members below.
+  Mutex mu_;
+  // Stores each cert_name we get from the distributor callback and its
+  // watcher information.
+  std::map<std::string, WatcherInfo> watcher_info_;
 };
 
-// A CertificateProviderInterface implementation that will watch the credential
-// changes on the file system. This provider will always return the up-to-date
-// certificate data for all the cert names callers set through
+// A CertificateProviderInterface implementation that will watch the
+// credential changes on the file system. This provider will always return the
+// up-to-date certificate data for all the cert names callers set through
 // |TlsCredentialsBuilder|. Several things to note:
 // 1. This API only supports one key-certificate file and hence one set of
 // identity key-certificate pair, so SNI(Server Name Indication) is not
 // supported.
 // 2. The private key and identity certificate should always match. This API
 // guarantees atomic read, and it is the callers' responsibility to do atomic
-// updates. There are many ways to atomically update the key and certificates in
-// the file system. To name a few:
-//   1)  creating a new directory, renaming the old directory to a new name, and
-//   then renaming the new directory to the original name of the old directory.
-//   2)  using a symlink for the directory. When need to change, put new
-//   credential data in a new directory, and change symlink.
+// updates. There are many ways to atomically update the key and certificates
+// in the file system. To name a few:
+//   1)  creating a new directory, renaming the old directory to a new name,
+//   and then renaming the new directory to the original name of the old
+//   directory. 2)  using a symlink for the directory. When need to change,
+//   put new credential data in a new directory, and change symlink.
 class FileWatcherCertificateProvider final
     : public grpc_core::CertificateProviderInterface {
  public:
@@ -263,10 +280,9 @@ class FileWatcherCertificateProvider final
   ~FileWatcherCertificateProvider() override;
 
  protected:
-  void OnWatchStarted(std::string name, CredentialType type) override;
-  void OnWatchStopped(std::string name, CredentialType type) override;
+  void OnWatchStarted(absl::string_view name, CredentialType type) override;
+  void OnWatchStopped(absl::string_view name, CredentialType type) override;
 };
-
 }  // namespace grpc_core
 
 #endif  // GRPC_SRC_CORE_LIB_SECURITY_CREDENTIALS_TLS_GRPC_TLS_CERTIFICATE_PROVIDER_H

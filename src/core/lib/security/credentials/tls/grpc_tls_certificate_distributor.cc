@@ -24,7 +24,7 @@
 #include <grpc/support/log.h>
 #include <grpc/support/port_platform.h>
 
-void TlsCertificateDistributor::SetKeyMaterials(
+void TlsCertificateDistributorImpl::SetKeyMaterials(
     const std::string& cert_name, absl::optional<std::string> pem_root_certs,
     absl::optional<grpc_core::PemKeyCertPairList> pem_key_cert_pairs) {
   CHECK(pem_root_certs.has_value() || pem_key_cert_pairs.has_value());
@@ -83,7 +83,7 @@ void TlsCertificateDistributor::SetKeyMaterials(
   }
 }
 
-bool TlsCertificateDistributor::HasRootCerts(
+bool TlsCertificateDistributorImpl::HasRootCerts(
     const std::string& root_cert_name) {
   grpc_core::MutexLock lock(&mu_);
   const auto it = certificate_info_map_.find(root_cert_name);
@@ -91,7 +91,7 @@ bool TlsCertificateDistributor::HasRootCerts(
          !it->second.pem_root_certs.empty();
 };
 
-bool TlsCertificateDistributor::HasKeyCertPairs(
+bool TlsCertificateDistributorImpl::HasKeyCertPairs(
     const std::string& identity_cert_name) {
   grpc_core::MutexLock lock(&mu_);
   const auto it = certificate_info_map_.find(identity_cert_name);
@@ -99,7 +99,7 @@ bool TlsCertificateDistributor::HasKeyCertPairs(
          !it->second.pem_key_cert_pairs.empty();
 };
 
-void TlsCertificateDistributor::SetErrorForCert(
+void TlsCertificateDistributorImpl::SetErrorForCert(
     const std::string& cert_name,
     absl::optional<grpc_error_handle> root_cert_error,
     absl::optional<grpc_error_handle> identity_cert_error) {
@@ -150,7 +150,7 @@ void TlsCertificateDistributor::SetErrorForCert(
   }
 };
 
-void TlsCertificateDistributor::SetError(grpc_error_handle error) {
+void TlsCertificateDistributorImpl::SetError(grpc_error_handle error) {
   CHECK(!error.ok());
   grpc_core::MutexLock lock(&mu_);
   for (const auto& watcher : watchers_) {
@@ -168,7 +168,7 @@ void TlsCertificateDistributor::SetError(grpc_error_handle error) {
   }
 };
 
-void TlsCertificateDistributor::WatchTlsCertificates(
+void TlsCertificateDistributorImpl::WatchTlsCertificates(
     std::unique_ptr<TlsCertificatesWatcherInterface> watcher,
     absl::optional<std::string> root_cert_name,
     absl::optional<std::string> identity_cert_name) {
@@ -252,7 +252,7 @@ void TlsCertificateDistributor::WatchTlsCertificates(
   }
 };
 
-void TlsCertificateDistributor::CancelTlsCertificatesWatch(
+void TlsCertificateDistributorImpl::CancelTlsCertificatesWatch(
     TlsCertificatesWatcherInterface* watcher) {
   absl::optional<std::string> root_cert_name;
   absl::optional<std::string> identity_cert_name;

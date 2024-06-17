@@ -90,7 +90,8 @@ class CertificateProviderStore final
       store_->ReleaseCertificateProvider(key_, this);
     }
 
-    std::shared_ptr<TlsCertificateDistributor> distributor() const override {
+    std::shared_ptr<TlsCertificateDistributorImpl> distributor()
+        const override {
       return certificate_provider_->distributor();
     }
 

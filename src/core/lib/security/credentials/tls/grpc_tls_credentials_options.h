@@ -53,7 +53,7 @@ struct grpc_tls_credentials_options
   }
   bool check_call_host() const { return check_call_host_; }
   // Returns the distributor from certificate_provider_ if it is set, nullptr otherwise.
-  std::shared_ptr<TlsCertificateDistributor> certificate_distributor() {
+  std::shared_ptr<TlsCertificateDistributorImpl> certificate_distributor() {
     if (certificate_provider_ != nullptr) { return certificate_provider_->distributor(); }
     return nullptr;
   }

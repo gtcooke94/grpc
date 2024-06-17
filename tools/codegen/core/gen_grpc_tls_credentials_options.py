@@ -118,7 +118,7 @@ _DATA_MEMBERS = [
             "Returns the distributor from certificate_provider_ if it is set,"
             " nullptr otherwise."
         ),
-        override_getter="""std::shared_ptr<TlsCertificateDistributor> certificate_distributor() {
+        override_getter="""std::shared_ptr<TlsCertificateDistributorImpl> certificate_distributor() {
     if (certificate_provider_ != nullptr) { return certificate_provider_->distributor(); }
     return nullptr;
   }""",

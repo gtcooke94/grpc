@@ -60,7 +60,7 @@ class XdsCertificateProvider final : public grpc_tls_certificate_provider {
 
   ~XdsCertificateProvider() override;
 
-  std::shared_ptr<TlsCertificateDistributor> distributor() const override {
+  std::shared_ptr<TlsCertificateDistributorImpl> distributor() const override {
     return distributor_;
   }
 
@@ -96,7 +96,7 @@ class XdsCertificateProvider final : public grpc_tls_certificate_provider {
   void WatchStatusCallback(std::string cert_name, bool root_being_watched,
                            bool identity_being_watched);
 
-  std::shared_ptr<TlsCertificateDistributor> distributor_;
+  std::shared_ptr<TlsCertificateDistributorImpl> distributor_;
   RefCountedPtr<grpc_tls_certificate_provider> root_cert_provider_;
   std::string root_cert_name_;
   RefCountedPtr<grpc_tls_certificate_provider> identity_cert_provider_;
@@ -104,9 +104,9 @@ class XdsCertificateProvider final : public grpc_tls_certificate_provider {
   std::vector<StringMatcher> san_matchers_;
   bool require_client_certificate_ = false;
 
-  TlsCertificateDistributor::TlsCertificatesWatcherInterface*
+  TlsCertificateDistributorImpl::TlsCertificatesWatcherInterface*
       root_cert_watcher_ = nullptr;
-  TlsCertificateDistributor::TlsCertificatesWatcherInterface*
+  TlsCertificateDistributorImpl::TlsCertificatesWatcherInterface*
       identity_cert_watcher_ = nullptr;
 };
 

@@ -28,6 +28,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 
+#include <grpc/grpc_certificate_provider.h>
 #include <grpc/support/port_platform.h>
 
 #include "src/core/lib/gprpp/ref_counted.h"
@@ -40,7 +41,9 @@ struct grpc_tls_identity_pairs {
 };
 
 // TLS certificate distributor.
-class TlsCertificateDistributor {
+class TlsCertificateDistributor {};
+
+class TlsCertificateDistributorImpl : public TlsCertificateDistributor {
  public:
   // Interface for watching TLS certificates update.
   class TlsCertificatesWatcherInterface {
@@ -211,7 +214,5 @@ class TlsCertificateDistributor {
   std::map<std::string, CertificateInfo> certificate_info_map_
       ABSL_GUARDED_BY(mu_);
 };
-
-typedef TlsCertificateDistributor TlsCertificateDistributor;
 
 #endif  // GRPC_SRC_CORE_LIB_SECURITY_CREDENTIALS_TLS_GRPC_TLS_CERTIFICATE_DISTRIBUTOR_H

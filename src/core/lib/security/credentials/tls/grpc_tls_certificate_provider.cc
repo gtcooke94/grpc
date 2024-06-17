@@ -45,11 +45,55 @@
 #include "src/core/lib/surface/api_trace.h"
 
 namespace grpc_core {
+
+void CertificateProviderInterface::SetRootCertificates(
+    absl::string_view name,
+    absl::StatusOr<absl::optional<absl::variant<std::string, SpiffeTrustMap>>>
+        root_data) {
+  std::shared_ptr<TlsCertificateDistributorImpl> distributor =
+      std::static_pointer_cast<TlsCertificateDistributorImpl>(distributor_);
+  std::string cert_name(name);
+  if (!root_data.ok()) {
+    // There's an error
+    distributor->SetErrorForCert(cert_name, root_data.status(), absl::nullopt);
+  }
+  if (!root_data.value().has_value()) {
+    // absl::nullopt was passed in, this represents wanting to stop watching
+    // this name
+    // TODO(gtcooke94) need to add functionality on distributor to make this
+    // work
+  }
+  distributor->SetKeyMaterials(
+      std::string(name), absl::get<std::string>(root_data.value().value()),
+      absl::nullopt);
+}
+
+void CertificateProviderInterface::SetIdentityChainAndPrivateKey(
+    absl::string_view name,
+    absl::StatusOr<absl::optional<absl::Span<IdentityKeyCertPair>>>
+        pem_key_cert_pairs) {}
+
+StaticDataCertificateProvider::StaticDataCertificateProvider(
+    absl::string_view root_certificate,
+    const absl::Span<PemKeyCertPair>& identity_key_cert_pairs)
+    : root_certificate_(root_certificate),
+      pem_key_cert_pairs_(identity_key_cert_pairs) {}
+
+void StaticDataCertificateProvider::OnWatchStarted(absl::string_view name,
+                                                   CredentialType type) {
+  // TODO(gtcooke94)
+}
+
+void StaticDataCertificateProvider::OnWatchStopped(absl::string_view name,
+                                                   CredentialType type) {
+  // TODO(gtcooke94)
+}
+
 namespace compat {
 
 StaticDataCertificateProvider::StaticDataCertificateProvider(
     std::string root_certificate, PemKeyCertPairList pem_key_cert_pairs)
-    : distributor_(std::make_shared<TlsCertificateDistributor>()),
+    : distributor_(std::make_shared<TlsCertificateDistributorImpl>()),
       root_certificate_(std::move(root_certificate)),
       pem_key_cert_pairs_(std::move(pem_key_cert_pairs)) {
   distributor_->SetWatchStatusCallback([this](std::string cert_name,
@@ -124,7 +168,7 @@ FileWatcherCertificateProvider::FileWatcherCertificateProvider(
       identity_certificate_path_(std::move(identity_certificate_path)),
       root_cert_path_(std::move(root_cert_path)),
       refresh_interval_sec_(refresh_interval_sec),
-      distributor_(std::make_shared<TlsCertificateDistributor>()) {
+      distributor_(std::make_shared<TlsCertificateDistributorImpl>()) {
   if (refresh_interval_sec_ < kMinimumFileWatcherRefreshIntervalSeconds) {
     LOG(INFO) << "FileWatcherCertificateProvider refresh_interval_sec_ set to "
                  "value less than minimum. Overriding configured value to "

@@ -29,7 +29,16 @@
 #include <grpc/grpc_security.h>
 #include <grpc/support/port_platform.h>
 
+// Need this forward declaration
+// There's a private shared_ptr to this distributor on the interface. The
+// interface defines methods that use this (SetRootCertificates and
+// SetIdentityChainAndPrivateKey), but in terms of the public API the
+// TlsCertificateDistributor never needs to be interacted with. Rather,
+// implementations of the CertificateProviderInterface will call
+// SetRootCertificates and SetIdentityChainAndPrivateKey on the interface.
+class TlsCertificateDistributor;
 namespace grpc_core {
+
 /* Opaque types. */
 // A struct that stores the credential data presented to the peer in handshake
 // to show local identity. The private key and certificate chain must be PEM
@@ -76,14 +85,14 @@ class CertificateProviderInterface {
   // data in the internal stack.
   // cert_name The name of the certificates being watched.
   // type The type of certificates being watched.
-  virtual void OnWatchStarted(std::string name, CredentialType type) = 0;
+  virtual void OnWatchStarted(absl::string_view name, CredentialType type) = 0;
 
   // Provider implementations MUST provide a OnWatchStarted callback that will
   // be called by the internal stack. This will be invoked when a certificate
   // name is no longer being used internally.
   // cert_name The name of the certificates being watched.
   // type The type of certificates being watched.
-  virtual void OnWatchStopped(std::string name, CredentialType type) = 0;
+  virtual void OnWatchStopped(absl::string_view name, CredentialType type) = 0;
 
   // Sets the root certificates based on their name.
   // This value is layered and represents the following.
@@ -114,9 +123,9 @@ class CertificateProviderInterface {
           pem_key_cert_pairs);
 
  private:
-  class TlsCertificateDistributor;
-  std::unique_ptr<TlsCertificateDistributor> distributor_;
+  std::shared_ptr<TlsCertificateDistributor> distributor_;
 };
+
 }  // namespace grpc_core
 
 #endif  // GRPC_GRPC_CERTIFICATE_PROVIDER_H
