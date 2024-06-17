@@ -30,7 +30,6 @@
 #include <grpc/support/port_platform.h>
 
 namespace grpc_core {
-namespace compat {
 /* Opaque types. */
 // A struct that stores the credential data presented to the peer in handshake
 // to show local identity. The private key and certificate chain must be PEM
@@ -118,7 +117,6 @@ class CertificateProviderInterface {
   class TlsCertificateDistributor;
   std::unique_ptr<TlsCertificateDistributor> distributor_;
 };
-}  // namespace compat
 }  // namespace grpc_core
 
 #endif  // GRPC_GRPC_CERTIFICATE_PROVIDER_H

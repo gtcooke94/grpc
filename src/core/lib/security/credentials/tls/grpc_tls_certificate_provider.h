@@ -92,6 +92,7 @@ struct grpc_tls_certificate_provider
 };
 
 namespace grpc_core {
+namespace compat {
 
 // A basic provider class that will get credentials from string during
 // initialization.
@@ -200,13 +201,14 @@ class FileWatcherCertificateProvider final
 absl::StatusOr<bool> PrivateKeyAndCertificateMatch(
     absl::string_view private_key, absl::string_view cert_chain);
 
-namespace compat {
+}  // namespace compat
+
 // A basic CertificateProviderInterface implementation that will load credential
 // data from static string during initialization. This provider will always
 // return the same certificate data for all cert names, and reloading is not
 // supported.
 class StaticDataCertificateProvider
-    : public grpc_core::compat::CertificateProviderInterface {
+    : public grpc_core::CertificateProviderInterface {
  public:
   StaticDataCertificateProvider(
       absl::string_view root_certificate,
@@ -234,7 +236,7 @@ class StaticDataCertificateProvider
 //   2)  using a symlink for the directory. When need to change, put new
 //   credential data in a new directory, and change symlink.
 class FileWatcherCertificateProvider final
-    : public grpc_core::compat::CertificateProviderInterface {
+    : public grpc_core::CertificateProviderInterface {
  public:
   // Constructor to get credential updates from root and identity file paths.
   //
@@ -264,10 +266,6 @@ class FileWatcherCertificateProvider final
   void OnWatchStarted(std::string name, CredentialType type) override;
   void OnWatchStopped(std::string name, CredentialType type) override;
 };
-
-class TlsCertificateDistributor {}
-
-}  // namespace compat
 
 }  // namespace grpc_core
 

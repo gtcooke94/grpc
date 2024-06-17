@@ -280,6 +280,7 @@ GRPC_PUBLIC_HDRS = [
     "include/grpc/grpc.h",
     "include/grpc/grpc_posix.h",
     "include/grpc/grpc_security.h",
+    "include/grpc/grpc_certificate_provider.h",
     "include/grpc/grpc_security_constants.h",
     "include/grpc/passive_listener.h",
     "include/grpc/slice.h",

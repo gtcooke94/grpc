@@ -45,6 +45,7 @@
 #include "src/core/lib/surface/api_trace.h"
 
 namespace grpc_core {
+namespace compat {
 
 StaticDataCertificateProvider::StaticDataCertificateProvider(
     std::string root_certificate, PemKeyCertPairList pem_key_cert_pairs)
@@ -374,6 +375,7 @@ int64_t FileWatcherCertificateProvider::TestOnlyGetRefreshIntervalSecond()
   return refresh_interval_sec_;
 }
 
+}  // namespace compat
 }  // namespace grpc_core
 
 /// -- Wrapper APIs declared in grpc_security.h -- *
@@ -391,7 +393,7 @@ grpc_tls_certificate_provider* grpc_tls_certificate_provider_static_data_create(
   if (root_certificate != nullptr) {
     root_cert_core = root_certificate;
   }
-  return new grpc_core::StaticDataCertificateProvider(
+  return new grpc_core::compat::StaticDataCertificateProvider(
       std::move(root_cert_core), std::move(identity_pairs_core));
 }
 
@@ -400,7 +402,7 @@ grpc_tls_certificate_provider_file_watcher_create(
     const char* private_key_path, const char* identity_certificate_path,
     const char* root_cert_path, unsigned int refresh_interval_sec) {
   grpc_core::ExecCtx exec_ctx;
-  return new grpc_core::FileWatcherCertificateProvider(
+  return new grpc_core::compat::FileWatcherCertificateProvider(
       private_key_path == nullptr ? "" : private_key_path,
       identity_certificate_path == nullptr ? "" : identity_certificate_path,
       root_cert_path == nullptr ? "" : root_cert_path, refresh_interval_sec);
@@ -414,6 +416,6 @@ void grpc_tls_certificate_provider_release(
   if (provider != nullptr) provider->Unref();
 }
 
-void grpc_core::compat::CertificateProviderInterface::Start() {
-  distributor_ = std::make_unique<TlsCertificateDistributor>();
-}
+// void grpc_core:: ::CertificateProviderInterface::Start() {
+//   distributor_ = std::make_unique<TlsCertificateDistributor>();
+// }

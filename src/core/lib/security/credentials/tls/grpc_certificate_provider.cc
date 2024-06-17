@@ -16,6 +16,4 @@
 
 #include <grpc/grpc_certificate_provider.h>
 
-namespace grpc_core {
-namespace compat {}
-}  // namespace grpc_core
+namespace grpc_core {}  // namespace grpc_core
