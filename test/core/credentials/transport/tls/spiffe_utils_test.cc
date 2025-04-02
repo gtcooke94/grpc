@@ -16,32 +16,35 @@
 //
 //
 
-#ifndef GRPC_SRC_CORE_CREDENTIALS_TRANSPORT_TLS_SPIFFE_UTILS_H
-#define GRPC_SRC_CORE_CREDENTIALS_TRANSPORT_TLS_SPIFFE_UTILS_H
+#include "src/core/credentials/transport/tls/spiffe_utils.h"
 
-#include <string>
+#include <grpc/grpc.h>
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "gtest/gtest.h"
+#include "test/core/test_util/test_config.h"
+
+using ::grpc_core::experimental::SpiffeId;
+using ::grpc_core::experimental::SpiffeIdFromString;
 
 namespace grpc_core {
-namespace experimental {
+namespace testing {
 
-class SpiffeId {
- public:
-  absl::string_view trust_domain() { return trust_domain_; }
-  absl::string_view path() { return path_; }
+TEST(SpiffeUtilsTest, Basic) {
+  absl::StatusOr<SpiffeId> spiffe_id = SpiffeIdFromString("");
+}
 
- private:
-  SpiffeId(absl::string_view trust_domain, absl::string_view path)
-      : trust_domain_(trust_domain), path_(path) {}
-  const std::string trust_domain_;
-  const std::string path_;
-};
-
-absl::StatusOr<SpiffeId> SpiffeIdFromString(absl::string_view uri);
-
-}  // namespace experimental
+}  // namespace testing
 }  // namespace grpc_core
 
-#endif  // GRPC_SRC_CORE_CREDENTIALS_TRANSPORT_TLS_SSL_UTILS_H
+int main(int argc, char** argv) {
+  grpc::testing::TestEnvironment env(&argc, argv);
+  grpc_init();
+  ::testing::InitGoogleTest(&argc, argv);
+  int ret = RUN_ALL_TESTS();
+  grpc_shutdown();
+  return ret;
+}
