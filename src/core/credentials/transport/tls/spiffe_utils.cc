@@ -21,6 +21,7 @@
 #include <string>
 
 #include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 
@@ -137,9 +138,11 @@ absl::StatusOr<SpiffeId> SpiffeId::FromString(absl::string_view uri) {
   if (absl::Status status = validatePath(path); !status.ok()) {
     return status;
   }
-
-  // TODO don't actually return this, return the spiffe id
-  return SpiffeId("foo", "bar");
+  std::string new_path = std::string(path);
+  if (!path.empty()) {
+    new_path = absl::StrCat("/", path);
+  }
+  return SpiffeId(trust_domain, absl::StrCat("/", path));
 }
 
 }  // namespace experimental
