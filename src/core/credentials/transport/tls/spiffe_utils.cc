@@ -53,6 +53,9 @@ absl::Status doInitialUriValidation(absl::string_view uri) {
 }
 
 absl::Status validateTrustDomain(absl::string_view trust_domain) {
+  if (trust_domain.empty()) {
+    return absl::InvalidArgumentError("Trust domain cannot be empty");
+  }
   if (trust_domain.size() >= 256) {
     return absl::InvalidArgumentError(
         "Trust domain maximum length is 255 characters");
@@ -119,11 +122,17 @@ absl::StatusOr<SpiffeId> SpiffeId::FromString(absl::string_view uri) {
   if (absl::EndsWith(uri, /*suffix=*/"/")) {
     return absl::InvalidArgumentError("SPIFFE ID cannot end with a /");
   }
-  std::vector<absl::string_view> uri_split = absl::StrSplit(uri, "://");
-  // This index is safe given the above two conditions
-  absl::string_view trust_domain_and_path = uri_split[1];
+  // The input definitely starts with spiffe://
+  absl::string_view trust_domain_and_path = uri.substr(SPIFFE_PREFIX.length());
   absl::string_view trust_domain;
   absl::string_view path;
+  if (absl::StartsWith(trust_domain_and_path, "/")) {
+    // To be here the SPIFFE ID must look like spiffe:///path, which means the
+    // trust domain is empty, which is invalid
+    return absl::InvalidArgumentError("The trust domain cannot be empty");
+  }
+  // It's valid to have no path, e.g. spiffe://foo.bar.com - handle those two
+  // cases
   if (absl::StrContains(trust_domain_and_path, "/")) {
     std::vector<absl::string_view> split =
         absl::StrSplit(trust_domain_and_path, absl::MaxSplits('/', 1));
@@ -138,9 +147,9 @@ absl::StatusOr<SpiffeId> SpiffeId::FromString(absl::string_view uri) {
   if (absl::Status status = validatePath(path); !status.ok()) {
     return status;
   }
-  std::string new_path = std::string(path);
-  if (!path.empty()) {
-    new_path = absl::StrCat("/", path);
+  // If we have a path,
+  if (path.empty()) {
+    return SpiffeId(trust_domain, "");
   }
   return SpiffeId(trust_domain, absl::StrCat("/", path));
 }

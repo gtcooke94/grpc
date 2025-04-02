@@ -69,6 +69,8 @@ INSTANTIATE_TEST_SUITE_P(
          "must start with spiffe://"},
         {"EndsWithSlash", "spiffe://foo/bar/", "cannot end with a /"},
         {"NoTrustDomain", "spiffe://", "cannot end with a /"},
+        {"NoTrustDomainWithPath", "spiffe:///path",
+         "The trust domain cannot be empty"},
         {"TrustDomainTooLong", absl::StrCat("spiffe://", std::string(256, 'a')),
          "Trust domain maximum length is 255 characters"},
         {"TrustDomainInvalidCharacter1", "spiffe://bad@domain",
@@ -108,7 +110,7 @@ INSTANTIATE_TEST_SUITE_P(
                                            // instantiation
     SpiffeIdSuccessTest,  // This is the name of your parameterized test
     ::testing::ValuesIn<SpiffeIdSuccessTestCase>({
-        {"spiffe://example.com", "example.com", "/"},
+        {"spiffe://example.com", "example.com", ""},
         {"spiffe://example.com/us", "example.com", "/us"},
         {"spiffe://example.com/country/us/state/FL/city/Miami", "example.com",
          "/country/us/state/FL/city/Miami"},
