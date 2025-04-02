@@ -31,6 +31,7 @@ class SpiffeId {
  public:
   absl::string_view trust_domain() { return trust_domain_; }
   absl::string_view path() { return path_; }
+  static absl::StatusOr<SpiffeId> FromString(absl::string_view uri);
 
  private:
   SpiffeId(absl::string_view trust_domain, absl::string_view path)
@@ -38,8 +39,6 @@ class SpiffeId {
   const std::string trust_domain_;
   const std::string path_;
 };
-
-absl::StatusOr<SpiffeId> SpiffeIdFromString(absl::string_view uri);
 
 }  // namespace experimental
 }  // namespace grpc_core
