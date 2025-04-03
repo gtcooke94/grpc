@@ -116,7 +116,7 @@ absl::StatusOr<SpiffeId> SpiffeId::FromString(absl::string_view uri) {
   if (absl::Status status = doInitialUriValidation(uri); !status.ok()) {
     return status;
   }
-  if (!absl::StartsWith(uri, SPIFFE_PREFIX)) {
+  if (!absl::StartsWithIgnoreCase(uri, SPIFFE_PREFIX)) {
     return absl::InvalidArgumentError("SPIFFE ID must start with spiffe://");
   }
   if (absl::EndsWith(uri, /*suffix=*/"/")) {

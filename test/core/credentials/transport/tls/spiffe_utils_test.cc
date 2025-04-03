@@ -112,6 +112,9 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn<SpiffeIdSuccessTestCase>({
         {"spiffe://example.com", "example.com", ""},
         {"spiffe://example.com/us", "example.com", "/us"},
+        {"sPiffe://example.com/us", "example.com", "/us"},
+        {"SPIFFE://example.com/us", "example.com", "/us"},
+        {"Spiffe://example.com/us", "example.com", "/us"},
         {"spiffe://example.com/country/us/state/FL/city/Miami", "example.com",
          "/country/us/state/FL/city/Miami"},
         {"spiffe://trust-domain-name/path", "trust-domain-name", "/path"},
