@@ -29,7 +29,9 @@
 #include "absl/strings/string_view.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "src/core/util/json/json_reader.h"
 #include "test/core/test_util/test_config.h"
+#include "test/core/test_util/tls_utils.h"
 
 namespace grpc_core {
 namespace testing {
@@ -358,6 +360,21 @@ TEST(SpiffeId, NumbersTrustDomainSuccess) {
   ASSERT_TRUE(spiffe_id.ok()) << spiffe_id.status();
   EXPECT_EQ(spiffe_id->trust_domain(), "trustdomain0123456789");
   EXPECT_EQ(spiffe_id->path(), "/path");
+}
+
+struct SpiffeBundle {};
+struct SpiffeBundleMap {
+  std::map<SpiffeBundle> bundles;
+}
+
+}
+TEST(SpiffeBundle, Test) {
+  std::string path =
+      "test/core/credentials/transport/tls/test_data/spiffe/"
+      "client_spiffebundle.json";
+  std::string json_str = grpc_core::testing::GetFileContents(path);
+  auto json = grpc_core::JsonParse(json_str);
+  ASSERT_TRUE(json.ok());
 }
 
 }  // namespace testing
