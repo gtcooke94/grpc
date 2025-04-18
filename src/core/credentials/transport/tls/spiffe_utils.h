@@ -47,10 +47,38 @@ class SpiffeId final {
   const std::string path_;
 };
 
+
+
+// @roth example json file:
+// {
+//   “trust_domains”: {
+//     "example.com": {
+//       “spiffe_sequence”: 12035488,
+//       "keys": [
+//         {
+//           "kty": "RSA",
+//           "use": "x509-svid",
+//           "x5c": ["<base64 DER encoding of Certificate #1>"],
+//           "n": "<base64urlUint-encoded value>",
+//           "e": "AQAB"
+//         },
+//         {
+//           "kty": "RSA",
+//           “kid”: “<JWT key id>”,
+//           "use": "jwt-svid",
+//           "n": "<base64urlUint-encoded value>",
+//           "e": "AQAB"
+//         }
+//       ]
+//     }
+//   }
+// }
+
 struct SpiffeBundleKey {
   std::string kty;
   std::string kid;
   std::string use;
+  // @roth: This has a lot of potential validation, it's contents should be a valid x509 cert or jwt key
   std::vector<std::string> x5c;
   std::string n;
   std::string e;
