@@ -29,6 +29,7 @@
 #include "absl/strings/string_view.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "src/core/util/json/json_object_loader.h"
 #include "src/core/util/json/json_reader.h"
 #include "test/core/test_util/test_config.h"
 #include "test/core/test_util/tls_utils.h"
@@ -362,12 +363,6 @@ TEST(SpiffeId, NumbersTrustDomainSuccess) {
   EXPECT_EQ(spiffe_id->path(), "/path");
 }
 
-struct SpiffeBundle {};
-struct SpiffeBundleMap {
-  std::map<SpiffeBundle> bundles;
-}
-
-}
 TEST(SpiffeBundle, Test) {
   std::string path =
       "test/core/credentials/transport/tls/test_data/spiffe/"
@@ -375,6 +370,18 @@ TEST(SpiffeBundle, Test) {
   std::string json_str = grpc_core::testing::GetFileContents(path);
   auto json = grpc_core::JsonParse(json_str);
   ASSERT_TRUE(json.ok());
+  struct SpiffeBundleMap {
+    std::map<std::string, std::string> bundles;
+
+    static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
+      static const auto* loader =
+          JsonObjectLoader<SpiffeBundleMap>()
+              .Field("trust_domains", &SpiffeBundleMap::bundles)
+              .Finish();
+      return loader;
+    }
+  };
+  auto test = LoadFromJson<SpiffeBundleMap>(*json);
 }
 
 }  // namespace testing
