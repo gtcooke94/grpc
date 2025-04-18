@@ -23,6 +23,8 @@
 
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "src/core/util/json/json.h"
+#include "src/core/util/json/json_object_loader.h"
 
 namespace grpc_core {
 
@@ -43,6 +45,52 @@ class SpiffeId final {
       : trust_domain_(trust_domain), path_(path) {}
   const std::string trust_domain_;
   const std::string path_;
+};
+
+struct SpiffeBundleKey {
+  std::string kty;
+  std::string kid;
+  std::string use;
+  std::vector<std::string> x5c;
+  std::string n;
+  std::string e;
+
+  static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
+    static const auto* loader = JsonObjectLoader<SpiffeBundleKey>()
+                                    .Field("kty", &SpiffeBundleKey::kty)
+                                    .OptionalField("kid", &SpiffeBundleKey::kid)
+                                    .Field("use", &SpiffeBundleKey::use)
+                                    .Field("x5c", &SpiffeBundleKey::x5c)
+                                    .Field("n", &SpiffeBundleKey::n)
+                                    .Field("e", &SpiffeBundleKey::e)
+                                    .Finish();
+    return loader;
+  }
+};
+
+struct SpiffeBundle {
+  uint64_t spiffe_sequence;
+  std::vector<SpiffeBundleKey> keys;
+
+  static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
+    static const auto* loader =
+        JsonObjectLoader<SpiffeBundle>()
+            .Field("spiffe_sequence", &SpiffeBundle::spiffe_sequence)
+            .Field("keys", &SpiffeBundle::keys)
+            .Finish();
+    return loader;
+  }
+};
+struct SpiffeBundleMap {
+  std::map<std::string, SpiffeBundle> bundles;
+
+  static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
+    static const auto* loader =
+        JsonObjectLoader<SpiffeBundleMap>()
+            .Field("trust_domains", &SpiffeBundleMap::bundles)
+            .Finish();
+    return loader;
+  }
 };
 
 }  // namespace grpc_core

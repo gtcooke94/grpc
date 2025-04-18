@@ -363,25 +363,20 @@ TEST(SpiffeId, NumbersTrustDomainSuccess) {
   EXPECT_EQ(spiffe_id->path(), "/path");
 }
 
-TEST(SpiffeBundle, Test) {
+TEST(SpiffeBundle, TempWorkingTest) {
   std::string path =
       "test/core/credentials/transport/tls/test_data/spiffe/"
       "client_spiffebundle.json";
   std::string json_str = grpc_core::testing::GetFileContents(path);
   auto json = grpc_core::JsonParse(json_str);
   ASSERT_TRUE(json.ok());
-  struct SpiffeBundleMap {
-    std::map<std::string, std::string> bundles;
 
-    static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
-      static const auto* loader =
-          JsonObjectLoader<SpiffeBundleMap>()
-              .Field("trust_domains", &SpiffeBundleMap::bundles)
-              .Finish();
-      return loader;
-    }
-  };
   auto test = LoadFromJson<SpiffeBundleMap>(*json);
+  ASSERT_TRUE(test.ok()) << test.status();
+  // for (auto const& kv : test->bundles) {
+  //   std::cout << kv.first << std::endl;
+  //   std::cout << kv.second << std::endl;
+  // }
 }
 
 }  // namespace testing
