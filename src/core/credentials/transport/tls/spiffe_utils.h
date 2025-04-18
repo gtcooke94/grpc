@@ -66,6 +66,9 @@ struct SpiffeBundleKey {
                                     .Finish();
     return loader;
   }
+
+  void JsonPostLoad(const Json& json, const JsonArgs&,
+                    ValidationErrors* errors);
 };
 
 struct SpiffeBundle {
@@ -91,6 +94,9 @@ struct SpiffeBundleMap {
             .Finish();
     return loader;
   }
+
+  void JsonPostLoad(const Json& json, const JsonArgs&,
+                    ValidationErrors* errors);
 };
 
 }  // namespace grpc_core

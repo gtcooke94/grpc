@@ -28,6 +28,16 @@
 
 namespace grpc_core {
 namespace {
+constexpr absl::string_view kAllowedUse = "x509-svid";
+constexpr absl::string_view kAllowedKty = "RSA";
+constexpr int kx5cSize = 1;
+// private static final Integer URI_SAN_TYPE = 6;
+// private static final String USE_PARAMETER_VALUE = "x509-svid";
+// private static final String KTY_PARAMETER_VALUE = "RSA";
+// private static final String CERTIFICATE_PREFIX = "-----BEGIN
+// CERTIFICATE-----\n"; private static final String CERTIFICATE_SUFFIX =
+// "-----END CERTIFICATE-----"; private static final String PREFIX =
+// "spiffe://";
 
 constexpr absl::string_view kSpiffePrefix = "spiffe://";
 constexpr int kMaxTrustDomainLength = 255;
@@ -154,6 +164,49 @@ absl::StatusOr<SpiffeId> SpiffeId::FromString(absl::string_view input) {
     return SpiffeId(trust_domain, "");
   }
   return SpiffeId(trust_domain, absl::StrCat("/", path));
+}
+
+void SpiffeBundleKey::JsonPostLoad(const Json& json, const JsonArgs&,
+                                   ValidationErrors* errors) {
+  {
+    ValidationErrors::ScopedField field(errors, ".use");
+    if (use != kAllowedUse) {
+      errors->AddError(
+          absl::StrFormat("got %s. Only supported value for use field is %s.",
+                          use, kAllowedUse));
+    }
+  }
+  {
+    ValidationErrors::ScopedField field(errors, ".kty");
+    if (kty != kAllowedKty) {
+      errors->AddError(
+          absl::StrFormat("got %s. Only supported value for kty field is %s",
+                          kty, kAllowedKty));
+    }
+  }
+  {
+    ValidationErrors::ScopedField field(errors, ".x5c");
+    if (x5c.size() != kx5cSize) {
+      errors->AddError(absl::StrFormat(
+          "got vector length %i. Expected length of exactly %i.", x5c.size(),
+          kx5cSize));
+    }
+  }
+}
+
+void SpiffeBundleMap::JsonPostLoad(const Json& json, const JsonArgs&,
+                                   ValidationErrors* errors) {
+  {
+    ValidationErrors::ScopedField field(errors, ".trust_domains");
+    for (auto const& kv : bundles) {
+      absl::Status status = ValidateTrustDomain(kv.first);
+      if (!status.ok()) {
+        errors->AddError(
+            absl::StrFormat("map key '%s' is not a valid trust domain. %s",
+                            kv.first, status.ToString()));
+      }
+    }
+  }
 }
 
 }  // namespace grpc_core
