@@ -47,8 +47,6 @@ class SpiffeId final {
   const std::string path_;
 };
 
-
-
 // @roth example json file:
 // {
 //   “trust_domains”: {
@@ -78,7 +76,8 @@ struct SpiffeBundleKey {
   std::string kty;
   std::string kid;
   std::string use;
-  // @roth: This has a lot of potential validation, it's contents should be a valid x509 cert or jwt key
+  // @roth: This has a lot of potential validation, it's contents should be a
+  // valid x509 cert or jwt key
   std::vector<std::string> x5c;
   std::string n;
   std::string e;
@@ -110,6 +109,7 @@ struct SpiffeBundle {
   }
 };
 struct SpiffeBundleMap {
+  // @roth this is really a std::map<SpiffeId, SpiffeBundle>
   std::map<std::string, SpiffeBundle> bundles;
 
   static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
