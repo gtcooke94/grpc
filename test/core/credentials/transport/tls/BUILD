@@ -215,6 +215,7 @@ grpc_cc_test(
     data = [
         "//test/core/credentials/transport/tls/test_data:spiffe/client_spiffebundle.json",
         "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_empty_keys.json",
     ],
     external_deps = [
         "gtest",

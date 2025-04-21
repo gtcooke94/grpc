@@ -31,6 +31,7 @@
 #include "gtest/gtest.h"
 #include "src/core/util/json/json_object_loader.h"
 #include "src/core/util/json/json_reader.h"
+#include "src/core/util/load_file.h"
 #include "test/core/test_util/test_config.h"
 #include "test/core/test_util/tls_utils.h"
 
@@ -263,6 +264,25 @@ TEST(SpiffeBundle, ValidBundleLoads) {
       "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
       "spiffebundle.json");
   ASSERT_TRUE(map.ok()) << map.status();
+  EXPECT_TRUE(map->bundles.size() == 2);
+  // auto cert = LoadFile(
+  //     "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+  //     "client_spiffe.pem",
+  //     /*add_null_terminator=*/false);
+  // ASSERT_TRUE(cert.ok()) << cert.status();
+  // TODO(gregorycooke) get root from spiffe bundle map
+}
+
+TEST(SpiffeBundle, EmptyKeysFails) {
+  EXPECT_EQ(
+      SpiffeBundleMap::FromFile(
+          "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+          "spiffebundle_empty_keys.json")
+          .status(),
+      absl::InvalidArgumentError(
+          "errors validating JSON: [field:trust_domains error:map key '' is "
+          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
+          "empty]"));
 }
 
 TEST(SpiffeBundle, TempWorkingTest) {
