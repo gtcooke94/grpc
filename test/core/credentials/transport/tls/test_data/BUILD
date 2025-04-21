@@ -20,4 +20,5 @@ exports_files([
     "test_roots/cert2.pem",
     "test_roots/cert3.pem",
     "spiffe/client_spiffebundle.json",
+    "spiffe/test_bundles/spiffebundle.json",
 ])

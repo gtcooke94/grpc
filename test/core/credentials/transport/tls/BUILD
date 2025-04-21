@@ -214,6 +214,7 @@ grpc_cc_test(
     srcs = ["spiffe_utils_test.cc"],
     data = [
         "//test/core/credentials/transport/tls/test_data:spiffe/client_spiffebundle.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle.json",
     ],
     external_deps = [
         "gtest",

@@ -261,7 +261,7 @@ TEST(SpiffeId, TripleDotsSuccess) {
 TEST(SpiffeBundle, ValidBundleLoads) {
   auto map = SpiffeBundleMap::FromFile(
       "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
-      "client_spiffebundle.json");
+      "spiffebundle.json");
   ASSERT_TRUE(map.ok()) << map.status();
 }
 
