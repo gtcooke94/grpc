@@ -112,9 +112,6 @@ struct SpiffeBundle {
   }
 };
 struct SpiffeBundleMap {
-  // @roth this is really a std::map<SpiffeId, SpiffeBundle>
-  std::map<std::string, SpiffeBundle> bundles;
-
   static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
     static const auto* loader =
         JsonObjectLoader<SpiffeBundleMap>()
@@ -122,6 +119,11 @@ struct SpiffeBundleMap {
             .Finish();
     return loader;
   }
+
+  static absl::StatusOr<SpiffeBundleMap> FromFile(absl::string_view file_path);
+
+  // @roth this is really a std::map<SpiffeId, SpiffeBundle>
+  std::map<std::string, SpiffeBundle> bundles;
 
   void JsonPostLoad(const Json& json, const JsonArgs&,
                     ValidationErrors* errors);

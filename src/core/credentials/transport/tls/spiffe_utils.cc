@@ -24,6 +24,9 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "src/core/util/json/json_object_loader.h"
+#include "src/core/util/json/json_reader.h"
+#include "src/core/util/load_file.h"
 #include "src/core/util/status_helper.h"
 
 namespace grpc_core {
@@ -207,6 +210,19 @@ void SpiffeBundleMap::JsonPostLoad(const Json& json, const JsonArgs&,
       }
     }
   }
+}
+
+absl::StatusOr<SpiffeBundleMap> SpiffeBundleMap::FromFile(
+    absl::string_view file_path) {
+  auto slice = LoadFile(file_path.data(), /*add_null_terminator=*/false);
+  if (!slice.ok()) {
+    return slice.status();
+  }
+  auto json = grpc_core::JsonParse(slice->as_string_view());
+  if (!json.ok()) {
+    return json.status();
+  }
+  return LoadFromJson<SpiffeBundleMap>(*json);
 }
 
 }  // namespace grpc_core

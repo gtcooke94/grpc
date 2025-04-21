@@ -258,6 +258,13 @@ TEST(SpiffeId, TripleDotsSuccess) {
   EXPECT_EQ(spiffe_id->path(), "/...");
 }
 
+TEST(SpiffeBundle, ValidBundleLoads) {
+  auto map = SpiffeBundleMap::FromFile(
+      "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+      "client_spiffebundle.json");
+  ASSERT_TRUE(map.ok()) << map.status();
+}
+
 TEST(SpiffeBundle, TempWorkingTest) {
   std::string path =
       "test/core/credentials/transport/tls/test_data/spiffe/"
