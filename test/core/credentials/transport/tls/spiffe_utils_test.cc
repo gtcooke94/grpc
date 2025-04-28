@@ -38,6 +38,11 @@
 namespace grpc_core {
 namespace testing {
 
+constexpr absl::string_view kCertificatePrefix =
+    "-----BEGIN CERTIFICATE-----\n";
+constexpr absl::string_view kCertificateSuffix =
+    "\n-----END CERTIFICATE-----\n";
+
 TEST(SpiffeId, EmptyFails) {
   EXPECT_EQ(
       SpiffeId::FromString("").status(),
@@ -259,19 +264,19 @@ TEST(SpiffeId, TripleDotsSuccess) {
   EXPECT_EQ(spiffe_id->path(), "/...");
 }
 
-TEST(SpiffeBundle, ValidBundleLoads) {
-  auto map = SpiffeBundleMap::FromFile(
-      "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
-      "spiffebundle.json");
-  ASSERT_TRUE(map.ok()) << map.status();
-  EXPECT_TRUE(map->bundles.size() == 2);
-  // auto cert = LoadFile(
-  //     "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
-  //     "client_spiffe.pem",
-  //     /*add_null_terminator=*/false);
-  // ASSERT_TRUE(cert.ok()) << cert.status();
-  // TODO(gregorycooke) get root from spiffe bundle map
-}
+// TEST(SpiffeBundle, ValidBundleLoads) {
+//   auto map = SpiffeBundleMap::FromFile(
+//       "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+//       "spiffebundle.json");
+//   ASSERT_TRUE(map.ok()) << map.status();
+//   EXPECT_TRUE(map->bundles.size() == 2);
+//   // auto cert = LoadFile(
+//   //     "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+//   //     "client_spiffe.pem",
+//   //     /*add_null_terminator=*/false);
+//   // ASSERT_TRUE(cert.ok()) << cert.status();
+//   // TODO(gregorycooke) get root from spiffe bundle map
+// }
 
 TEST(SpiffeBundle, EmptyKeysFails) {
   EXPECT_EQ(
@@ -403,18 +408,82 @@ TEST(SpiffeBundle, WrongUseFails) {
           "x509-svid.]"));
 }
 
+absl::StatusOr<X509*> ReadCertificate(absl::string_view raw_cert) {
+  std::string pem_cert =
+      absl::StrCat(kCertificatePrefix, raw_cert.data(), kCertificateSuffix);
+
+  BIO* cert_bio = BIO_new_mem_buf(pem_cert.c_str(), pem_cert.size());
+  if (cert_bio == nullptr) {
+    return absl::InvalidArgumentError(
+        "Conversion from raw certificate to BIO failed.");
+  }
+  X509* x509 = PEM_read_bio_X509(cert_bio, nullptr, nullptr, nullptr);
+  BIO_free(cert_bio);
+  if (x509 == nullptr) {
+    return absl::InvalidArgumentError(
+        "Conversion from PEM string to X509 failed.");
+  }
+  return x509;
+}
+
+absl::StatusOr<X509*> ReadCertificateFromFile(absl::string_view filepath) {
+  FILE* file = fopen(filepath.data(), "r");
+  if (!file) {
+    return absl::InvalidArgumentError(
+        absl::StrFormat("Failed to read file %s", filepath));
+  }
+
+  X509* cert = PEM_read_X509(file, nullptr, nullptr, nullptr);
+  fclose(file);
+
+  if (!cert) {
+    return absl::InvalidArgumentError(
+        absl::StrFormat("Failed to load certificate from file %s", filepath));
+  }
+  return cert;
+}
+
 TEST(SpiffeBundle, TempWorkingTest) {
   std::string path =
-      "test/core/credentials/transport/tls/test_data/spiffe/"
-      "client_spiffebundle.json";
+      "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+      "spiffebundle.json";
   std::string json_str = grpc_core::testing::GetFileContents(path);
   auto json = grpc_core::JsonParse(json_str);
   ASSERT_TRUE(json.ok());
 
-  auto test = LoadFromJson<SpiffeBundleMap>(*json);
-  ASSERT_TRUE(test.ok()) << test.status();
+  auto bundle_map = LoadFromJson<SpiffeBundleMap>(*json);
+  ASSERT_TRUE(bundle_map.ok()) << bundle_map.status();
+  ASSERT_EQ(bundle_map->bundles.size(), 2);
+  SpiffeBundle exampleComBundle = bundle_map->bundles["example.com"];
+
+  // X509* exampleComCert =
+
+  //         if bundles["test.example.com"] ==
+  //     nil{t.Fatalf("LoadSPIFFEBundleMap(%v) got no bundle for
+  //     test.example.com",
+  //                  spiffeBundleFile)}
+
+  //     expectedExampleComCert
+  //     : = loadX509Cert(t, testdata.Path("spiffe/spiffe_cert.pem"))
+  //           expectedTestExampleComCert
+  //     : = loadX509Cert(
+  //             t, testdata.Path(
+  //                    "spiffe/server1_spiffe.pem")) if !bundles["example.com"]
+  //             .X509Authorities()[0]
+  //             .Equal(expectedExampleComCert) {
+  //   t.Fatalf("LoadSPIFFEBundleMap(%v) parsed wrong cert for example.com.",
+  //            spiffeBundleFile)
+  // }
+  // if !bundles
+  //   ["test.example.com"].X509Authorities()[0].Equal(
+  //       expectedTestExampleComCert) {
+  //     t.Fatalf("LoadSPIFFEBundleMap(%v) parsed wrong cert for
+  //     test.example.com",
+  //              spiffeBundleFile)
+  //   }
+
   // for (auto const& kv : test->bundles) {
-  //   std::cout << kv.first << std::endl;
+  //   auto cert = ReadCertificate(kv.) std::cout << kv.first << std::endl;
   //   std::cout << kv.second << std::endl;
   // }
 }
