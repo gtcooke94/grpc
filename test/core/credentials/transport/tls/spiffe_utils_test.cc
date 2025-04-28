@@ -19,6 +19,7 @@
 #include "src/core/credentials/transport/tls/spiffe_utils.h"
 
 #include <grpc/grpc.h>
+#include <openssl/x509.h>
 
 #include <string>
 
@@ -455,6 +456,13 @@ TEST(SpiffeBundle, TempWorkingTest) {
   ASSERT_TRUE(bundle_map.ok()) << bundle_map.status();
   ASSERT_EQ(bundle_map->bundles.size(), 2);
   SpiffeBundle exampleComBundle = bundle_map->bundles["example.com"];
+  auto certificate = ReadCertificate(exampleComBundle.keys[0].x5c[0]);
+  ASSERT_TRUE(certificate.ok()) << certificate.status();
+  auto expected_certificate = ReadCertificateFromFile(
+      "test/core/credentials/transport/tls/test_data/spiffe/"
+      "spiffe_cert.pem");
+  ASSERT_TRUE(expected_certificate.ok()) << certificate.status();
+  EXPECT_EQ(X509_cmp(*certificate, *expected_certificate), 0);
 
   // X509* exampleComCert =
 

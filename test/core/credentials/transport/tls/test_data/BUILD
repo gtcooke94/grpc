@@ -19,6 +19,7 @@ exports_files([
     "test_roots/cert1.pem",
     "test_roots/cert2.pem",
     "test_roots/cert3.pem",
+    "spiffe/spiffe_cert.pem",
     "spiffe/client_spiffebundle.json",
     "spiffe/test_bundles/spiffebundle.json",
     "spiffe/test_bundles/spiffebundle_empty_keys.json",
