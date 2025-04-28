@@ -18,6 +18,10 @@
 
 #include "src/core/credentials/transport/tls/spiffe_utils.h"
 
+#include <openssl/pem.h>
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+
 #include <string>
 
 #include "absl/strings/match.h"
@@ -195,6 +199,23 @@ void SpiffeBundleKey::JsonPostLoad(const Json& json, const JsonArgs&,
           kx5cSize));
     }
   }
+}
+
+X509* readCertificateFromFile(const std::string& filePath) {
+  FILE* file = fopen(filePath.c_str(), "r");
+  if (!file) {
+    std::cerr << "Error opening file: " << filePath << std::endl;
+    return nullptr;
+  }
+
+  X509* cert = PEM_read_X509(file, nullptr, nullptr, nullptr);
+  fclose(file);
+
+  if (!cert) {
+    std::cerr << "Error reading certificate from file: " << filePath
+              << std::endl;
+  }
+  return cert;
 }
 
 void SpiffeBundleMap::JsonPostLoad(const Json& json, const JsonArgs&,

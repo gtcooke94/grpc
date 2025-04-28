@@ -285,6 +285,126 @@ TEST(SpiffeBundle, EmptyKeysFails) {
           "empty]"));
 }
 
+TEST(SpiffeBundle, CorruptedCertFails) {
+  EXPECT_EQ(
+      SpiffeBundleMap::FromFile(
+          "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+          "spiffebundle_corrupted_cert.json")
+          .status(),
+      absl::InvalidArgumentError(
+          "errors validating JSON: [field:trust_domains error:map key '' is "
+          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
+          "empty]"));
+}
+
+TEST(SpiffeBundle, EmptyStringKeyFails) {
+  EXPECT_EQ(
+      SpiffeBundleMap::FromFile(
+          "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+          "spiffebundle_empty_string_key.json")
+          .status(),
+      absl::InvalidArgumentError(
+          "errors validating JSON: [field:trust_domains error:map key '' is "
+          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
+          "empty]"));
+}
+
+TEST(SpiffeBundle, InvalidTrustDomainFails) {
+  EXPECT_EQ(
+      SpiffeBundleMap::FromFile(
+          "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+          "spiffebundle_invalid_trustdomain.json")
+          .status(),
+      absl::InvalidArgumentError(
+          "errors validating JSON: [field:trust_domains error:map key '' is "
+          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
+          "empty]"));
+}
+
+TEST(SpiffeBundle, MalformedJsonFails) {
+  EXPECT_EQ(
+      SpiffeBundleMap::FromFile(
+          "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+          "spiffebundle_malformed.json")
+          .status(),
+      absl::InvalidArgumentError(
+          "errors validating JSON: [field:trust_domains error:map key '' is "
+          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
+          "empty]"));
+}
+
+TEST(SpiffeBundle, WrongKtyFails) {
+  EXPECT_EQ(
+      SpiffeBundleMap::FromFile(
+          "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+          "spiffebundle_wrong_kty.json")
+          .status(),
+      absl::InvalidArgumentError(
+          "errors validating JSON: [field:trust_domains error:map key '' is "
+          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
+          "empty]"));
+}
+
+TEST(SpiffeBundle, WrongKidFails) {
+  EXPECT_EQ(
+      SpiffeBundleMap::FromFile(
+          "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+          "spiffebundle_wrong_kid.json")
+          .status(),
+      absl::InvalidArgumentError(
+          "errors validating JSON: [field:trust_domains error:map key '' is "
+          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
+          "empty]"));
+}
+
+TEST(SpiffeBundle, MultiCertsFails) {
+  EXPECT_EQ(
+      SpiffeBundleMap::FromFile(
+          "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+          "spiffebundle_wrong_multi_certs.json")
+          .status(),
+      absl::InvalidArgumentError(
+          "errors validating JSON: [field:trust_domains error:map key '' is "
+          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
+          "empty]"));
+}
+
+TEST(SpiffeBundle, WrongRootFails) {
+  EXPECT_EQ(
+      SpiffeBundleMap::FromFile(
+          "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+          "spiffebundle_wrong_root.json")
+          .status(),
+      absl::InvalidArgumentError(
+          "errors validating JSON: [field:trust_domains error:map key '' is "
+          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
+          "empty]"));
+}
+
+TEST(SpiffeBundle, WrongSeqTypeFails) {
+  EXPECT_EQ(
+      SpiffeBundleMap::FromFile(
+          "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+          "spiffebundle_wrong_seq_type.json")
+          .status(),
+      absl::InvalidArgumentError(
+          "errors validating JSON: [field:trust_domains error:map key '' is "
+          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
+          "empty]"));
+}
+
+TEST(SpiffeBundle, WrongUseFails) {
+  EXPECT_EQ(
+      SpiffeBundleMap::FromFile(
+          "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+          "spiffebundle_wrong_use.json")
+          .status(),
+      absl::InvalidArgumentError(
+          "errors validating JSON: [field:trust_domains error:map key '' is "
+          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
+          "empty]"));
+}
+
 TEST(SpiffeBundle, TempWorkingTest) {
   std::string path =
       "test/core/credentials/transport/tls/test_data/spiffe/"
