@@ -41,10 +41,10 @@ constexpr int kx5cSize = 1;
 // private static final Integer URI_SAN_TYPE = 6;
 // private static final String USE_PARAMETER_VALUE = "x509-svid";
 // private static final String KTY_PARAMETER_VALUE = "RSA";
-// private static final String CERTIFICATE_PREFIX = "-----BEGIN
-// CERTIFICATE-----\n"; private static final String CERTIFICATE_SUFFIX =
-// "-----END CERTIFICATE-----"; private static final String PREFIX =
-// "spiffe://";
+constexpr absl::string_view kCertificatePrefix =
+    "-----BEGIN CERTIFICATE-----\n";
+constexpr absl::string_view kCertificateSuffix =
+    "\n-----END CERTIFICATE-----\n";
 
 constexpr absl::string_view kSpiffePrefix = "spiffe://";
 constexpr int kMaxTrustDomainLength = 255;
@@ -134,6 +134,25 @@ absl::Status ValidatePath(absl::string_view path) {
   return absl::OkStatus();
 }
 
+absl::Status ValidateCertificateIsValidX509(absl::string_view raw_cert) {
+  std::string pem_cert =
+      absl::StrCat(kCertificatePrefix, raw_cert.data(), kCertificateSuffix);
+
+  BIO* cert_bio = BIO_new_mem_buf(pem_cert.c_str(), pem_cert.size());
+  if (cert_bio == nullptr) {
+    return absl::InvalidArgumentError(
+        "Conversion from raw certificate to BIO failed.");
+  }
+  X509* x509 = PEM_read_bio_X509(cert_bio, nullptr, nullptr, nullptr);
+  BIO_free(cert_bio);
+  if (x509 == nullptr) {
+    return absl::InvalidArgumentError(
+        "Conversion from PEM string to X509 failed.");
+  }
+  X509_free(x509);
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 absl::StatusOr<SpiffeId> SpiffeId::FromString(absl::string_view input) {
@@ -198,24 +217,11 @@ void SpiffeBundleKey::JsonPostLoad(const Json& json, const JsonArgs&,
           "got vector length %i. Expected length of exactly %i.", x5c.size(),
           kx5cSize));
     }
+    absl::Status status = ValidateCertificateIsValidX509(x5c[0]);
+    if (!status.ok()) {
+      errors->AddError(status.message());
+    }
   }
-}
-
-X509* readCertificateFromFile(const std::string& filePath) {
-  FILE* file = fopen(filePath.c_str(), "r");
-  if (!file) {
-    std::cerr << "Error opening file: " << filePath << std::endl;
-    return nullptr;
-  }
-
-  X509* cert = PEM_read_X509(file, nullptr, nullptr, nullptr);
-  fclose(file);
-
-  if (!cert) {
-    std::cerr << "Error reading certificate from file: " << filePath
-              << std::endl;
-  }
-  return cert;
 }
 
 void SpiffeBundleMap::JsonPostLoad(const Json& json, const JsonArgs&,

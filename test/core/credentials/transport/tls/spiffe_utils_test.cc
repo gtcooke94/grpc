@@ -292,9 +292,9 @@ TEST(SpiffeBundle, CorruptedCertFails) {
           "spiffebundle_corrupted_cert.json")
           .status(),
       absl::InvalidArgumentError(
-          "errors validating JSON: [field:trust_domains error:map key '' is "
-          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
-          "empty]"));
+          "errors validating JSON: "
+          "[field:trust_domains[\"example.com\"].keys[0].x5c error:Conversion "
+          "from PEM string to X509 failed.]"));
 }
 
 TEST(SpiffeBundle, EmptyStringKeyFails) {
@@ -316,9 +316,10 @@ TEST(SpiffeBundle, InvalidTrustDomainFails) {
           "spiffebundle_invalid_trustdomain.json")
           .status(),
       absl::InvalidArgumentError(
-          "errors validating JSON: [field:trust_domains error:map key '' is "
-          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
-          "empty]"));
+          "errors validating JSON: [field:trust_domains error:map key "
+          "'invalid#character' is not a valid trust domain. INVALID_ARGUMENT: "
+          "Trust domain contains invalid character '#'. MUST contain only "
+          "lowercase letters, numbers, dots, dashes, and underscores]"));
 }
 
 TEST(SpiffeBundle, MalformedJsonFails) {
@@ -328,9 +329,7 @@ TEST(SpiffeBundle, MalformedJsonFails) {
           "spiffebundle_malformed.json")
           .status(),
       absl::InvalidArgumentError(
-          "errors validating JSON: [field:trust_domains error:map key '' is "
-          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
-          "empty]"));
+          "errors validating JSON: [field: error:is not an object]"));
 }
 
 TEST(SpiffeBundle, WrongKtyFails) {
@@ -340,9 +339,9 @@ TEST(SpiffeBundle, WrongKtyFails) {
           "spiffebundle_wrong_kty.json")
           .status(),
       absl::InvalidArgumentError(
-          "errors validating JSON: [field:trust_domains error:map key '' is "
-          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
-          "empty]"));
+          "errors validating JSON: "
+          "[field:trust_domains[\"example.com\"].keys[0].kty "
+          "error:got EC. Only supported value for kty field is RSA]"));
 }
 
 TEST(SpiffeBundle, WrongKidFails) {
@@ -352,9 +351,9 @@ TEST(SpiffeBundle, WrongKidFails) {
           "spiffebundle_wrong_kid.json")
           .status(),
       absl::InvalidArgumentError(
-          "errors validating JSON: [field:trust_domains error:map key '' is "
-          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
-          "empty]"));
+          "errors validating JSON: "
+          "[field:trust_domains[\"example.com\"].keys[0].kty errors:[field not "
+          "present; got . Only supported value for kty field is RSA]]"));
 }
 
 TEST(SpiffeBundle, MultiCertsFails) {
@@ -364,9 +363,9 @@ TEST(SpiffeBundle, MultiCertsFails) {
           "spiffebundle_wrong_multi_certs.json")
           .status(),
       absl::InvalidArgumentError(
-          "errors validating JSON: [field:trust_domains error:map key '' is "
-          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
-          "empty]"));
+          "errors validating JSON: "
+          "[field:trust_domains[\"google.com\"].keys[0].x5c "
+          "error:got vector length 2. Expected length of exactly 1.]"));
 }
 
 TEST(SpiffeBundle, WrongRootFails) {
@@ -375,10 +374,8 @@ TEST(SpiffeBundle, WrongRootFails) {
           "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
           "spiffebundle_wrong_root.json")
           .status(),
-      absl::InvalidArgumentError(
-          "errors validating JSON: [field:trust_domains error:map key '' is "
-          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
-          "empty]"));
+      absl::InvalidArgumentError("errors validating JSON: [field:trust_domains "
+                                 "error:field not present]"));
 }
 
 TEST(SpiffeBundle, WrongSeqTypeFails) {
@@ -388,9 +385,9 @@ TEST(SpiffeBundle, WrongSeqTypeFails) {
           "spiffebundle_wrong_seq_type.json")
           .status(),
       absl::InvalidArgumentError(
-          "errors validating JSON: [field:trust_domains error:map key '' is "
-          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
-          "empty]"));
+          "errors validating JSON: "
+          "[field:trust_domains[\"example.com\"].spiffe_sequence "
+          "error:failed to parse non-negative number]"));
 }
 
 TEST(SpiffeBundle, WrongUseFails) {
@@ -400,9 +397,10 @@ TEST(SpiffeBundle, WrongUseFails) {
           "spiffebundle_wrong_use.json")
           .status(),
       absl::InvalidArgumentError(
-          "errors validating JSON: [field:trust_domains error:map key '' is "
-          "not a valid trust domain. INVALID_ARGUMENT: Trust domain cannot be "
-          "empty]"));
+          "errors validating JSON: "
+          "[field:trust_domains[\"example.com\"].keys[0].use "
+          "error:got NOT-x509-svid. Only supported value for use field is "
+          "x509-svid.]"));
 }
 
 TEST(SpiffeBundle, TempWorkingTest) {
