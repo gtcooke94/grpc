@@ -407,8 +407,8 @@ TEST(SpiffeBundle, TempWorkingTest) {
   std::string path =
       "test/core/credentials/transport/tls/test_data/spiffe/"
       "client_spiffebundle.json";
-  std::string json_str = grpc_core::testing::GetFileContents(path);
-  auto json = grpc_core::JsonParse(json_str);
+  std::string json_str = testing::GetFileContents(path);
+  auto json = JsonParse(json_str);
   ASSERT_TRUE(json.ok());
 
   auto test = LoadFromJson<SpiffeBundleMap>(*json);
