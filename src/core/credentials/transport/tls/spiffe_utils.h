@@ -23,6 +23,8 @@
 
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "src/core/util/json/json.h"
+#include "src/core/util/json/json_object_loader.h"
 
 namespace grpc_core {
 
@@ -43,6 +45,69 @@ class SpiffeId final {
       : trust_domain_(trust_domain), path_(path) {}
   const std::string trust_domain_;
   const std::string path_;
+};
+
+// An entry in the Key vector of a Spiffe Bundle Map
+struct SpiffeBundleKey {
+  std::string kty;
+  std::string kid;
+  std::string use;
+  std::vector<std::string> x5c;
+  std::string n;
+  std::string e;
+
+  static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
+    static const auto* loader = JsonObjectLoader<SpiffeBundleKey>()
+                                    .Field("kty", &SpiffeBundleKey::kty)
+                                    .OptionalField("kid", &SpiffeBundleKey::kid)
+                                    .Field("use", &SpiffeBundleKey::use)
+                                    .Field("x5c", &SpiffeBundleKey::x5c)
+                                    .Field("n", &SpiffeBundleKey::n)
+                                    .Field("e", &SpiffeBundleKey::e)
+                                    .Finish();
+    return loader;
+  }
+
+  void JsonPostLoad(const Json& json, const JsonArgs&,
+                    ValidationErrors* errors);
+};
+
+// A Spiffe bundle
+struct SpiffeBundle {
+  uint64_t spiffe_sequence;
+  std::vector<SpiffeBundleKey> keys;
+
+  static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
+    static const auto* loader =
+        JsonObjectLoader<SpiffeBundle>()
+            .Field("spiffe_sequence", &SpiffeBundle::spiffe_sequence)
+            .Field("keys", &SpiffeBundle::keys)
+            .Finish();
+    return loader;
+  }
+};
+
+// A SpiffeBundleMap
+struct SpiffeBundleMap {
+  static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
+    static const auto* loader =
+        JsonObjectLoader<SpiffeBundleMap>()
+            .Field("trust_domains", &SpiffeBundleMap::bundles)
+            .Finish();
+    return loader;
+  }
+
+  // Loads a SPIFFE Bundle Map from a json file representation. Returns a bad
+  // status if there is a problem while loading the file and parsing the JSON. A
+  // returned value represents a valid and SPIFFE Bundle Map.
+  // The only supported use is configuring X509 roots for a given trust domain -
+  // no other SPIFFE Bundle configurations are supported.
+  static absl::StatusOr<SpiffeBundleMap> FromFile(absl::string_view file_path);
+
+  std::map<std::string, SpiffeBundle> bundles;
+
+  void JsonPostLoad(const Json& json, const JsonArgs&,
+                    ValidationErrors* errors);
 };
 
 }  // namespace grpc_core
