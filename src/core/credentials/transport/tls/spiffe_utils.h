@@ -48,14 +48,8 @@ class SpiffeId final {
 };
 
 // An entry in the Key vector of a Spiffe Bundle Map
-struct SpiffeBundleKey {
-  std::string kty;
-  std::string kid;
-  std::string use;
-  std::vector<std::string> x5c;
-  std::string n;
-  std::string e;
-
+class SpiffeBundleKey {
+ public:
   static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
     static const auto* loader = JsonObjectLoader<SpiffeBundleKey>()
                                     .Field("kty", &SpiffeBundleKey::kty)
@@ -70,13 +64,19 @@ struct SpiffeBundleKey {
 
   void JsonPostLoad(const Json& json, const JsonArgs&,
                     ValidationErrors* errors);
+
+ private:
+  std::string kty;
+  std::string kid;
+  std::string use;
+  std::vector<std::string> x5c;
+  std::string n;
+  std::string e;
 };
 
 // A Spiffe bundle
-struct SpiffeBundle {
-  uint64_t spiffe_sequence;
-  std::vector<SpiffeBundleKey> keys;
-
+class SpiffeBundle {
+ public:
   static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
     static const auto* loader =
         JsonObjectLoader<SpiffeBundle>()
@@ -85,10 +85,15 @@ struct SpiffeBundle {
             .Finish();
     return loader;
   }
+
+ private:
+  uint64_t spiffe_sequence;
+  std::vector<SpiffeBundleKey> keys;
 };
 
 // A SpiffeBundleMap
-struct SpiffeBundleMap {
+class SpiffeBundleMap {
+ public:
   static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
     static const auto* loader =
         JsonObjectLoader<SpiffeBundleMap>()
@@ -97,6 +102,9 @@ struct SpiffeBundleMap {
     return loader;
   }
 
+  void JsonPostLoad(const Json& json, const JsonArgs&,
+                    ValidationErrors* errors);
+
   // Loads a SPIFFE Bundle Map from a json file representation. Returns a bad
   // status if there is a problem while loading the file and parsing the JSON. A
   // returned value represents a valid and SPIFFE Bundle Map.
@@ -104,10 +112,18 @@ struct SpiffeBundleMap {
   // no other SPIFFE Bundle configurations are supported.
   static absl::StatusOr<SpiffeBundleMap> FromFile(absl::string_view file_path);
 
-  std::map<std::string, SpiffeBundle> bundles;
+  absl::StatusOr<SpiffeBundle> Get(absl::string_view trust_domain);
+  size_t size() { return bundles.size(); }
 
-  void JsonPostLoad(const Json& json, const JsonArgs&,
-                    ValidationErrors* errors);
+ private:
+  struct StringCmp {
+    using is_transparent = void;
+    bool operator()(absl::string_view a, absl::string_view b) const {
+      return a < b;
+    }
+  };
+
+  std::map<std::string, SpiffeBundle, StringCmp> bundles;
 };
 
 }  // namespace grpc_core

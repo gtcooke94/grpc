@@ -249,4 +249,14 @@ absl::StatusOr<SpiffeBundleMap> SpiffeBundleMap::FromFile(
   return LoadFromJson<SpiffeBundleMap>(*json);
 }
 
+// https://g3doc.corp.google.com/devtools/library_club/g3doc/totw/144.md?cl=head
+absl::StatusOr<SpiffeBundle> SpiffeBundleMap::Get(
+    const absl::string_view trust_domain) {
+  if (auto it = bundles.find(trust_domain); it != bundles.end()) {
+    return it->second;
+  }
+  return absl::NotFoundError(absl::StrFormat(
+      "No spiffe bundle found for trust domain %s", trust_domain));
+}
+
 }  // namespace grpc_core

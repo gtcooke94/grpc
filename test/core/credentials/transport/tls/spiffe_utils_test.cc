@@ -454,9 +454,10 @@ TEST(SpiffeBundle, TempWorkingTest) {
 
   auto bundle_map = LoadFromJson<SpiffeBundleMap>(*json);
   ASSERT_TRUE(bundle_map.ok()) << bundle_map.status();
-  ASSERT_EQ(bundle_map->bundles.size(), 2);
+  ASSERT_EQ(bundle_map->size(), 2);
+  // TODO update with better APIs
   {
-    SpiffeBundle example_com_bundle = bundle_map->bundles["example.com"];
+    SpiffeBundle example_com_bundle = bundle_map->Get("example.com");
     auto certificate = ReadCertificate(example_com_bundle.keys[0].x5c[0]);
     ASSERT_TRUE(certificate.ok()) << certificate.status();
     auto expected_certificate = ReadCertificateFromFile(
