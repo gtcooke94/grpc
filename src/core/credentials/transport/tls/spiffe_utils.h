@@ -47,37 +47,11 @@ class SpiffeId final {
   const std::string path_;
 };
 
-// @roth example json file:
-// {
-//   “trust_domains”: {
-//     "example.com": {
-//       “spiffe_sequence”: 12035488,
-//       "keys": [
-//         {
-//           "kty": "RSA",
-//           "use": "x509-svid",
-//           "x5c": ["<base64 DER encoding of Certificate #1>"],
-//           "n": "<base64urlUint-encoded value>",
-//           "e": "AQAB"
-//         },
-//         {
-//           "kty": "RSA",
-//           “kid”: “<JWT key id>”,
-//           "use": "jwt-svid",
-//           "n": "<base64urlUint-encoded value>",
-//           "e": "AQAB"
-//         }
-//       ]
-//     }
-//   }
-// }
-
+// An entry in the Key vector of a Spiffe Bundle Map
 struct SpiffeBundleKey {
   std::string kty;
   std::string kid;
   std::string use;
-  // @roth: This has a lot of potential validation, it's contents should be a
-  // valid x509 cert or jwt key
   std::vector<std::string> x5c;
   std::string n;
   std::string e;
@@ -98,6 +72,7 @@ struct SpiffeBundleKey {
                     ValidationErrors* errors);
 };
 
+// A Spiffe bundle
 struct SpiffeBundle {
   uint64_t spiffe_sequence;
   std::vector<SpiffeBundleKey> keys;
@@ -111,6 +86,8 @@ struct SpiffeBundle {
     return loader;
   }
 };
+
+// A SpiffeBundleMap
 struct SpiffeBundleMap {
   static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
     static const auto* loader =
@@ -120,6 +97,11 @@ struct SpiffeBundleMap {
     return loader;
   }
 
+  // Loads a SPIFFE Bundle Map from a json file representation. Returns a bad
+  // status if there is a problem while loading the file and parsing the JSON. A
+  // returned value represents a valid and SPIFFE Bundle Map.
+  // The only supported use is configuring X509 roots for a given trust domain -
+  // no other SPIFFE Bundle configurations are supported.
   static absl::StatusOr<SpiffeBundleMap> FromFile(absl::string_view file_path);
 
   std::map<std::string, SpiffeBundle> bundles;

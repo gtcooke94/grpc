@@ -38,9 +38,6 @@ namespace {
 constexpr absl::string_view kAllowedUse = "x509-svid";
 constexpr absl::string_view kAllowedKty = "RSA";
 constexpr int kx5cSize = 1;
-// private static final Integer URI_SAN_TYPE = 6;
-// private static final String USE_PARAMETER_VALUE = "x509-svid";
-// private static final String KTY_PARAMETER_VALUE = "RSA";
 constexpr absl::string_view kCertificatePrefix =
     "-----BEGIN CERTIFICATE-----\n";
 constexpr absl::string_view kCertificateSuffix =
