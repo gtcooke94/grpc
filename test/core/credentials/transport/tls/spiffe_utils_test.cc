@@ -477,38 +477,8 @@ TEST(SpiffeBundle, TempWorkingTest) {
     ASSERT_TRUE(expected_certificate.ok()) << certificate.status();
     EXPECT_EQ(X509_cmp(*certificate, *expected_certificate), 0);
   }
-
-  // X509* exampleComCert =
-
-  //         if bundles["test.example.com"] ==
-  //     nil{t.Fatalf("LoadSPIFFEBundleMap(%v) got no bundle for
-  //     test.example.com",
-  //                  spiffeBundleFile)}
-
-  //     expectedExampleComCert
-  //     : = loadX509Cert(t, testdata.Path("spiffe/spiffe_cert.pem"))
-  //           expectedTestExampleComCert
-  //     : = loadX509Cert(
-  //             t, testdata.Path(
-  //                    "spiffe/server1_spiffe.pem")) if !bundles["example.com"]
-  //             .X509Authorities()[0]
-  //             .Equal(expectedExampleComCert) {
-  //   t.Fatalf("LoadSPIFFEBundleMap(%v) parsed wrong cert for example.com.",
-  //            spiffeBundleFile)
-  // }
-  // if !bundles
-  //   ["test.example.com"].X509Authorities()[0].Equal(
-  //       expectedTestExampleComCert) {
-  //     t.Fatalf("LoadSPIFFEBundleMap(%v) parsed wrong cert for
-  //     test.example.com",
-  //              spiffeBundleFile)
-  //   }
-
-  // for (auto const& kv : test->bundles) {
-  //   auto cert = ReadCertificate(kv.) std::cout << kv.first << std::endl;
-  //   std::cout << kv.second << std::endl;
-  // }
 }
+
 }  // namespace testing
 }  // namespace grpc_core
 
