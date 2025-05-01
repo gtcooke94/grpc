@@ -225,7 +225,7 @@ void SpiffeBundleMap::JsonPostLoad(const Json& json, const JsonArgs&,
                                    ValidationErrors* errors) {
   {
     ValidationErrors::ScopedField field(errors, ".trust_domains");
-    for (auto const& kv : bundles) {
+    for (auto const& kv : bundles_) {
       absl::Status status = ValidateTrustDomain(kv.first);
       if (!status.ok()) {
         errors->AddError(
@@ -234,6 +234,12 @@ void SpiffeBundleMap::JsonPostLoad(const Json& json, const JsonArgs&,
       }
     }
   }
+
+  // JsonObjectLoader cannot parse into a map with a custom comparator, so parse
+  // into a map without one, then insert those elements into the map with the
+  // custom comparator after parsing. This is a one-time conversion to not have
+  // to create strings every look-up.
+  bundles_.insert(temp_bundles_.begin(), temp_bundles_.end());
 }
 
 absl::StatusOr<SpiffeBundleMap> SpiffeBundleMap::FromFile(
@@ -250,13 +256,34 @@ absl::StatusOr<SpiffeBundleMap> SpiffeBundleMap::FromFile(
 }
 
 // https://g3doc.corp.google.com/devtools/library_club/g3doc/totw/144.md?cl=head
-absl::StatusOr<SpiffeBundle> SpiffeBundleMap::Get(
+absl::StatusOr<std::vector<absl::string_view>> SpiffeBundleMap::GetRoots(
     const absl::string_view trust_domain) {
-  if (auto it = bundles.find(trust_domain); it != bundles.end()) {
-    return it->second;
+  if (auto it = bundles_.find(trust_domain); it != bundles_.end()) {
+    return it->second.GetRoots();
   }
   return absl::NotFoundError(absl::StrFormat(
       "No spiffe bundle found for trust domain %s", trust_domain));
+}
+
+absl::StatusOr<std::vector<absl::string_view>> SpiffeBundle::GetRoots() {
+  std::vector<absl::string_view> root_keys(keys_.size());
+  for (size_t i = 0; i < keys_.size(); i++) {
+    auto root = keys_[i].GetRoot();
+    if (!root.ok()) {
+      return root.status();
+    }
+    root_keys[i] = *keys_[i].GetRoot();
+  }
+  return root_keys;
+}
+
+absl::StatusOr<absl::string_view> SpiffeBundleKey::GetRoot() {
+  if (x5c.size() != 1) {
+    return absl::InvalidArgumentError(
+        "SPIFFE Bundle key entry has x5c field with length != 1. Key entry x5c "
+        "field MUST have length of exactly 1.");
+  }
+  return x5c[0];
 }
 
 }  // namespace grpc_core

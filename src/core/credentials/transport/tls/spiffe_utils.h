@@ -65,6 +65,8 @@ class SpiffeBundleKey {
   void JsonPostLoad(const Json& json, const JsonArgs&,
                     ValidationErrors* errors);
 
+  absl::StatusOr<absl::string_view> GetRoot();
+
  private:
   std::string kty;
   std::string kid;
@@ -80,15 +82,17 @@ class SpiffeBundle {
   static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
     static const auto* loader =
         JsonObjectLoader<SpiffeBundle>()
-            .Field("spiffe_sequence", &SpiffeBundle::spiffe_sequence)
-            .Field("keys", &SpiffeBundle::keys)
+            .Field("spiffe_sequence", &SpiffeBundle::spiffe_sequence_)
+            .Field("keys", &SpiffeBundle::keys_)
             .Finish();
     return loader;
   }
 
+  absl::StatusOr<std::vector<absl::string_view>> GetRoots();
+
  private:
-  uint64_t spiffe_sequence;
-  std::vector<SpiffeBundleKey> keys;
+  uint64_t spiffe_sequence_;
+  std::vector<SpiffeBundleKey> keys_;
 };
 
 // A SpiffeBundleMap
@@ -97,7 +101,7 @@ class SpiffeBundleMap {
   static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
     static const auto* loader =
         JsonObjectLoader<SpiffeBundleMap>()
-            .Field("trust_domains", &SpiffeBundleMap::bundles)
+            .Field("trust_domains", &SpiffeBundleMap::temp_bundles_)
             .Finish();
     return loader;
   }
@@ -112,8 +116,9 @@ class SpiffeBundleMap {
   // no other SPIFFE Bundle configurations are supported.
   static absl::StatusOr<SpiffeBundleMap> FromFile(absl::string_view file_path);
 
-  absl::StatusOr<SpiffeBundle> Get(absl::string_view trust_domain);
-  size_t size() { return bundles.size(); }
+  absl::StatusOr<std::vector<absl::string_view>> GetRoots(
+      absl::string_view trust_domain);
+  size_t size() { return bundles_.size(); }
 
  private:
   struct StringCmp {
@@ -123,7 +128,12 @@ class SpiffeBundleMap {
     }
   };
 
-  std::map<std::string, SpiffeBundle, StringCmp> bundles;
+  // JsonObjectLoader cannot parse into a map with a custom comparator, so parse
+  // into a map without one, then insert those elements into the map with the
+  // custom comparator after parsing. This is a one-time conversion to not have
+  // to create strings every look-up.
+  std::map<std::string, SpiffeBundle> temp_bundles_;
+  std::map<std::string, SpiffeBundle, StringCmp> bundles_;
 };
 
 }  // namespace grpc_core
