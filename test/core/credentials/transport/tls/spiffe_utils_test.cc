@@ -265,20 +265,6 @@ TEST(SpiffeId, TripleDotsSuccess) {
   EXPECT_EQ(spiffe_id->path(), "/...");
 }
 
-// TEST(SpiffeBundle, ValidBundleLoads) {
-//   auto map = SpiffeBundleMap::FromFile(
-//       "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
-//       "spiffebundle.json");
-//   ASSERT_TRUE(map.ok()) << map.status();
-//   EXPECT_TRUE(map->bundles.size() == 2);
-//   // auto cert = LoadFile(
-//   //     "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
-//   //     "client_spiffe.pem",
-//   //     /*add_null_terminator=*/false);
-//   // ASSERT_TRUE(cert.ok()) << cert.status();
-//   // TODO(gregorycooke) get root from spiffe bundle map
-// }
-
 TEST(SpiffeBundle, EmptyKeysFails) {
   EXPECT_EQ(
       SpiffeBundleMap::FromFile(

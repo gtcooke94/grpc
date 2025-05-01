@@ -193,28 +193,28 @@ void SpiffeBundleKey::JsonPostLoad(const Json& json, const JsonArgs&,
                                    ValidationErrors* errors) {
   {
     ValidationErrors::ScopedField field(errors, ".use");
-    if (use != kAllowedUse) {
+    if (use_ != kAllowedUse) {
       errors->AddError(
           absl::StrFormat("got %s. Only supported value for use field is %s.",
-                          use, kAllowedUse));
+                          use_, kAllowedUse));
     }
   }
   {
     ValidationErrors::ScopedField field(errors, ".kty");
-    if (kty != kAllowedKty) {
+    if (kty_ != kAllowedKty) {
       errors->AddError(
           absl::StrFormat("got %s. Only supported value for kty field is %s",
-                          kty, kAllowedKty));
+                          kty_, kAllowedKty));
     }
   }
   {
     ValidationErrors::ScopedField field(errors, ".x5c");
-    if (x5c.size() != kx5cSize) {
+    if (x5c_.size() != kx5cSize) {
       errors->AddError(absl::StrFormat(
-          "got vector length %i. Expected length of exactly %i.", x5c.size(),
+          "got vector length %i. Expected length of exactly %i.", x5c_.size(),
           kx5cSize));
     }
-    absl::Status status = ValidateCertificateIsValidX509(x5c[0]);
+    absl::Status status = ValidateCertificateIsValidX509(x5c_[0]);
     if (!status.ok()) {
       errors->AddError(status.message());
     }
@@ -225,7 +225,7 @@ void SpiffeBundleMap::JsonPostLoad(const Json& json, const JsonArgs&,
                                    ValidationErrors* errors) {
   {
     ValidationErrors::ScopedField field(errors, ".trust_domains");
-    for (auto const& kv : bundles_) {
+    for (auto const& kv : temp_bundles_) {
       absl::Status status = ValidateTrustDomain(kv.first);
       if (!status.ok()) {
         errors->AddError(
@@ -278,12 +278,12 @@ absl::StatusOr<std::vector<absl::string_view>> SpiffeBundle::GetRoots() {
 }
 
 absl::StatusOr<absl::string_view> SpiffeBundleKey::GetRoot() {
-  if (x5c.size() != 1) {
+  if (x5c_.size() != 1) {
     return absl::InvalidArgumentError(
         "SPIFFE Bundle key entry has x5c field with length != 1. Key entry x5c "
         "field MUST have length of exactly 1.");
   }
-  return x5c[0];
+  return x5c_[0];
 }
 
 }  // namespace grpc_core

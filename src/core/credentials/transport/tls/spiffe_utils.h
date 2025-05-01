@@ -51,14 +51,15 @@ class SpiffeId final {
 class SpiffeBundleKey {
  public:
   static const JsonLoaderInterface* JsonLoader(const JsonArgs&) {
-    static const auto* loader = JsonObjectLoader<SpiffeBundleKey>()
-                                    .Field("kty", &SpiffeBundleKey::kty)
-                                    .OptionalField("kid", &SpiffeBundleKey::kid)
-                                    .Field("use", &SpiffeBundleKey::use)
-                                    .Field("x5c", &SpiffeBundleKey::x5c)
-                                    .Field("n", &SpiffeBundleKey::n)
-                                    .Field("e", &SpiffeBundleKey::e)
-                                    .Finish();
+    static const auto* loader =
+        JsonObjectLoader<SpiffeBundleKey>()
+            .Field("kty", &SpiffeBundleKey::kty_)
+            .OptionalField("kid", &SpiffeBundleKey::kid_)
+            .Field("use", &SpiffeBundleKey::use_)
+            .Field("x5c", &SpiffeBundleKey::x5c_)
+            .Field("n", &SpiffeBundleKey::n)
+            .Field("e", &SpiffeBundleKey::e)
+            .Finish();
     return loader;
   }
 
@@ -68,10 +69,10 @@ class SpiffeBundleKey {
   absl::StatusOr<absl::string_view> GetRoot();
 
  private:
-  std::string kty;
-  std::string kid;
-  std::string use;
-  std::vector<std::string> x5c;
+  std::string kty_;
+  std::string kid_;
+  std::string use_;
+  std::vector<std::string> x5c_;
   std::string n;
   std::string e;
 };
