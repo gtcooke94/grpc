@@ -248,7 +248,7 @@ absl::StatusOr<SpiffeBundleMap> SpiffeBundleMap::FromFile(
   if (!slice.ok()) {
     return slice.status();
   }
-  auto json = grpc_core::JsonParse(slice->as_string_view());
+  auto json = JsonParse(slice->as_string_view());
   if (!json.ok()) {
     return json.status();
   }

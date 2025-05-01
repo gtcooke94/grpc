@@ -434,14 +434,14 @@ TEST(SpiffeBundle, TempWorkingTest) {
   std::string path =
       "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
       "spiffebundle.json";
-  std::string json_str = grpc_core::testing::GetFileContents(path);
-  auto json = grpc_core::JsonParse(json_str);
+  std::string json_str = testing::GetFileContents(path);
+  auto json = JsonParse(json_str);
   ASSERT_TRUE(json.ok());
 
   auto bundle_map = LoadFromJson<SpiffeBundleMap>(*json);
   ASSERT_TRUE(bundle_map.ok()) << bundle_map.status();
   ASSERT_EQ(bundle_map->size(), 2);
-  // TODO update with better APIs
+  // TODO(unknown): update with better APIs
   {
     auto example_com_roots = bundle_map->GetRoots("example.com");
     ASSERT_TRUE(example_com_roots.ok());
