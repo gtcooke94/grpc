@@ -189,10 +189,10 @@ void SpiffeBundleKey::JsonPostLoad(const Json& json, const JsonArgs&,
   }
   {
     ValidationErrors::ScopedField field(errors, ".x5c");
-    if (x5c_.size() != kx5cSize) {
+    if (x5c_.size() != kX5cSize) {
       errors->AddError(absl::StrFormat(
           "got vector length %i. Expected length of exactly %i.", x5c_.size(),
-          kx5cSize));
+          kX5cSize));
       return;
     }
 
