@@ -31,6 +31,7 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "src/core/credentials/transport/tls/spiffe_utils.h"
 #include "src/core/credentials/transport/tls/ssl_utils.h"
 #include "src/core/lib/debug/trace.h"
 #include "src/core/lib/iomgr/error.h"
@@ -298,8 +299,11 @@ absl::Status FileWatcherCertificateProvider::ValidateCredentials() const {
 void FileWatcherCertificateProvider::ForceUpdate() {
   std::optional<std::string> root_certificate;
   std::optional<PemKeyCertPairList> pem_key_cert_pairs;
-  // TODO(gtcooke94) impl spiffe bundle loading
-  if (!root_cert_path_.empty()) {
+  // TODO(gtcooke94) impl spiffe bundle loading - working here now
+  // If the SPIFFE bundle map is set, use it over the root cert
+  if (!spiffe_bundle_map_path_.empty()) {
+    auto spiffe_bundle_map = SpiffeBundleMap::FromFile(spiffe_bundle_map_path_);
+  } else if (!root_cert_path_.empty()) {
     root_certificate = ReadRootCertificatesFromFile(root_cert_path_);
   }
   if (!private_key_path_.empty()) {
@@ -307,6 +311,8 @@ void FileWatcherCertificateProvider::ForceUpdate() {
         private_key_path_, identity_certificate_path_);
   }
   MutexLock lock(&mu_);
+  // TODO(gtcooke94) Will we change with roots, or separate var here for spiffe
+  // bundle map
   const bool root_cert_changed =
       (!root_certificate.has_value() && !root_certificate_.empty()) ||
       (root_certificate.has_value() && root_certificate_ != *root_certificate);
