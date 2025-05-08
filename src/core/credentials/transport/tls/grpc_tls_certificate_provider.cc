@@ -178,9 +178,18 @@ static constexpr int64_t kMinimumFileWatcherRefreshIntervalSeconds = 1;
 FileWatcherCertificateProvider::FileWatcherCertificateProvider(
     std::string private_key_path, std::string identity_certificate_path,
     std::string root_cert_path, int64_t refresh_interval_sec)
+    : FileWatcherCertificateProvider(
+          private_key_path, identity_certificate_path, root_cert_path,
+          /*spiffe_bundle_map_path*/ "", refresh_interval_sec) {}
+
+FileWatcherCertificateProvider::FileWatcherCertificateProvider(
+    std::string private_key_path, std::string identity_certificate_path,
+    std::string root_cert_path, std::string spiffe_bundle_map_path,
+    int64_t refresh_interval_sec)
     : private_key_path_(std::move(private_key_path)),
       identity_certificate_path_(std::move(identity_certificate_path)),
       root_cert_path_(std::move(root_cert_path)),
+      spiffe_bundle_map_path_(std::move(spiffe_bundle_map_path)),
       refresh_interval_sec_(refresh_interval_sec),
       distributor_(MakeRefCounted<grpc_tls_certificate_distributor>()) {
   if (refresh_interval_sec_ < kMinimumFileWatcherRefreshIntervalSeconds) {
@@ -369,9 +378,8 @@ FileWatcherCertificateProvider::ReadRootCertificatesFromFile(
 }
 
 namespace {
-
-// This helper function gets the last-modified time of |filename|. When failed,
-// it logs the error and returns 0.
+// This helper function gets the last-modified time of |filename|. When
+// failed, it logs the error and returns 0.
 time_t GetModificationTime(const char* filename) {
   time_t ts = 0;
   (void)GetFileModificationTime(filename, &ts);
