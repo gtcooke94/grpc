@@ -201,7 +201,9 @@ FileWatcherCertificateProvider::FileWatcherCertificateProvider(
   // Private key and identity cert files must be both set or both unset.
   CHECK(private_key_path_.empty() == identity_certificate_path_.empty());
   // Must be watching either root or identity certs.
-  CHECK(!private_key_path_.empty() || !root_cert_path_.empty());
+  bool watching_root =
+      !root_cert_path_.empty() || !spiffe_bundle_map_path_.empty();
+  CHECK(!private_key_path_.empty() || watching_root);
   gpr_event_init(&shutdown_event_);
   ForceUpdate();
   auto thread_lambda = [](void* arg) {
@@ -296,6 +298,7 @@ absl::Status FileWatcherCertificateProvider::ValidateCredentials() const {
 void FileWatcherCertificateProvider::ForceUpdate() {
   std::optional<std::string> root_certificate;
   std::optional<PemKeyCertPairList> pem_key_cert_pairs;
+  // TODO(gtcooke94) impl spiffe bundle loading
   if (!root_cert_path_.empty()) {
     root_certificate = ReadRootCertificatesFromFile(root_cert_path_);
   }
