@@ -23,7 +23,7 @@
 #include "absl/functional/overload.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
-#include "spiffe_utils.h"
+#include "src/core/credentials/transport/tls/spiffe_utils.h"
 
 void grpc_tls_certificate_distributor::SetKeyMaterials(
     const std::string& cert_name,

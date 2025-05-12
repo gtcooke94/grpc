@@ -440,9 +440,7 @@ void TlsChannelSecurityConnector::TlsChannelCertificateWatcher::
         // NOLINTNEXTLINE: setting pem_roots_certs_ is held when calling lambda
         security_connector_->pem_root_certs_ = std::string(pem_root_certs);
       },
-      [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
-        return;
-      },
+      [&](std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map) { return; },
   };
   MutexLock lock(&security_connector_->mu_);
   if (root_certs.has_value()) {
@@ -713,7 +711,7 @@ void TlsServerSecurityConnector::TlsServerCertificateWatcher::
         // NOLINTNEXTLINE: setting pem_roots_certs_ is held when calling lambda
         security_connector_->pem_root_certs_ = std::string(pem_root_certs);
       },
-      [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
+      [&](std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map) {
         // TODO(gtcooke94) add spiffe bundle logic
         return;
       },
