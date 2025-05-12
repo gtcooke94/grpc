@@ -298,6 +298,7 @@ absl::Status FileWatcherCertificateProvider::ValidateCredentials() const {
 
 void FileWatcherCertificateProvider::ForceUpdate() {
   std::optional<std::string> root_certificate;
+  std::optional<SpiffeBundleMap> spiffe_bundle_map;
   std::optional<PemKeyCertPairList> pem_key_cert_pairs;
   // TODO(gtcooke94) impl spiffe bundle loading - working here now
   // If the SPIFFE bundle map is set, use it over the root cert
@@ -313,6 +314,10 @@ void FileWatcherCertificateProvider::ForceUpdate() {
   MutexLock lock(&mu_);
   // TODO(gtcooke94) Will we change with roots, or separate var here for spiffe
   // bundle map
+  const bool spiffe_bundle_map_changed =
+      (!spiffe_bundle_map.has_value() && !(spiffe_bundle_map_.size() == 0)) ||
+      (spiffe_bundle_map.has_value() &&
+       spiffe_bundle_map_ != *spiffe_bundle_map);
   const bool root_cert_changed =
       (!root_certificate.has_value() && !root_certificate_.empty()) ||
       (root_certificate.has_value() && root_certificate_ != *root_certificate);
@@ -334,18 +339,25 @@ void FileWatcherCertificateProvider::ForceUpdate() {
       pem_key_cert_pairs_ = {};
     }
   }
-  if (root_cert_changed || identity_cert_changed) {
+  if (root_cert_changed || identity_cert_changed || spiffe_bundle_map_changed) {
     ExecCtx exec_ctx;
     grpc_error_handle root_cert_error =
         GRPC_ERROR_CREATE("Unable to get latest root certificates.");
     grpc_error_handle identity_cert_error =
         GRPC_ERROR_CREATE("Unable to get latest identity certificates.");
+    grpc_error_handle spiffe_bundle_map_error =
+        GRPC_ERROR_CREATE("Unable to get latest spiffe bundle map.");
     for (const auto& p : watcher_info_) {
       const std::string& cert_name = p.first;
       const WatcherInfo& info = p.second;
       std::optional<std::string> root_to_report;
       std::optional<PemKeyCertPairList> identity_to_report;
+      std::optional<SpiffeBundleMap> spiffe_bundle_map_to_report;
       // Set key materials to the distributor if their contents changed.
+      if (info.root_being_watched && spiffe_bundle_map_.size() != 0 &&
+          spiffe_bundle_map_changed) {
+        spiffe_bundle_map_to_report = spiffe_bundle_map_;
+      }
       if (info.root_being_watched && !root_certificate_.empty() &&
           root_cert_changed) {
         root_to_report = root_certificate_;

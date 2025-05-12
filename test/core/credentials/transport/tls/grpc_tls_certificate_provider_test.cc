@@ -23,6 +23,7 @@
 #include <deque>
 #include <list>
 
+#include "absl/functional/overload.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "gmock/gmock.h"
@@ -62,9 +63,24 @@ class GrpcTlsCertificateProviderTest : public ::testing::Test {
   // if the status updates are correct.
   struct CredentialInfo {
     std::string root_certs;
+    SpiffeBundleMap spiffe_bundle_map;
     PemKeyCertPairList key_cert_pairs;
-    CredentialInfo(std::string root, PemKeyCertPairList key_cert)
-        : root_certs(std::move(root)), key_cert_pairs(std::move(key_cert)) {}
+    // CredentialInfo(std::string root, PemKeyCertPairList key_cert)
+    //     : root_certs(std::move(root)), key_cert_pairs(std::move(key_cert)) {}
+    CredentialInfo(
+        std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>> roots,
+        PemKeyCertPairList key_cert)
+        : key_cert_pairs(std::move(key_cert)) {
+      auto visitor = absl::Overload{
+          [&](const absl::string_view& pem_root_certs) {
+            root_certs = pem_root_certs;
+          },
+          [&](const std::shared_ptr<grpc_core::SpiffeBundleMap>& bundle_map) {
+            spiffe_bundle_map = std::move(*bundle_map);
+          },
+      };
+      std::visit(visitor, roots);
+    }
     bool operator==(const CredentialInfo& other) const {
       return root_certs == other.root_certs &&
              key_cert_pairs == other.key_cert_pairs;
@@ -118,18 +134,21 @@ class GrpcTlsCertificateProviderTest : public ::testing::Test {
     ~TlsCertificatesTestWatcher() override { state_->watcher = nullptr; }
 
     void OnCertificatesChanged(
-        std::optional<absl::string_view> root_certs,
+        std::optional<
+            std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
+            root_certs,
         std::optional<PemKeyCertPairList> key_cert_pairs) override {
       MutexLock lock(&state_->mu);
-      std::string updated_root;
+      std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>
+          updated_root;
       if (root_certs.has_value()) {
-        updated_root = std::string(*root_certs);
+        updated_root = *root_certs;
       }
       PemKeyCertPairList updated_identity;
       if (key_cert_pairs.has_value()) {
         updated_identity = std::move(*key_cert_pairs);
       }
-      state_->cert_update_queue.emplace_back(std::move(updated_root),
+      state_->cert_update_queue.emplace_back(updated_root,
                                              std::move(updated_identity));
     }
 

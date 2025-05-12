@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "absl/functional/bind_front.h"
+#include "absl/functional/overload.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
@@ -428,12 +429,24 @@ ArenaPromise<absl::Status> TlsChannelSecurityConnector::CheckCallHost(
 }
 
 void TlsChannelSecurityConnector::TlsChannelCertificateWatcher::
-    OnCertificatesChanged(std::optional<absl::string_view> root_certs,
-                          std::optional<PemKeyCertPairList> key_cert_pairs) {
+    OnCertificatesChanged(
+        std::optional<
+            std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
+            root_certs,
+        std::optional<PemKeyCertPairList> key_cert_pairs) {
   CHECK_NE(security_connector_, nullptr);
+  auto visitor = absl::Overload{
+      [&](const absl::string_view& pem_root_certs) {
+        // NOLINTNEXTLINE: setting pem_roots_certs_ is held when calling lambda
+        security_connector_->pem_root_certs_ = std::string(pem_root_certs);
+      },
+      [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
+        return;
+      },
+  };
   MutexLock lock(&security_connector_->mu_);
   if (root_certs.has_value()) {
-    security_connector_->pem_root_certs_ = root_certs;
+    std::visit(visitor, *root_certs);
   }
   if (key_cert_pairs.has_value()) {
     security_connector_->pem_key_cert_pair_list_ = std::move(key_cert_pairs);
@@ -688,12 +701,26 @@ int TlsServerSecurityConnector::cmp(
 }
 
 void TlsServerSecurityConnector::TlsServerCertificateWatcher::
-    OnCertificatesChanged(std::optional<absl::string_view> root_certs,
-                          std::optional<PemKeyCertPairList> key_cert_pairs) {
+    OnCertificatesChanged(
+        std::optional<
+            std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
+            roots,
+        std::optional<PemKeyCertPairList> key_cert_pairs) {
   CHECK_NE(security_connector_, nullptr);
+
+  auto visitor = absl::Overload{
+      [&](const absl::string_view& pem_root_certs) {
+        // NOLINTNEXTLINE: setting pem_roots_certs_ is held when calling lambda
+        security_connector_->pem_root_certs_ = std::string(pem_root_certs);
+      },
+      [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
+        // TODO(gtcooke94) add spiffe bundle logic
+        return;
+      },
+  };
   MutexLock lock(&security_connector_->mu_);
-  if (root_certs.has_value()) {
-    security_connector_->pem_root_certs_ = root_certs;
+  if (roots.has_value()) {
+    std::visit(visitor, *roots);
   }
   if (key_cert_pairs.has_value()) {
     security_connector_->pem_key_cert_pair_list_ = std::move(key_cert_pairs);

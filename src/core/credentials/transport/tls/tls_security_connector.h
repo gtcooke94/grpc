@@ -115,7 +115,9 @@ class TlsChannelSecurityConnector final
         TlsChannelSecurityConnector* security_connector)
         : security_connector_(security_connector) {}
     void OnCertificatesChanged(
-        std::optional<absl::string_view> root_certs,
+        std::optional<
+            std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
+            root_certs,
         std::optional<PemKeyCertPairList> key_cert_pairs) override;
     void OnError(grpc_error_handle root_cert_error,
                  grpc_error_handle identity_cert_error) override;
@@ -225,7 +227,9 @@ class TlsServerSecurityConnector final : public grpc_server_security_connector {
         TlsServerSecurityConnector* security_connector)
         : security_connector_(security_connector) {}
     void OnCertificatesChanged(
-        std::optional<absl::string_view> root_certs,
+        std::optional<
+            std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
+            roots,
         std::optional<PemKeyCertPairList> key_cert_pairs) override;
 
     void OnError(grpc_error_handle root_cert_error,

@@ -30,6 +30,7 @@
 #include "absl/log/check.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "spiffe_utils.h"
 #include "src/core/credentials/transport/tls/grpc_tls_certificate_distributor.h"
 #include "src/core/credentials/transport/tls/ssl_utils.h"
 #include "src/core/util/ref_counted.h"
@@ -197,6 +198,7 @@ class FileWatcherCertificateProvider final
   // attempt failed.
   std::string root_certificate_ ABSL_GUARDED_BY(mu_);
   PemKeyCertPairList pem_key_cert_pairs_ ABSL_GUARDED_BY(mu_);
+  SpiffeBundleMap spiffe_bundle_map_ ABSL_GUARDED_BY(mu_);
   // Stores each cert_name we get from the distributor callback and its watcher
   // information.
   std::map<std::string, WatcherInfo> watcher_info_ ABSL_GUARDED_BY(mu_);
