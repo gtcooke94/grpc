@@ -60,6 +60,12 @@ constexpr absl::string_view kSpiffeBundleMapPath =
     "test/core/credentials/transport/tls/test_data/spiffe/"
     "client_spiffebundle.json";
 
+std::shared_ptr<SpiffeBundleMap> GetTestSpiffeBundleMap() {
+  auto map = SpiffeBundleMap::FromFile(kSpiffeBundleMapPath);
+  EXPECT_TRUE(map.ok()) << map.status();
+  return std::make_shared<SpiffeBundleMap>(*map);
+}
+
 class GrpcTlsCertificateDistributorTest : public ::testing::Test {
  protected:
   // Forward declaration.
@@ -144,18 +150,10 @@ class GrpcTlsCertificateDistributorTest : public ::testing::Test {
             std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
             roots,
         std::optional<PemKeyCertPairList> key_cert_pairs) override {
-      std::string updated_root;
+      std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>
+          updated_root;
       if (roots.has_value()) {
-        auto visitor = absl::Overload{
-            [&](const absl::string_view& pem_root_certs) {
-              updated_root = pem_root_certs;
-            },
-            [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
-              // TODO(gtcooke94)
-              // cert_info.roots = spiffe_bundle_map;
-            },
-        };
-        std::visit(visitor, *roots);
+        updated_root = *roots;
       }
       PemKeyCertPairList updated_identity;
       if (key_cert_pairs.has_value()) {
@@ -941,6 +939,24 @@ TEST_F(GrpcTlsCertificateDistributorTest, SetErrorForCertInCallback) {
   for (auto& th : threads) {
     th.join();
   }
+}
+
+TEST_F(GrpcTlsCertificateDistributorTest,
+       BasicCredentialBehaviorsWithSpiffeRoot) {
+  EXPECT_FALSE(distributor_.HasRootCerts(kRootCert1Name));
+  EXPECT_FALSE(distributor_.HasKeyCertPairs(kIdentityCert1Name));
+  // After setting the certificates to the corresponding cert names, the
+  // distributor should possess the corresponding certs.
+  distributor_.SetKeyMaterials(kRootCert1Name, GetTestSpiffeBundleMap(),
+                               std::nullopt);
+  EXPECT_TRUE(distributor_.HasRootCerts(kRootCert1Name));
+  distributor_.SetKeyMaterials(
+      kIdentityCert1Name, std::nullopt,
+      MakeCertKeyPairs(kIdentityCert1PrivateKey, kIdentityCert1Contents));
+  EXPECT_TRUE(distributor_.HasKeyCertPairs(kIdentityCert1Name));
+  // Querying a non-existing cert name should return false.
+  EXPECT_FALSE(distributor_.HasRootCerts(kRootCert2Name));
+  EXPECT_FALSE(distributor_.HasKeyCertPairs(kIdentityCert2Name));
 }
 
 }  // namespace

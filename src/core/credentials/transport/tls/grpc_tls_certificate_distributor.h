@@ -28,6 +28,7 @@
 #include <utility>
 
 #include "absl/base/thread_annotations.h"
+#include "absl/functional/overload.h"
 #include "absl/strings/string_view.h"
 #include "src/core/credentials/transport/tls/spiffe_utils.h"
 #include "src/core/credentials/transport/tls/ssl_utils.h"
@@ -178,7 +179,7 @@ struct grpc_tls_certificate_distributor
   // root certs, while pem_root_certs still contains the valid old data.
   struct CertificateInfo {
     // The contents of the root certificates.
-    std::string pem_root_certs;
+    // std::string pem_root_certs;
     // The contents of the root certificates.
     std::variant<std::string, std::shared_ptr<grpc_core::SpiffeBundleMap>>
         roots;
@@ -202,6 +203,12 @@ struct grpc_tls_certificate_distributor
     void SetIdentityError(grpc_error_handle error) {
       identity_cert_error = error;
     }
+
+    std::variant<absl::string_view, std::shared_ptr<grpc_core::SpiffeBundleMap>>
+    GetRoots();
+
+    // Returns if the variant contains either "" or an empty SpiffeBundleMap
+    bool AreRootsEmpty();
   };
 
   grpc_core::Mutex mu_;
@@ -212,8 +219,8 @@ struct grpc_tls_certificate_distributor
   // Stores information about each watcher.
   std::map<TlsCertificatesWatcherInterface*, WatcherInfo> watchers_
       ABSL_GUARDED_BY(mu_);
-  // The callback to notify the caller, e.g. the Producer, that the watch status
-  // is changed.
+  // The callback to notify the caller, e.g. the Producer, that the watch
+  // status is changed.
   std::function<void(std::string, bool, bool)> watch_status_callback_
       ABSL_GUARDED_BY(callback_mu_);
   // Stores the names of each certificate, and their corresponding credential
