@@ -25,6 +25,7 @@
 #include <string>
 #include <thread>
 
+#include "absl/functional/overload.h"
 #include "absl/log/check.h"
 #include "gmock/gmock.h"
 #include "src/core/lib/slice/slice_internal.h"
@@ -35,6 +36,10 @@
 namespace grpc_core {
 
 namespace testing {
+
+namespace {
+
+using ::testing::VariantWith;
 
 constexpr const char* kCertName1 = "cert_1_name";
 constexpr const char* kCertName2 = "cert_2_name";
@@ -51,6 +56,9 @@ constexpr const char* kIdentityCert2Contents = "identity_cert_2_contents";
 constexpr const char* kErrorMessage = "error_message";
 constexpr const char* kRootErrorMessage = "root_error_message";
 constexpr const char* kIdentityErrorMessage = "identity_error_message";
+constexpr absl::string_view kSpiffeBundleMapPath =
+    "test/core/credentials/transport/tls/test_data/spiffe/"
+    "client_spiffebundle.json";
 
 class GrpcTlsCertificateDistributorTest : public ::testing::Test {
  protected:
@@ -63,11 +71,27 @@ class GrpcTlsCertificateDistributorTest : public ::testing::Test {
   // if the status updates are correct.
   struct CredentialInfo {
     std::string root_certs;
+    SpiffeBundleMap spiffe_bundle_map;
     PemKeyCertPairList key_cert_pairs;
-    CredentialInfo(std::string root, PemKeyCertPairList key_cert)
-        : root_certs(std::move(root)), key_cert_pairs(std::move(key_cert)) {}
+    // CredentialInfo(std::string root, PemKeyCertPairList key_cert)
+    //     : root_certs(std::move(root)), key_cert_pairs(std::move(key_cert)) {}
+    CredentialInfo(
+        std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>> roots,
+        PemKeyCertPairList key_cert)
+        : key_cert_pairs(std::move(key_cert)) {
+      auto visitor = absl::Overload{
+          [&](const absl::string_view& pem_root_certs) {
+            root_certs = pem_root_certs;
+          },
+          [&](const std::shared_ptr<grpc_core::SpiffeBundleMap>& bundle_map) {
+            spiffe_bundle_map = std::move(*bundle_map);
+          },
+      };
+      std::visit(visitor, roots);
+    }
     bool operator==(const CredentialInfo& other) const {
-      return root_certs == other.root_certs &&
+      return (root_certs == other.root_certs ||
+              spiffe_bundle_map == other.spiffe_bundle_map) &&
              key_cert_pairs == other.key_cert_pairs;
     }
   };
@@ -116,11 +140,22 @@ class GrpcTlsCertificateDistributorTest : public ::testing::Test {
     ~TlsCertificatesTestWatcher() override { state_->watcher = nullptr; }
 
     void OnCertificatesChanged(
-        std::optional<absl::string_view> root_certs,
+        std::optional<
+            std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
+            roots,
         std::optional<PemKeyCertPairList> key_cert_pairs) override {
       std::string updated_root;
-      if (root_certs.has_value()) {
-        updated_root = std::string(*root_certs);
+      if (roots.has_value()) {
+        auto visitor = absl::Overload{
+            [&](const absl::string_view& pem_root_certs) {
+              updated_root = pem_root_certs;
+            },
+            [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
+              // TODO(gtcooke94)
+              // cert_info.roots = spiffe_bundle_map;
+            },
+        };
+        std::visit(visitor, *roots);
       }
       PemKeyCertPairList updated_identity;
       if (key_cert_pairs.has_value()) {
@@ -908,8 +943,8 @@ TEST_F(GrpcTlsCertificateDistributorTest, SetErrorForCertInCallback) {
   }
 }
 
+}  // namespace
 }  // namespace testing
-
 }  // namespace grpc_core
 
 int main(int argc, char** argv) {

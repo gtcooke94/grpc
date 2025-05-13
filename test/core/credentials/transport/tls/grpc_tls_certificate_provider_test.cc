@@ -83,7 +83,8 @@ class GrpcTlsCertificateProviderTest : public ::testing::Test {
     }
     bool operator==(const CredentialInfo& other) const {
       return root_certs == other.root_certs &&
-             key_cert_pairs == other.key_cert_pairs;
+             key_cert_pairs == other.key_cert_pairs &&
+             spiffe_bundle_map == other.spiffe_bundle_map;
     }
   };
 
