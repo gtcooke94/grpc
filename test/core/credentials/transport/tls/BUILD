@@ -117,6 +117,7 @@ grpc_cc_test(
     srcs = ["grpc_tls_certificate_distributor_test.cc"],
     data = [
         "//test/core/credentials/transport/tls/test_data:spiffe/client_spiffebundle.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle.json",
     ],
     external_deps = [
         "absl/log:check",
