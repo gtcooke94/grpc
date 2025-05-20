@@ -303,7 +303,12 @@ void FileWatcherCertificateProvider::ForceUpdate() {
   // TODO(gtcooke94) impl spiffe bundle loading - working here now
   // If the SPIFFE bundle map is set, use it over the root cert
   if (!spiffe_bundle_map_path_.empty()) {
-    auto spiffe_bundle_map = SpiffeBundleMap::FromFile(spiffe_bundle_map_path_);
+    auto map = SpiffeBundleMap::FromFile(spiffe_bundle_map_path_);
+    if (!map.ok()) {
+      // TODO(gtcooke94) error?
+    } else {
+      spiffe_bundle_map = *map;
+    }
   } else if (!root_cert_path_.empty()) {
     root_certificate = ReadRootCertificatesFromFile(root_cert_path_);
   }
@@ -350,16 +355,20 @@ void FileWatcherCertificateProvider::ForceUpdate() {
     for (const auto& p : watcher_info_) {
       const std::string& cert_name = p.first;
       const WatcherInfo& info = p.second;
-      std::optional<std::string> root_to_report;
+      std::optional<
+          std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
+          root_to_report;
       std::optional<PemKeyCertPairList> identity_to_report;
-      std::optional<SpiffeBundleMap> spiffe_bundle_map_to_report;
+      // std::optional<SpiffeBundleMap> spiffe_bundle_map_to_report;
       // Set key materials to the distributor if their contents changed.
+      // TODO(gtcooke94) test failing, figure out where something isn't getting
+      // through
       if (info.root_being_watched && spiffe_bundle_map_.size() != 0 &&
           spiffe_bundle_map_changed) {
-        spiffe_bundle_map_to_report = spiffe_bundle_map_;
-      }
-      if (info.root_being_watched && !root_certificate_.empty() &&
-          root_cert_changed) {
+        root_to_report = std::make_shared<SpiffeBundleMap>(spiffe_bundle_map_);
+        // spiffe_bundle_map_to_report = spiffe_bundle_map_;
+      } else if (info.root_being_watched && !root_certificate_.empty() &&
+                 root_cert_changed) {
         root_to_report = root_certificate_;
       }
       if (info.identity_being_watched && !pem_key_cert_pairs_.empty() &&

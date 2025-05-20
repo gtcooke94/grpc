@@ -23,6 +23,7 @@
 #include <deque>
 #include <list>
 
+#include "absl/base/no_destructor.h"
 #include "absl/functional/overload.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
@@ -46,6 +47,23 @@
 namespace grpc_core {
 
 namespace testing {
+
+namespace {
+constexpr absl::string_view kGoodSpiffeBundleMapPath =
+    "test/core/credentials/transport/tls/test_data/spiffe/"
+    "client_spiffebundle.json";
+}
+
+const std::shared_ptr<SpiffeBundleMap> GetGoodSpiffeBundleMap() {
+  static const absl::NoDestructor<std::shared_ptr<SpiffeBundleMap>>
+      kSpiffeBundleMap([] {
+        auto spiffe_bundle_map =
+            SpiffeBundleMap::FromFile(kGoodSpiffeBundleMapPath);
+        EXPECT_TRUE(spiffe_bundle_map.ok());
+        return std::make_shared<SpiffeBundleMap>(*spiffe_bundle_map);
+      }());
+  return *kSpiffeBundleMap;
+}
 
 constexpr const char* kCertName = "cert_name";
 constexpr const char* kRootError = "Unable to get latest root certificates.";
@@ -634,6 +652,37 @@ TEST_F(GrpcTlsCertificateProviderTest, FailedKeyCertMatchOnInvalidPair) {
       PrivateKeyAndCertificateMatch(private_key_2_, cert_chain_);
   EXPECT_TRUE(status.ok());
   EXPECT_FALSE(*status);
+}
+
+TEST_F(GrpcTlsCertificateProviderTest,
+       SpiffeFileWatcherCertificateProviderWithGoodPaths) {
+  FileWatcherCertificateProvider provider(
+      SERVER_KEY_PATH, SERVER_CERT_PATH, CA_CERT_PATH,
+      std::string(kGoodSpiffeBundleMapPath), 1);
+  // Watcher watching both root and identity certs.
+  WatcherState* watcher_state_1 =
+      MakeWatcher(provider.distributor(), kCertName, kCertName);
+  EXPECT_THAT(
+      watcher_state_1->GetCredentialQueue(),
+      ::testing::ElementsAre(CredentialInfo(
+          GetGoodSpiffeBundleMap(),
+          MakeCertKeyPairs(private_key_.c_str(), cert_chain_.c_str()))));
+  CancelWatch(watcher_state_1);
+  // Watcher watching only root certs.
+  WatcherState* watcher_state_2 =
+      MakeWatcher(provider.distributor(), kCertName, std::nullopt);
+  EXPECT_THAT(
+      watcher_state_2->GetCredentialQueue(),
+      ::testing::ElementsAre(CredentialInfo(GetGoodSpiffeBundleMap(), {})));
+  CancelWatch(watcher_state_2);
+  // Watcher watching only identity certs.
+  WatcherState* watcher_state_3 =
+      MakeWatcher(provider.distributor(), std::nullopt, kCertName);
+  EXPECT_THAT(
+      watcher_state_3->GetCredentialQueue(),
+      ::testing::ElementsAre(CredentialInfo(
+          "", MakeCertKeyPairs(private_key_.c_str(), cert_chain_.c_str()))));
+  CancelWatch(watcher_state_3);
 }
 
 }  // namespace testing
