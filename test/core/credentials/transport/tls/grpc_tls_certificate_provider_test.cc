@@ -60,7 +60,7 @@ const std::shared_ptr<SpiffeBundleMap> GetGoodSpiffeBundleMap() {
         auto spiffe_bundle_map =
             SpiffeBundleMap::FromFile(kGoodSpiffeBundleMapPath);
         EXPECT_TRUE(spiffe_bundle_map.ok());
-        return std::make_shared<SpiffeBundleMap>(*spiffe_bundle_map);
+        return *spiffe_bundle_map;
       }());
   return *kSpiffeBundleMap;
 }

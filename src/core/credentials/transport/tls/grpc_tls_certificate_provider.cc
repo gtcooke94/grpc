@@ -298,7 +298,7 @@ absl::Status FileWatcherCertificateProvider::ValidateCredentials() const {
 
 void FileWatcherCertificateProvider::ForceUpdate() {
   std::optional<std::string> root_certificate;
-  std::optional<SpiffeBundleMap> spiffe_bundle_map;
+  std::optional<std::shared_ptr<SpiffeBundleMap>> spiffe_bundle_map;
   std::optional<PemKeyCertPairList> pem_key_cert_pairs;
   // TODO(gtcooke94) impl spiffe bundle loading - working here now
   // If the SPIFFE bundle map is set, use it over the root cert
@@ -320,9 +320,8 @@ void FileWatcherCertificateProvider::ForceUpdate() {
   // TODO(gtcooke94) Will we change with roots, or separate var here for spiffe
   // bundle map
   const bool spiffe_bundle_map_changed =
-      (!spiffe_bundle_map.has_value() && !(spiffe_bundle_map_.size() == 0)) ||
-      (spiffe_bundle_map.has_value() &&
-       spiffe_bundle_map_ != *spiffe_bundle_map);
+      spiffe_bundle_map.has_value() && (*spiffe_bundle_map)->size() != 0 &&
+      spiffe_bundle_map_ != *spiffe_bundle_map;
   const bool root_cert_changed =
       (!root_certificate.has_value() && !root_certificate_.empty()) ||
       (root_certificate.has_value() && root_certificate_ != *root_certificate);
@@ -363,9 +362,8 @@ void FileWatcherCertificateProvider::ForceUpdate() {
       // Set key materials to the distributor if their contents changed.
       // TODO(gtcooke94) test failing, figure out where something isn't getting
       // through
-      if (info.root_being_watched && spiffe_bundle_map_.size() != 0 &&
-          spiffe_bundle_map_changed) {
-        root_to_report = std::make_shared<SpiffeBundleMap>(spiffe_bundle_map_);
+      if (info.root_being_watched && spiffe_bundle_map_changed) {
+        root_to_report = spiffe_bundle_map_;
         // spiffe_bundle_map_to_report = spiffe_bundle_map_;
       } else if (info.root_being_watched && !root_certificate_.empty() &&
                  root_cert_changed) {

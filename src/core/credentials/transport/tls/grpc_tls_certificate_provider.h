@@ -198,7 +198,7 @@ class FileWatcherCertificateProvider final
   // attempt failed.
   std::string root_certificate_ ABSL_GUARDED_BY(mu_);
   PemKeyCertPairList pem_key_cert_pairs_ ABSL_GUARDED_BY(mu_);
-  SpiffeBundleMap spiffe_bundle_map_ ABSL_GUARDED_BY(mu_);
+  std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map_ ABSL_GUARDED_BY(mu_);
   // Stores each cert_name we get from the distributor callback and its watcher
   // information.
   std::map<std::string, WatcherInfo> watcher_info_ ABSL_GUARDED_BY(mu_);
