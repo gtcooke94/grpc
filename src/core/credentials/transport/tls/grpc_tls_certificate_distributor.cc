@@ -23,7 +23,7 @@
 #include "absl/functional/overload.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
-#include "spiffe_utils.h"
+#include "src/core/credentials/transport/tls/spiffe_utils.h"
 
 std::variant<absl::string_view, std::shared_ptr<grpc_core::SpiffeBundleMap>>
 grpc_tls_certificate_distributor::CertificateInfo::GetRoots() {
