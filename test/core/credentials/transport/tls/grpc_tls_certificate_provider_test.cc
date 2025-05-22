@@ -856,40 +856,43 @@ TEST_F(
   CancelWatch(watcher_state_1);
 }
 
-// TEST_F(GrpcTlsCertificateProviderTest,
-//        FileWatcherCertificateProviderWithGoodAtFirstThenDeletedBothCerts) {
-//   // Create temporary files and copy cert data into it.
-//   auto tmp_root_cert = std::make_unique<TmpFile>(root_cert_);
-//   auto tmp_identity_key = std::make_unique<TmpFile>(private_key_);
-//   auto tmp_identity_cert = std::make_unique<TmpFile>(cert_chain_);
-//   // Create FileWatcherCertificateProvider.
-//   FileWatcherCertificateProvider provider(tmp_identity_key->name(),
-//                                           tmp_identity_cert->name(),
-//                                           tmp_root_cert->name(), 1);
-//   WatcherState* watcher_state_1 =
-//       MakeWatcher(provider.distributor(), kCertName, kCertName);
-//   // The initial data is all good, so we expect to have successful credential
-//   // updates.
-//   EXPECT_THAT(watcher_state_1->GetCredentialQueue(),
-//               ::testing::ElementsAre(CredentialInfo(
-//                   root_cert_, MakeCertKeyPairs(private_key_.c_str(),
-//                                                cert_chain_.c_str()))));
-//   // Delete TmpFile objects, which will remove the corresponding files.
-//   tmp_root_cert.reset();
-//   tmp_identity_key.reset();
-//   tmp_identity_cert.reset();
-//   // Wait 2 seconds for the provider's refresh thread to read the deleted
-//   files. gpr_sleep_until(gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC),
-//                                gpr_time_from_seconds(2, GPR_TIMESPAN)));
-//   // Expect to see errors sent to watchers, and no credential updates.
-//   // We have no ideas on how many errors we will receive, so we only check
-//   once. EXPECT_THAT(watcher_state_1->GetErrorQueue(),
-//               ::testing::Contains(ErrorInfo(kRootError, kIdentityError)));
-//   EXPECT_THAT(watcher_state_1->GetCredentialQueue(),
-//   ::testing::ElementsAre());
-//   // Clean up.
-//   CancelWatch(watcher_state_1);
-// }
+TEST_F(
+    GrpcTlsCertificateProviderTest,
+    SpiffeFileWatcherCertificateProviderWithGoodAtFirstThenDeletedBothCertsAndSpiffe) {
+  // Create temporary files and copy cert data into it.
+  auto tmp_spiffe_bundle_map =
+      std::make_unique<TmpFile>(spiffe_bundle_contents_);
+  auto tmp_identity_key = std::make_unique<TmpFile>(private_key_);
+  auto tmp_identity_cert = std::make_unique<TmpFile>(cert_chain_);
+  // Create FileWatcherCertificateProvider.
+  FileWatcherCertificateProvider provider(
+      tmp_identity_key->name(), tmp_identity_cert->name(),
+      /*root_cert_path=*/"", tmp_spiffe_bundle_map->name(),
+      /*refresh_interval_sec=*/1);
+  WatcherState* watcher_state_1 =
+      MakeWatcher(provider.distributor(), kCertName, kCertName);
+  // The initial data is all good, so we expect to have successful credential
+  // updates.
+  EXPECT_THAT(
+      watcher_state_1->GetCredentialQueue(),
+      ::testing::ElementsAre(CredentialInfo(
+          GetGoodSpiffeBundleMap(),
+          MakeCertKeyPairs(private_key_.c_str(), cert_chain_.c_str()))));
+  // Delete TmpFile objects, which will remove the corresponding files.
+  tmp_spiffe_bundle_map.reset();
+  tmp_identity_key.reset();
+  tmp_identity_cert.reset();
+  // Wait 2 seconds for the provider's refresh thread to read the deleted files.
+  gpr_sleep_until(gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC),
+                               gpr_time_from_seconds(2, GPR_TIMESPAN)));
+  // Expect to see errors sent to watchers, and no credential updates.
+  // We have no ideas on how many errors we will receive, so we only check once.
+  EXPECT_THAT(watcher_state_1->GetErrorQueue(),
+              ::testing::Contains(ErrorInfo(kRootError, kIdentityError)));
+  EXPECT_THAT(watcher_state_1->GetCredentialQueue(), ::testing::ElementsAre());
+  // Clean up.
+  CancelWatch(watcher_state_1);
+}
 
 }  // namespace testing
 }  // namespace grpc_core
