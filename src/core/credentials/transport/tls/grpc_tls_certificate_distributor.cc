@@ -23,7 +23,7 @@
 #include "absl/functional/overload.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
-#include "spiffe_utils.h"
+#include "src/core/credentials/transport/tls/spiffe_utils.h"
 
 std::variant<absl::string_view, std::shared_ptr<grpc_core::SpiffeBundleMap>>
 grpc_tls_certificate_distributor::CertificateInfo::GetRoots() {
@@ -114,12 +114,12 @@ void grpc_tls_certificate_distributor::SetKeyMaterials(
       } else if (watcher_it->second.root_cert_name.has_value()) {
         auto root_cert_info =
             certificate_info_map_.find(*watcher_it->second.root_cert_name);
-        if (root_cert_info != certificate_info_map_.end() && !root_cert_info->second.AreRootsEmpty()) {
+        if (root_cert_info != certificate_info_map_.end() &&
+            !root_cert_info->second.AreRootsEmpty()) {
           roots_to_report = root_cert_info->second.GetRoots();
         }
       }
-      watcher_ptr->OnCertificatesChanged(roots_to_report,
-                                         pem_key_cert_pairs);
+      watcher_ptr->OnCertificatesChanged(roots_to_report, pem_key_cert_pairs);
     }
     cert_info.pem_key_cert_pairs = std::move(*pem_key_cert_pairs);
   }
