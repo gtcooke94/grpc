@@ -185,12 +185,12 @@ FileWatcherCertificateProvider::FileWatcherCertificateProvider(
 
 FileWatcherCertificateProvider::FileWatcherCertificateProvider(
     std::string private_key_path, std::string identity_certificate_path,
-    std::string root_cert_path, std::string spiffe_bundle_map_path,
+    std::string root_cert_path, absl::string_view spiffe_bundle_map_path,
     int64_t refresh_interval_sec)
     : private_key_path_(std::move(private_key_path)),
       identity_certificate_path_(std::move(identity_certificate_path)),
       root_cert_path_(std::move(root_cert_path)),
-      spiffe_bundle_map_path_(std::move(spiffe_bundle_map_path)),
+      spiffe_bundle_map_path_(spiffe_bundle_map_path),
       refresh_interval_sec_(refresh_interval_sec),
       distributor_(MakeRefCounted<grpc_tls_certificate_distributor>()) {
   if (refresh_interval_sec_ < kMinimumFileWatcherRefreshIntervalSeconds) {
@@ -298,7 +298,11 @@ absl::Status FileWatcherCertificateProvider::ValidateCredentials() const {
       return status;
     }
   }
-  return absl::OkStatus();
+  // Validation of the SPIFFE Bundle happens when it is loaded from JSON, but
+  // the ctor of FileWatcherCertificateProvider doesn't allow for that error to
+  // bubble up. Do that here. If there is no bad status, the default of Ok will
+  // be passed up
+  return initial_spiffe_load_status_;
 }
 
 void FileWatcherCertificateProvider::ForceUpdate() {
@@ -309,10 +313,11 @@ void FileWatcherCertificateProvider::ForceUpdate() {
   // If the SPIFFE bundle map is set, use it over the root cert
   if (!spiffe_bundle_map_path_.empty()) {
     auto map = SpiffeBundleMap::FromFile(spiffe_bundle_map_path_);
-    if (!map.ok()) {
-      // TODO(gtcooke94) error?
-    } else {
+    if (map.ok()) {
       spiffe_bundle_map = *map;
+      initial_spiffe_load_status_ = absl::OkStatus();
+    } else {
+      initial_spiffe_load_status_ = map.status();
     }
   } else if (!root_cert_path_.empty()) {
     root_certificate = ReadRootCertificatesFromFile(root_cert_path_);

@@ -52,6 +52,10 @@ namespace {
 constexpr absl::string_view kGoodSpiffeBundleMapPath =
     "test/core/credentials/transport/tls/test_data/spiffe/"
     "client_spiffebundle.json";
+
+constexpr absl::string_view kMalformedSpiffeBundleMapPath =
+    "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+    "spiffebundle_malformed.json";
 }
 
 const std::shared_ptr<SpiffeBundleMap> GetGoodSpiffeBundleMap() {
@@ -662,9 +666,9 @@ TEST_F(GrpcTlsCertificateProviderTest, FailedKeyCertMatchOnInvalidPair) {
 
 TEST_F(GrpcTlsCertificateProviderTest,
        SpiffeFileWatcherCertificateProviderWithGoodPaths) {
-  FileWatcherCertificateProvider provider(
-      SERVER_KEY_PATH, SERVER_CERT_PATH, CA_CERT_PATH,
-      std::string(kGoodSpiffeBundleMapPath), 1000);
+  FileWatcherCertificateProvider provider(SERVER_KEY_PATH, SERVER_CERT_PATH,
+                                          CA_CERT_PATH,
+                                          kGoodSpiffeBundleMapPath, 1);
   // Watcher watching both root and identity certs.
   WatcherState* watcher_state_1 =
       MakeWatcher(provider.distributor(), kCertName, kCertName);
@@ -689,6 +693,34 @@ TEST_F(GrpcTlsCertificateProviderTest,
       ::testing::ElementsAre(CredentialInfo(
           "", MakeCertKeyPairs(private_key_.c_str(), cert_chain_.c_str()))));
   CancelWatch(watcher_state_3);
+}
+
+TEST_F(
+    GrpcTlsCertificateProviderTest,
+    SpiffeFileWatcherCertificateProviderWithGoodPathsAndCredentialValidation) {
+  FileWatcherCertificateProvider provider(SERVER_KEY_PATH, SERVER_CERT_PATH,
+                                          CA_CERT_PATH,
+                                          kGoodSpiffeBundleMapPath, 1);
+  EXPECT_EQ(provider.ValidateCredentials(), absl::OkStatus());
+}
+
+TEST_F(GrpcTlsCertificateProviderTest,
+       SpiffeFileWatcherCertificateProviderWithMissingSpiffeBundlePath) {
+  FileWatcherCertificateProvider provider(SERVER_KEY_PATH_2, SERVER_CERT_PATH_2,
+                                          CA_CERT_PATH, INVALID_PATH, 1);
+  EXPECT_EQ(provider.ValidateCredentials(),
+            absl::InternalError("Failed to load file: invalid/path due to "
+                                "error(fdopen): No such file or directory"));
+}
+
+TEST_F(GrpcTlsCertificateProviderTest,
+       SpiffeFileWatcherCertificateProviderWithMalformedSpiffeBundlePath) {
+  FileWatcherCertificateProvider provider(SERVER_KEY_PATH_2, SERVER_CERT_PATH_2,
+                                          CA_CERT_PATH,
+                                          kMalformedSpiffeBundleMapPath, 1);
+  EXPECT_EQ(provider.ValidateCredentials(),
+            absl::InvalidArgumentError(
+                "errors validating JSON: [field: error:is not an object]"));
 }
 
 }  // namespace testing

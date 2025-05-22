@@ -143,7 +143,7 @@ class FileWatcherCertificateProvider final
   FileWatcherCertificateProvider(std::string private_key_path,
                                  std::string identity_certificate_path,
                                  std::string root_cert_path,
-                                 std::string spiffe_bundle_map_path,
+                                 absl::string_view spiffe_bundle_map_path,
                                  int64_t refresh_interval_sec);
 
   ~FileWatcherCertificateProvider() override;
@@ -187,6 +187,7 @@ class FileWatcherCertificateProvider final
   std::string root_cert_path_;
   std::string spiffe_bundle_map_path_;
   int64_t refresh_interval_sec_ = 0;
+  absl::Status initial_spiffe_load_status_;
 
   RefCountedPtr<grpc_tls_certificate_distributor> distributor_;
   Thread refresh_thread_;
