@@ -317,6 +317,7 @@ void FileWatcherCertificateProvider::ForceUpdate() {
       spiffe_bundle_map = *map;
       initial_spiffe_load_status_ = absl::OkStatus();
     } else {
+      spiffe_bundle_map = std::nullopt;
       initial_spiffe_load_status_ = map.status();
     }
   } else if (!root_cert_path_.empty()) {
@@ -327,18 +328,30 @@ void FileWatcherCertificateProvider::ForceUpdate() {
         private_key_path_, identity_certificate_path_);
   }
   MutexLock lock(&mu_);
-  // TODO(gtcooke94) Will we change with roots, or separate var here for spiffe
-  // bundle map
-  // Handle unsetting as well? I think root_cert doesn't properly handle it
-  // right now
+
+  // If the update has no value, but the existing map exists, then the update is
+  // a delete
+  const bool is_spiffe_bundle_update_a_delete =
+      !spiffe_bundle_map.has_value() && spiffe_bundle_map_ != nullptr &&
+      spiffe_bundle_map_->size() != 0;
+  // If the update has a value, see if the existing map is nullptr OR has a
+  // different value than the update.
+  const bool did_spiffe_bundle_update_change_value =
+      spiffe_bundle_map.has_value() &&
+      (spiffe_bundle_map_ == nullptr ||
+       spiffe_bundle_map_ != *spiffe_bundle_map);
+  // If either of the above cases are true, the spiffe bundle map changed
   const bool spiffe_bundle_map_changed =
-      spiffe_bundle_map.has_value() && (*spiffe_bundle_map)->size() != 0 &&
-      spiffe_bundle_map_ != *spiffe_bundle_map;
+      is_spiffe_bundle_update_a_delete || did_spiffe_bundle_update_change_value;
   const bool root_cert_changed =
       (!root_certificate.has_value() && !root_certificate_.empty()) ||
       (root_certificate.has_value() && root_certificate_ != *root_certificate);
   if (spiffe_bundle_map_changed) {
-    spiffe_bundle_map_ = std::move(*spiffe_bundle_map);
+    if (spiffe_bundle_map.has_value()) {
+      spiffe_bundle_map_ = std::move(*spiffe_bundle_map);
+    } else {
+      spiffe_bundle_map_ = nullptr;
+    }
   } else if (root_cert_changed) {
     if (root_certificate.has_value()) {
       root_certificate_ = std::move(*root_certificate);
@@ -363,8 +376,6 @@ void FileWatcherCertificateProvider::ForceUpdate() {
         GRPC_ERROR_CREATE("Unable to get latest root certificates.");
     grpc_error_handle identity_cert_error =
         GRPC_ERROR_CREATE("Unable to get latest identity certificates.");
-    grpc_error_handle spiffe_bundle_map_error =
-        GRPC_ERROR_CREATE("Unable to get latest spiffe bundle map.");
     for (const auto& p : watcher_info_) {
       const std::string& cert_name = p.first;
       const WatcherInfo& info = p.second;
@@ -372,13 +383,9 @@ void FileWatcherCertificateProvider::ForceUpdate() {
           std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
           root_to_report;
       std::optional<PemKeyCertPairList> identity_to_report;
-      // std::optional<SpiffeBundleMap> spiffe_bundle_map_to_report;
       // Set key materials to the distributor if their contents changed.
-      // TODO(gtcooke94) test failing, figure out where something isn't getting
-      // through
-      if (info.root_being_watched && spiffe_bundle_map_changed) {
+      if (info.root_being_watched && spiffe_bundle_map_changed && spiffe_bundle_map_ != nullptr && spiffe_bundle_map_->size() != 0) {
         root_to_report = spiffe_bundle_map_;
-        // spiffe_bundle_map_to_report = spiffe_bundle_map_;
       } else if (info.root_being_watched && !root_certificate_.empty() &&
                  root_cert_changed) {
         root_to_report = root_certificate_;
@@ -394,10 +401,9 @@ void FileWatcherCertificateProvider::ForceUpdate() {
       // Report errors to the distributor if the contents are empty.
       bool report_root_error = false;
       if (!spiffe_bundle_map_path_.empty()) {
-        report_root_error = info.root_being_watched &&
-                            spiffe_bundle_map_ != nullptr &&
-                            spiffe_bundle_map_->size() != 0;
-        root_cert_error = spiffe_bundle_map_error;
+        report_root_error =
+            info.root_being_watched &&
+            (spiffe_bundle_map_ == nullptr || spiffe_bundle_map_->size() == 0);
       } else {
         report_root_error =
             info.root_being_watched && root_certificate_.empty();
