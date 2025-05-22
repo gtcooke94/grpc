@@ -392,8 +392,16 @@ void FileWatcherCertificateProvider::ForceUpdate() {
                                       std::move(identity_to_report));
       }
       // Report errors to the distributor if the contents are empty.
-      const bool report_root_error =
-          info.root_being_watched && root_certificate_.empty();
+      bool report_root_error = false;
+      if (!spiffe_bundle_map_path_.empty()) {
+        report_root_error = info.root_being_watched &&
+                            spiffe_bundle_map_ != nullptr &&
+                            spiffe_bundle_map_->size() != 0;
+        root_cert_error = spiffe_bundle_map_error;
+      } else {
+        report_root_error =
+            info.root_being_watched && root_certificate_.empty();
+      }
       const bool report_identity_error =
           info.identity_being_watched && pem_key_cert_pairs_.empty();
       if (report_root_error || report_identity_error) {
