@@ -230,7 +230,6 @@ void grpc_tls_certificate_distributor::WatchTlsCertificates(
   CHECK_NE(watcher_ptr, nullptr);
   // Update watchers_ and certificate_info_map_.
   {
-    // TODO(gtcooke94) also SpiffeBundleMap
     grpc_core::MutexLock lock(&mu_);
     const auto watcher_it = watchers_.find(watcher_ptr);
     // The caller needs to cancel the watcher first if it wants to re-register
@@ -240,7 +239,7 @@ void grpc_tls_certificate_distributor::WatchTlsCertificates(
                               identity_cert_name};
     std::optional<std::variant<absl::string_view,
                                std::shared_ptr<grpc_core::SpiffeBundleMap>>>
-        updated_root_certs;
+        updated_roots;
     std::optional<grpc_core::PemKeyCertPairList> updated_identity_pairs;
     grpc_error_handle root_error;
     grpc_error_handle identity_error;
@@ -256,7 +255,7 @@ void grpc_tls_certificate_distributor::WatchTlsCertificates(
       root_error = cert_info.root_cert_error;
       // Empty credentials will be treated as no updates.
       if (!cert_info.AreRootsEmpty()) {
-        updated_root_certs = cert_info.GetRoots();
+        updated_roots = cert_info.GetRoots();
       }
     }
     if (identity_cert_name.has_value()) {
@@ -276,12 +275,12 @@ void grpc_tls_certificate_distributor::WatchTlsCertificates(
     // occurred while trying to fetch the latest cert, but the updated_*_certs
     // should always be valid. So we will send the updates regardless of
     // *_cert_error.
-    if (updated_root_certs.has_value() || updated_identity_pairs.has_value()) {
+    if (updated_roots.has_value() || updated_identity_pairs.has_value()) {
       // std::optional<std::variant<absl::string_view,
       //                            std::shared_ptr<grpc_core::SpiffeBundleMap>>>
       //     roots;
 
-      watcher_ptr->OnCertificatesChanged(std::nullopt,
+      watcher_ptr->OnCertificatesChanged(updated_roots,
                                          std::move(updated_identity_pairs));
     }
     // Notify this watcher if the certs it is watching already had some

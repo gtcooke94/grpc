@@ -788,42 +788,41 @@ TEST_F(GrpcTlsCertificateProviderTest,
   CancelWatch(watcher_state_1);
 }
 
-// TEST_F(GrpcTlsCertificateProviderTest,
-//        SpiffeFileWatcherCertificateProviderOnSpiffeBundleMapRefreshed) {
-//   // Create temporary files and copy cert data into them.
-//   TmpFile tmp_root_cert(root_cert_);
-//   TmpFile tmp_identity_key(private_key_);
-//   TmpFile tmp_identity_cert(cert_chain_);
-//   TmpFile tmp_spiffe_bundle_map(spiffe_bundle_contents_);
-//   // Create FileWatcherCertificateProvider.
-//   FileWatcherCertificateProvider provider(
-//       tmp_identity_key.name(), tmp_identity_cert.name(),
-//       tmp_root_cert.name(), tmp_spiffe_bundle_map.name(), 1);
-//   WatcherState* watcher_state_1 =
-//       MakeWatcher(provider.distributor(), kCertName, kCertName);
-//   // Expect to see the credential data.
-//   EXPECT_THAT(
-//       watcher_state_1->GetCredentialQueue(),
-//       ::testing::ElementsAre(CredentialInfo(
-//           GetGoodSpiffeBundleMap(),
-//           MakeCertKeyPairs(private_key_.c_str(), cert_chain_.c_str()))));
-//   // Copy new data to files.
-//   // TODO(ZhenLian): right now it is not completely atomic. Use the real
-//   atomic
-//   // update when the directory renaming is added in gpr.
-//   tmp_spiffe_bundle_map.RewriteFile(spiffe_bundle_contents_2_);
-//   // Wait 2 seconds for the provider's refresh thread to read the updated
-//   files. gpr_sleep_until(gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC),
-//                                gpr_time_from_seconds(2, GPR_TIMESPAN)));
-//   // Expect to see the new credential data.
-//   EXPECT_THAT(
-//       watcher_state_1->GetCredentialQueue(),
-//       ::testing::ElementsAre(CredentialInfo(
-//           GetGoodSpiffeBundleMap2(),
-//           MakeCertKeyPairs(private_key_.c_str(), cert_chain_.c_str()))));
-//   // Clean up.
-//   CancelWatch(watcher_state_1);
-// }
+TEST_F(GrpcTlsCertificateProviderTest,
+       SpiffeFileWatcherCertificateProviderOnSpiffeBundleMapRefreshed) {
+  // Create temporary files and copy cert data into them.
+  TmpFile tmp_root_cert(root_cert_);
+  TmpFile tmp_identity_key(private_key_);
+  TmpFile tmp_identity_cert(cert_chain_);
+  TmpFile tmp_spiffe_bundle_map(spiffe_bundle_contents_);
+  // Create FileWatcherCertificateProvider.
+  FileWatcherCertificateProvider provider(
+      tmp_identity_key.name(), tmp_identity_cert.name(), tmp_root_cert.name(),
+      tmp_spiffe_bundle_map.name(), 1);
+  WatcherState* watcher_state_1 =
+      MakeWatcher(provider.distributor(), kCertName, kCertName);
+  // Expect to see the credential data.
+  EXPECT_THAT(
+      watcher_state_1->GetCredentialQueue(),
+      ::testing::ElementsAre(CredentialInfo(
+          GetGoodSpiffeBundleMap(),
+          MakeCertKeyPairs(private_key_.c_str(), cert_chain_.c_str()))));
+  // Copy new data to files.
+  // TODO(ZhenLian): right now it is not completely atomic. Use the real
+  // atomic update when the directory renaming is added in gpr.
+  tmp_spiffe_bundle_map.RewriteFile(spiffe_bundle_contents_2_);
+  // Wait 2 seconds for the provider's refresh thread to read the updated files.
+  gpr_sleep_until(gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC),
+                               gpr_time_from_seconds(2, GPR_TIMESPAN)));
+  // Expect to see the new credential data.
+  EXPECT_THAT(
+      watcher_state_1->GetCredentialQueue(),
+      ::testing::ElementsAre(CredentialInfo(
+          GetGoodSpiffeBundleMap2(),
+          MakeCertKeyPairs(private_key_.c_str(), cert_chain_.c_str()))));
+  // Clean up.
+  CancelWatch(watcher_state_1);
+}
 
 // TEST_F(
 //     GrpcTlsCertificateProviderTest,
