@@ -276,10 +276,6 @@ void grpc_tls_certificate_distributor::WatchTlsCertificates(
     // should always be valid. So we will send the updates regardless of
     // *_cert_error.
     if (updated_roots.has_value() || updated_identity_pairs.has_value()) {
-      // std::optional<std::variant<absl::string_view,
-      //                            std::shared_ptr<grpc_core::SpiffeBundleMap>>>
-      //     roots;
-
       watcher_ptr->OnCertificatesChanged(updated_roots,
                                          std::move(updated_identity_pairs));
     }

@@ -750,16 +750,15 @@ TEST_F(GrpcTlsCertificateProviderTest,
 // The following tests write credential data to temporary files to test the
 // transition behavior of the provider.
 TEST_F(GrpcTlsCertificateProviderTest,
-       SpiffeFileWatcherCertificateProviderOnBothCertsRefreshed) {
+       SpiffeFileWatcherCertificateProviderOnBothRefreshed) {
   // Create temporary files and copy cert data into them.
-  TmpFile tmp_root_cert(root_cert_);
   TmpFile tmp_identity_key(private_key_);
   TmpFile tmp_identity_cert(cert_chain_);
   TmpFile tmp_spiffe_bundle_map(spiffe_bundle_contents_);
   // Create FileWatcherCertificateProvider.
   FileWatcherCertificateProvider provider(
-      tmp_identity_key.name(), tmp_identity_cert.name(), tmp_root_cert.name(),
-      tmp_spiffe_bundle_map.name(), 1);
+      tmp_identity_key.name(), tmp_identity_cert.name(), /*root_cert_path=*/"",
+      tmp_spiffe_bundle_map.name(), /*refresh_interval_sec=*/1);
   WatcherState* watcher_state_1 =
       MakeWatcher(provider.distributor(), kCertName, kCertName);
   // Expect to see the credential data.
@@ -771,7 +770,6 @@ TEST_F(GrpcTlsCertificateProviderTest,
   // Copy new data to files.
   // TODO(ZhenLian): right now it is not completely atomic. Use the real atomic
   // update when the directory renaming is added in gpr.
-  tmp_root_cert.RewriteFile(root_cert_2_);
   tmp_identity_key.RewriteFile(private_key_2_);
   tmp_identity_cert.RewriteFile(cert_chain_2_);
   tmp_spiffe_bundle_map.RewriteFile(spiffe_bundle_contents_2_);
@@ -791,14 +789,13 @@ TEST_F(GrpcTlsCertificateProviderTest,
 TEST_F(GrpcTlsCertificateProviderTest,
        SpiffeFileWatcherCertificateProviderOnSpiffeBundleMapRefreshed) {
   // Create temporary files and copy cert data into them.
-  TmpFile tmp_root_cert(root_cert_);
   TmpFile tmp_identity_key(private_key_);
   TmpFile tmp_identity_cert(cert_chain_);
   TmpFile tmp_spiffe_bundle_map(spiffe_bundle_contents_);
   // Create FileWatcherCertificateProvider.
   FileWatcherCertificateProvider provider(
-      tmp_identity_key.name(), tmp_identity_cert.name(), tmp_root_cert.name(),
-      tmp_spiffe_bundle_map.name(), 1);
+      tmp_identity_key.name(), tmp_identity_cert.name(), /*root_cert_path=*/"",
+      tmp_spiffe_bundle_map.name(), /*refresh_interval_sec=*/1);
   WatcherState* watcher_state_1 =
       MakeWatcher(provider.distributor(), kCertName, kCertName);
   // Expect to see the credential data.
