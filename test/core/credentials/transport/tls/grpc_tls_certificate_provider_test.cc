@@ -81,7 +81,7 @@ class GrpcTlsCertificateProviderTest : public ::testing::Test {
   // if the status updates are correct.
   struct CredentialInfo {
     std::string root_certs;
-    SpiffeBundleMap spiffe_bundle_map;
+    std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map;
     PemKeyCertPairList key_cert_pairs;
     // CredentialInfo(std::string root, PemKeyCertPairList key_cert)
     //     : root_certs(std::move(root)), key_cert_pairs(std::move(key_cert)) {}
@@ -94,15 +94,21 @@ class GrpcTlsCertificateProviderTest : public ::testing::Test {
             root_certs = pem_root_certs;
           },
           [&](const std::shared_ptr<grpc_core::SpiffeBundleMap>& bundle_map) {
-            spiffe_bundle_map = std::move(*bundle_map);
+            spiffe_bundle_map = bundle_map;
           },
       };
       std::visit(visitor, roots);
     }
     bool operator==(const CredentialInfo& other) const {
+      bool spiffe_bundles_equal = false;
+      if (spiffe_bundle_map == nullptr && other.spiffe_bundle_map == nullptr) {
+        spiffe_bundles_equal = true;
+      } else if (spiffe_bundle_map != nullptr &&
+                 other.spiffe_bundle_map != nullptr) {
+        spiffe_bundles_equal = *spiffe_bundle_map == *other.spiffe_bundle_map;
+      }
       return root_certs == other.root_certs &&
-             key_cert_pairs == other.key_cert_pairs &&
-             spiffe_bundle_map == other.spiffe_bundle_map;
+             key_cert_pairs == other.key_cert_pairs && spiffe_bundles_equal;
     }
   };
 
@@ -658,7 +664,7 @@ TEST_F(GrpcTlsCertificateProviderTest,
        SpiffeFileWatcherCertificateProviderWithGoodPaths) {
   FileWatcherCertificateProvider provider(
       SERVER_KEY_PATH, SERVER_CERT_PATH, CA_CERT_PATH,
-      std::string(kGoodSpiffeBundleMapPath), 1);
+      std::string(kGoodSpiffeBundleMapPath), 1000);
   // Watcher watching both root and identity certs.
   WatcherState* watcher_state_1 =
       MakeWatcher(provider.distributor(), kCertName, kCertName);

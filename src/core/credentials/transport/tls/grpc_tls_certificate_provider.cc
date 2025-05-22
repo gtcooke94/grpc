@@ -200,6 +200,7 @@ FileWatcherCertificateProvider::FileWatcherCertificateProvider(
     refresh_interval_sec_ = kMinimumFileWatcherRefreshIntervalSeconds;
   }
   // Private key and identity cert files must be both set or both unset.
+  // TODO(gtcooke94) spiffe path
   CHECK(private_key_path_.empty() == identity_certificate_path_.empty());
   // Must be watching either root or identity certs.
   bool watching_root =
@@ -228,13 +229,18 @@ FileWatcherCertificateProvider::FileWatcherCertificateProvider(
                                               bool root_being_watched,
                                               bool identity_being_watched) {
     MutexLock lock(&mu_);
-    std::optional<std::string> root_certificate;
+    std::optional<
+        std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
+        roots;
     std::optional<PemKeyCertPairList> pem_key_cert_pairs;
     FileWatcherCertificateProvider::WatcherInfo& info =
         watcher_info_[cert_name];
-    if (!info.root_being_watched && root_being_watched &&
-        !root_certificate_.empty()) {
-      root_certificate = root_certificate_;
+    if (!info.root_being_watched && root_being_watched) {
+      if (spiffe_bundle_map_ != nullptr && spiffe_bundle_map_->size() != 0) {
+        roots = spiffe_bundle_map_;
+      } else if (!root_certificate_.empty()) {
+        roots = root_certificate_;
+      }
     }
     info.root_being_watched = root_being_watched;
     if (!info.identity_being_watched && identity_being_watched &&
@@ -246,13 +252,12 @@ FileWatcherCertificateProvider::FileWatcherCertificateProvider(
       watcher_info_.erase(cert_name);
     }
     ExecCtx exec_ctx;
-    if (root_certificate.has_value() || pem_key_cert_pairs.has_value()) {
-      distributor_->SetKeyMaterials(cert_name, root_certificate,
-                                    pem_key_cert_pairs);
+    if (roots.has_value() || pem_key_cert_pairs.has_value()) {
+      distributor_->SetKeyMaterials(cert_name, roots, pem_key_cert_pairs);
     }
     grpc_error_handle root_cert_error;
     grpc_error_handle identity_cert_error;
-    if (root_being_watched && !root_certificate.has_value()) {
+    if (root_being_watched && !roots.has_value()) {
       root_cert_error =
           GRPC_ERROR_CREATE("Unable to get latest root certificates.");
     }
@@ -319,13 +324,17 @@ void FileWatcherCertificateProvider::ForceUpdate() {
   MutexLock lock(&mu_);
   // TODO(gtcooke94) Will we change with roots, or separate var here for spiffe
   // bundle map
+  // Handle unsetting as well? I think root_cert doesn't properly handle it
+  // right now
   const bool spiffe_bundle_map_changed =
       spiffe_bundle_map.has_value() && (*spiffe_bundle_map)->size() != 0 &&
       spiffe_bundle_map_ != *spiffe_bundle_map;
   const bool root_cert_changed =
       (!root_certificate.has_value() && !root_certificate_.empty()) ||
       (root_certificate.has_value() && root_certificate_ != *root_certificate);
-  if (root_cert_changed) {
+  if (spiffe_bundle_map_changed) {
+    spiffe_bundle_map_ = std::move(*spiffe_bundle_map);
+  } else if (root_cert_changed) {
     if (root_certificate.has_value()) {
       root_certificate_ = std::move(*root_certificate);
     } else {
