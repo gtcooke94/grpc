@@ -384,7 +384,8 @@ void FileWatcherCertificateProvider::ForceUpdate() {
           root_to_report;
       std::optional<PemKeyCertPairList> identity_to_report;
       // Set key materials to the distributor if their contents changed.
-      if (info.root_being_watched && spiffe_bundle_map_changed && spiffe_bundle_map_ != nullptr && spiffe_bundle_map_->size() != 0) {
+      if (info.root_being_watched && spiffe_bundle_map_changed &&
+          spiffe_bundle_map_ != nullptr && spiffe_bundle_map_->size() != 0) {
         root_to_report = spiffe_bundle_map_;
       } else if (info.root_being_watched && !root_certificate_.empty() &&
                  root_cert_changed) {
