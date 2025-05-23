@@ -101,7 +101,7 @@ void FileWatcherCertificateProviderFactory::Config::JsonPostLoad(
       !is_root_configured) {
     errors->AddError(
         "at least one of \"certificate_file\" and a root "
-        "(\"ca_certificate_file\" or \"spiffe_bundle_map_file\" must "
+        "(\"ca_certificate_file\" or \"spiffe_bundle_map_file\") must "
         "be specified");
   }
 }

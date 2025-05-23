@@ -89,8 +89,6 @@ class GrpcTlsCertificateDistributorTest : public ::testing::Test {
     std::string root_certs;
     SpiffeBundleMap spiffe_bundle_map;
     PemKeyCertPairList key_cert_pairs;
-    // CredentialInfo(std::string root, PemKeyCertPairList key_cert)
-    //     : root_certs(std::move(root)), key_cert_pairs(std::move(key_cert)) {}
     CredentialInfo(
         std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>> roots,
         PemKeyCertPairList key_cert)
@@ -106,8 +104,8 @@ class GrpcTlsCertificateDistributorTest : public ::testing::Test {
       std::visit(visitor, roots);
     }
     bool operator==(const CredentialInfo& other) const {
-      return (root_certs == other.root_certs ||
-              spiffe_bundle_map == other.spiffe_bundle_map) &&
+      return root_certs == other.root_certs &&
+              spiffe_bundle_map == other.spiffe_bundle_map &&
              key_cert_pairs == other.key_cert_pairs;
     }
   };
@@ -306,7 +304,6 @@ TEST_F(GrpcTlsCertificateDistributorTest, UpdateCredentialsOnAnySide) {
   CancelWatch(watcher_state_1);
 }
 
-// here
 TEST_F(GrpcTlsCertificateDistributorTest, SameIdentityNameDiffRootName) {
   // Register watcher 1.
   WatcherState* watcher_state_1 =
@@ -952,7 +949,6 @@ TEST_F(GrpcTlsCertificateDistributorTest, SetErrorForCertInCallback) {
   }
 }
 
-// TODO(gtcooke94) Add some more spiffe tests
 TEST_F(GrpcTlsCertificateDistributorTest,
        BasicCredentialBehaviorsWithSpiffeRoot) {
   EXPECT_FALSE(distributor_.HasRootCerts(kRootCert1Name));

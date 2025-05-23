@@ -104,6 +104,11 @@ class TlsChannelSecurityConnector final
     return pem_key_cert_pair_list_;
   }
 
+  std::optional<SpiffeBundleMap> SpiffeBundleMapForTesting() {
+    MutexLock lock(&mu_);
+    return spiffe_bundle_map_;
+  }
+
  private:
   // A watcher that watches certificate updates from
   // grpc_tls_certificate_distributor. It will never outlive

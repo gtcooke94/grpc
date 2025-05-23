@@ -54,6 +54,12 @@ constexpr const char* kRootCertName = "root_cert_name";
 constexpr const char* kIdentityCertName = "identity_cert_name";
 constexpr const char* kErrorMessage = "error_message";
 constexpr const char* kTargetName = "foo.bar.com:443";
+constexpr absl::string_view kSpiffeBundlePath0 =
+    "test/core/credentials/transport/tls/test_data/spiffe/"
+    "client_spiffebundle.json";
+constexpr absl::string_view kSpiffeBundlePath1 =
+    "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
+    "spiffebundle2.json";
 
 class TlsSecurityConnectorTest : public ::testing::Test {
  protected:
@@ -68,6 +74,12 @@ class TlsSecurityConnectorTest : public ::testing::Test {
     identity_pairs_0_.emplace_back(
         testing::GetFileContents(SERVER_KEY_PATH_0),
         testing::GetFileContents(SERVER_CERT_PATH_0));
+    auto map0 = SpiffeBundleMap::FromFile(kSpiffeBundlePath0);
+    CHECK(map0.ok());
+    spiffe_bundle_map_0_ = *map0;
+    auto map1 = SpiffeBundleMap::FromFile(kSpiffeBundlePath1);
+    CHECK(map1.ok());
+    spiffe_bundle_map_1_ = *map1;
   }
 
   static void VerifyExpectedErrorCallback(void* arg, grpc_error_handle error) {
@@ -83,6 +95,8 @@ class TlsSecurityConnectorTest : public ::testing::Test {
   std::string root_cert_0_;
   PemKeyCertPairList identity_pairs_1_;
   PemKeyCertPairList identity_pairs_0_;
+  std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map_0_;
+  std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map_1_;
   HostNameCertificateVerifier hostname_certificate_verifier_;
 };
 
@@ -1133,6 +1147,43 @@ TEST_F(TlsSecurityConnectorTest,
       VerifyExpectedErrorCallback, nullptr, grpc_schedule_on_exec_ctx);
   ChannelArgs args;
   connector->check_peer(peer, nullptr, args, &auth_context, on_peer_checked);
+}
+
+TEST_F(TlsSecurityConnectorTest,
+       SpiffeRootAndIdentityCertsObtainedWhenCreateChannelSecurityConnector) {
+  RefCountedPtr<grpc_tls_certificate_distributor> distributor =
+      MakeRefCounted<grpc_tls_certificate_distributor>();
+  distributor->SetKeyMaterials(kRootCertName, spiffe_bundle_map_0_,
+                               std::nullopt);
+  distributor->SetKeyMaterials(kIdentityCertName, std::nullopt,
+                               identity_pairs_0_);
+  RefCountedPtr<grpc_tls_certificate_provider> provider =
+      MakeRefCounted<TlsTestCertificateProvider>(distributor);
+  RefCountedPtr<grpc_tls_credentials_options> options =
+      MakeRefCounted<grpc_tls_credentials_options>();
+  options->set_certificate_provider(provider);
+  options->set_watch_root_cert(true);
+  options->set_watch_identity_pair(true);
+  options->set_root_cert_name(kRootCertName);
+  options->set_identity_cert_name(kIdentityCertName);
+  RefCountedPtr<TlsCredentials> credential =
+      MakeRefCounted<TlsCredentials>(options);
+  ChannelArgs new_args;
+  RefCountedPtr<grpc_channel_security_connector> connector =
+      credential->create_security_connector(nullptr, kTargetName, &new_args);
+  EXPECT_NE(connector, nullptr);
+  TlsChannelSecurityConnector* tls_connector =
+      static_cast<TlsChannelSecurityConnector*>(connector.get());
+  EXPECT_NE(tls_connector->ClientHandshakerFactoryForTesting(), nullptr);
+  EXPECT_EQ(*tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_0_);
+  EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
+  distributor->SetKeyMaterials(kRootCertName, spiffe_bundle_map_1_,
+                               std::nullopt);
+  distributor->SetKeyMaterials(kIdentityCertName, std::nullopt,
+                               identity_pairs_1_);
+  EXPECT_NE(tls_connector->ClientHandshakerFactoryForTesting(), nullptr);
+  EXPECT_EQ(*tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_1_);
+  EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_1_);
 }
 }  // namespace testing
 }  // namespace grpc_core

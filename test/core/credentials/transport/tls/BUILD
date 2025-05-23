@@ -64,6 +64,9 @@ grpc_cc_test(
         "//src/core/tsi/test_creds:server0.pem",
         "//src/core/tsi/test_creds:server1.key",
         "//src/core/tsi/test_creds:server1.pem",
+        "//test/core/credentials/transport/tls/test_data:spiffe/client_spiffebundle.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle_malformed.json",
+        "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle2.json",
     ],
     external_deps = [
         "absl/log:check",

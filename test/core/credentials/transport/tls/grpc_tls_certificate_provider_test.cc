@@ -102,8 +102,6 @@ class GrpcTlsCertificateProviderTest : public ::testing::Test {
     std::string root_certs;
     std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map;
     PemKeyCertPairList key_cert_pairs;
-    // CredentialInfo(std::string root, PemKeyCertPairList key_cert)
-    //     : root_certs(std::move(root)), key_cert_pairs(std::move(key_cert)) {}
     CredentialInfo(
         std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>> roots,
         PemKeyCertPairList key_cert)
@@ -180,13 +178,13 @@ class GrpcTlsCertificateProviderTest : public ::testing::Test {
     void OnCertificatesChanged(
         std::optional<
             std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
-            root_certs,
+            roots,
         std::optional<PemKeyCertPairList> key_cert_pairs) override {
       MutexLock lock(&state_->mu);
       std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>
           updated_root;
-      if (root_certs.has_value()) {
-        updated_root = *root_certs;
+      if (roots.has_value()) {
+        updated_root = *roots;
       }
       PemKeyCertPairList updated_identity;
       if (key_cert_pairs.has_value()) {
