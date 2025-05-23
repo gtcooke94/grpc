@@ -181,7 +181,7 @@ FileWatcherCertificateProvider::FileWatcherCertificateProvider(
     std::string root_cert_path, int64_t refresh_interval_sec)
     : FileWatcherCertificateProvider(
           private_key_path, identity_certificate_path, root_cert_path,
-          /*spiffe_bundle_map_path*/ "", refresh_interval_sec) {}
+          /*spiffe_bundle_map_path*/"", refresh_interval_sec) {}
 
 FileWatcherCertificateProvider::FileWatcherCertificateProvider(
     std::string private_key_path, std::string identity_certificate_path,
@@ -200,7 +200,6 @@ FileWatcherCertificateProvider::FileWatcherCertificateProvider(
     refresh_interval_sec_ = kMinimumFileWatcherRefreshIntervalSeconds;
   }
   // Private key and identity cert files must be both set or both unset.
-  // TODO(gtcooke94) spiffe path
   CHECK(private_key_path_.empty() == identity_certificate_path_.empty());
   // Must be watching either root or identity certs.
   bool watching_root =
@@ -302,7 +301,7 @@ absl::Status FileWatcherCertificateProvider::ValidateCredentials() const {
   // the ctor of FileWatcherCertificateProvider doesn't allow for that error to
   // bubble up. Do that here. If there is no bad status, the default of Ok will
   // be passed up
-  return initial_spiffe_load_status_;
+  return spiffe_load_status_;
 }
 
 void FileWatcherCertificateProvider::ForceUpdate() {
@@ -315,10 +314,10 @@ void FileWatcherCertificateProvider::ForceUpdate() {
     auto map = SpiffeBundleMap::FromFile(spiffe_bundle_map_path_);
     if (map.ok()) {
       spiffe_bundle_map = *map;
-      initial_spiffe_load_status_ = absl::OkStatus();
+      spiffe_load_status_ = absl::OkStatus();
     } else {
       spiffe_bundle_map = std::nullopt;
-      initial_spiffe_load_status_ = map.status();
+      spiffe_load_status_ = map.status();
     }
   } else if (!root_cert_path_.empty()) {
     root_certificate = ReadRootCertificatesFromFile(root_cert_path_);

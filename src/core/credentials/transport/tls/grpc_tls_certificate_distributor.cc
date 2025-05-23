@@ -49,7 +49,7 @@ bool grpc_tls_certificate_distributor::CertificateInfo::AreRootsEmpty() {
   auto visitor = absl::Overload{
       [&](const std::string& pem_root_certs) { return pem_root_certs.empty(); },
       [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
-        return spiffe_bundle_map->size() == 0;
+        return spiffe_bundle_map == nullptr || spiffe_bundle_map->size() == 0;
       },
   };
   return std::visit(visitor, roots);

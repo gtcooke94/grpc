@@ -179,8 +179,6 @@ struct grpc_tls_certificate_distributor
   // root certs, while pem_root_certs still contains the valid old data.
   struct CertificateInfo {
     // The contents of the root certificates.
-    // std::string pem_root_certs;
-    // The contents of the root certificates.
     std::variant<std::string, std::shared_ptr<grpc_core::SpiffeBundleMap>>
         roots;
     // The contents of the identity key-certificate pairs.
@@ -207,7 +205,7 @@ struct grpc_tls_certificate_distributor
     std::variant<absl::string_view, std::shared_ptr<grpc_core::SpiffeBundleMap>>
     GetRoots();
 
-    // Returns if the variant contains either "" or an empty SpiffeBundleMap
+    // Returns if the variant contains either "", an empty SpiffeBundleMap, or a nullptr to a SpiffeBundleMap
     bool AreRootsEmpty();
   };
 

@@ -170,6 +170,7 @@ class TlsChannelSecurityConnector final
   std::optional<absl::string_view> pem_root_certs_ ABSL_GUARDED_BY(mu_);
   std::optional<PemKeyCertPairList> pem_key_cert_pair_list_
       ABSL_GUARDED_BY(mu_);
+  std::optional<SpiffeBundleMap> spiffe_bundle_map_ ABSL_GUARDED_BY(mu_);
   std::map<grpc_closure* /*on_peer_checked*/, ChannelPendingVerifierRequest*>
       pending_verifier_requests_ ABSL_GUARDED_BY(verifier_request_map_mu_);
 };
@@ -279,6 +280,7 @@ class TlsServerSecurityConnector final : public grpc_server_security_connector {
   std::optional<absl::string_view> pem_root_certs_ ABSL_GUARDED_BY(mu_);
   std::optional<PemKeyCertPairList> pem_key_cert_pair_list_
       ABSL_GUARDED_BY(mu_);
+  std::optional<SpiffeBundleMap> spiffe_bundle_map_ ABSL_GUARDED_BY(mu_);
   RefCountedPtr<TlsSessionKeyLogger> tls_session_key_logger_;
   std::map<grpc_closure* /*on_peer_checked*/, ServerPendingVerifierRequest*>
       pending_verifier_requests_ ABSL_GUARDED_BY(verifier_request_map_mu_);
