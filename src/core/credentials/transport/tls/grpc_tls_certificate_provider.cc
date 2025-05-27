@@ -181,7 +181,7 @@ FileWatcherCertificateProvider::FileWatcherCertificateProvider(
     std::string root_cert_path, int64_t refresh_interval_sec)
     : FileWatcherCertificateProvider(
           private_key_path, identity_certificate_path, root_cert_path,
-          /*spiffe_bundle_map_path*/"", refresh_interval_sec) {}
+          /*spiffe_bundle_map_path*/ "", refresh_interval_sec) {}
 
 FileWatcherCertificateProvider::FileWatcherCertificateProvider(
     std::string private_key_path, std::string identity_certificate_path,
@@ -383,7 +383,8 @@ void FileWatcherCertificateProvider::ForceUpdate() {
           root_to_report;
       std::optional<PemKeyCertPairList> identity_to_report;
       // Set key materials to the distributor if their contents changed.
-      if (info.root_being_watched && spiffe_bundle_map_changed && spiffe_bundle_map_ != nullptr && spiffe_bundle_map_->size() != 0) {
+      if (info.root_being_watched && spiffe_bundle_map_changed &&
+          spiffe_bundle_map_ != nullptr && spiffe_bundle_map_->size() != 0) {
         root_to_report = spiffe_bundle_map_;
       } else if (info.root_being_watched && !root_certificate_.empty() &&
                  root_cert_changed) {
