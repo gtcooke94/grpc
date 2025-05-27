@@ -443,7 +443,7 @@ void TlsChannelSecurityConnector::TlsChannelCertificateWatcher::
         // NOLINTNEXTLINE: The mutex is held when calling this.
         security_connector_->pem_root_certs_ = pem_root_certs;
       },
-      [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
+      [&](std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map) {
         // NOLINTNEXTLINE: The mutex is held when calling this.
         security_connector_->spiffe_bundle_map_ = *spiffe_bundle_map;
       },
@@ -720,7 +720,7 @@ void TlsServerSecurityConnector::TlsServerCertificateWatcher::
         // NOLINTNEXTLINE: The mutex is held when calling this.
         security_connector_->pem_root_certs_ = pem_root_certs;
       },
-      [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
+      [&](std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map) {
         // NOLINTNEXTLINE: The mutex is held when calling this.
         security_connector_->spiffe_bundle_map_ = *spiffe_bundle_map;
         return;
