@@ -734,7 +734,7 @@ void TlsServerSecurityConnector::TlsServerCertificateWatcher::
     security_connector_->pem_key_cert_pair_list_ = std::move(key_cert_pairs);
   }
   bool root_being_watched = security_connector_->options_->watch_root_cert();
-  bool root_has_value = security_connector_->pem_root_certs_.has_value();
+  bool root_has_value = security_connector_->pem_root_certs_.has_value() || security_connector_->spiffe_bundle_map_.has_value();
   bool identity_being_watched =
       security_connector_->options_->watch_identity_pair();
   bool identity_has_value =
