@@ -205,7 +205,8 @@ struct grpc_tls_certificate_distributor
     std::variant<absl::string_view, std::shared_ptr<grpc_core::SpiffeBundleMap>>
     GetRoots();
 
-    // Returns if the variant contains either "", an empty SpiffeBundleMap, or a nullptr to a SpiffeBundleMap
+    // Returns if the variant contains either "", an empty SpiffeBundleMap, or a
+    // nullptr to a SpiffeBundleMap
     bool AreRootsEmpty();
   };
 
