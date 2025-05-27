@@ -438,14 +438,12 @@ void TlsChannelSecurityConnector::TlsChannelCertificateWatcher::
   CHECK_NE(security_connector_, nullptr);
   auto visitor = absl::Overload{
       [&](const absl::string_view& pem_root_certs) {
-        // TODO(gtcooke94) why does calling std::string() here break? - we take
-        // a absl::string_view to a newly created string!
         // NOLINTNEXTLINE: The mutex is held when calling this.
         security_connector_->pem_root_certs_ = pem_root_certs;
       },
       [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
         // NOLINTNEXTLINE: The mutex is held when calling this.
-        security_connector_->spiffe_bundle_map_ = *spiffe_bundle_map;
+        security_connector_->spiffe_bundle_map_ = spiffe_bundle_map;
       },
   };
   MutexLock lock(&security_connector_->mu_);
@@ -542,7 +540,7 @@ TlsChannelSecurityConnector::UpdateHandshakerFactoryLocked() {
   if (client_handshaker_factory_ != nullptr) {
     tsi_ssl_client_handshaker_factory_unref(client_handshaker_factory_);
   }
-  // TODO(gtcooke94) Spiffe bundle maps
+  // TODO(gtcooke94) Spiffe bundle maps - ALSO server side
   std::string pem_root_certs;
   if (pem_root_certs_.has_value()) {
     // TODO(ZhenLian): update the underlying TSI layer to use C++ types like
@@ -722,7 +720,7 @@ void TlsServerSecurityConnector::TlsServerCertificateWatcher::
       },
       [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
         // NOLINTNEXTLINE: The mutex is held when calling this.
-        security_connector_->spiffe_bundle_map_ = *spiffe_bundle_map;
+        security_connector_->spiffe_bundle_map_ = spiffe_bundle_map;
         return;
       },
   };

@@ -1178,14 +1178,14 @@ TEST_F(TlsSecurityConnectorTest,
   TlsChannelSecurityConnector* tls_connector =
       static_cast<TlsChannelSecurityConnector*>(connector.get());
   EXPECT_NE(tls_connector->ClientHandshakerFactoryForTesting(), nullptr);
-  EXPECT_EQ(*tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_0_);
+  EXPECT_EQ(*tls_connector->SpiffeBundleMapForTesting(), spiffe_bundle_map_0_);
   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
   distributor->SetKeyMaterials(kRootCertName, spiffe_bundle_map_1_,
                                std::nullopt);
   distributor->SetKeyMaterials(kIdentityCertName, std::nullopt,
                                identity_pairs_1_);
   EXPECT_NE(tls_connector->ClientHandshakerFactoryForTesting(), nullptr);
-  EXPECT_EQ(*tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_1_);
+  EXPECT_EQ(*tls_connector->SpiffeBundleMapForTesting(), spiffe_bundle_map_1_);
   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_1_);
 }
 
@@ -1215,7 +1215,7 @@ TEST_F(TlsSecurityConnectorTest,
   TlsChannelSecurityConnector* tls_connector =
       static_cast<TlsChannelSecurityConnector*>(connector.get());
   EXPECT_NE(tls_connector->ClientHandshakerFactoryForTesting(), nullptr);
-  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_0_);
+  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), spiffe_bundle_map_0_);
   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
   // Calling SetErrorForCert on distributor shouldn't invalidate the previous
   // valid credentials.
@@ -1224,7 +1224,7 @@ TEST_F(TlsSecurityConnectorTest,
   distributor->SetErrorForCert(kIdentityCertName, std::nullopt,
                                GRPC_ERROR_CREATE(kErrorMessage));
   EXPECT_NE(tls_connector->ClientHandshakerFactoryForTesting(), nullptr);
-  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_0_);
+  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), spiffe_bundle_map_0_);
   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
 }
 
@@ -1344,13 +1344,13 @@ TEST_F(TlsSecurityConnectorTest,
   TlsServerSecurityConnector* tls_connector =
       static_cast<TlsServerSecurityConnector*>(connector.get());
   EXPECT_NE(tls_connector->ServerHandshakerFactoryForTesting(), nullptr);
-  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_0_);
+  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), spiffe_bundle_map_0_);
   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
   distributor->SetKeyMaterials(kRootCertName, spiffe_bundle_map_1_, std::nullopt);
   distributor->SetKeyMaterials(kIdentityCertName, std::nullopt,
                                identity_pairs_1_);
   EXPECT_NE(tls_connector->ServerHandshakerFactoryForTesting(), nullptr);
-  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_1_);
+  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), spiffe_bundle_map_1_);
   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_1_);
 }
 
@@ -1379,7 +1379,7 @@ TEST_F(TlsSecurityConnectorTest,
   TlsServerSecurityConnector* tls_connector =
       static_cast<TlsServerSecurityConnector*>(connector.get());
   EXPECT_NE(tls_connector->ServerHandshakerFactoryForTesting(), nullptr);
-  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_0_);
+  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), spiffe_bundle_map_0_);
   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
   // Calling SetErrorForCert on distributor shouldn't invalidate the previous
   // valid credentials.
@@ -1388,7 +1388,7 @@ TEST_F(TlsSecurityConnectorTest,
   distributor->SetErrorForCert(kIdentityCertName, std::nullopt,
                                GRPC_ERROR_CREATE(kErrorMessage));
   EXPECT_NE(tls_connector->ServerHandshakerFactoryForTesting(), nullptr);
-  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_0_);
+  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), spiffe_bundle_map_0_);
   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
 }
 
