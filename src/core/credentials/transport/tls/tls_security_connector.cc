@@ -438,8 +438,10 @@ void TlsChannelSecurityConnector::TlsChannelCertificateWatcher::
   CHECK_NE(security_connector_, nullptr);
   auto visitor = absl::Overload{
       [&](const absl::string_view& pem_root_certs) {
+        // TODO(gtcooke94) why does calling std::string() here break? - we take
+        // a absl::string_view to a newly created string!
         // NOLINTNEXTLINE: The mutex is held when calling this.
-        security_connector_->pem_root_certs_ = std::string(pem_root_certs);
+        security_connector_->pem_root_certs_ = pem_root_certs;
       },
       [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
         // NOLINTNEXTLINE: The mutex is held when calling this.
@@ -454,7 +456,8 @@ void TlsChannelSecurityConnector::TlsChannelCertificateWatcher::
     security_connector_->pem_key_cert_pair_list_ = std::move(key_cert_pairs);
   }
   const bool root_ready = !security_connector_->options_->watch_root_cert() ||
-                          security_connector_->pem_root_certs_.has_value();
+                          security_connector_->pem_root_certs_.has_value() ||
+                          security_connector_->spiffe_bundle_map_.has_value();
   const bool identity_ready =
       !security_connector_->options_->watch_identity_pair() ||
       security_connector_->pem_key_cert_pair_list_.has_value();
@@ -539,6 +542,7 @@ TlsChannelSecurityConnector::UpdateHandshakerFactoryLocked() {
   if (client_handshaker_factory_ != nullptr) {
     tsi_ssl_client_handshaker_factory_unref(client_handshaker_factory_);
   }
+  // TODO(gtcooke94) Spiffe bundle maps
   std::string pem_root_certs;
   if (pem_root_certs_.has_value()) {
     // TODO(ZhenLian): update the underlying TSI layer to use C++ types like
@@ -550,6 +554,7 @@ TlsChannelSecurityConnector::UpdateHandshakerFactoryLocked() {
     pem_key_cert_pair = ConvertToTsiPemKeyCertPair(*pem_key_cert_pair_list_);
   }
   bool use_default_roots = !options_->watch_root_cert();
+  // TODO(gtcooke94) more roots here
   grpc_security_status status = grpc_ssl_tsi_client_handshaker_factory_init(
       pem_key_cert_pair,
       pem_root_certs.empty() || use_default_roots ? nullptr
@@ -713,7 +718,7 @@ void TlsServerSecurityConnector::TlsServerCertificateWatcher::
   auto visitor = absl::Overload{
       [&](const absl::string_view& pem_root_certs) {
         // NOLINTNEXTLINE: The mutex is held when calling this.
-        security_connector_->pem_root_certs_ = std::string(pem_root_certs);
+        security_connector_->pem_root_certs_ = pem_root_certs;
       },
       [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
         // NOLINTNEXTLINE: The mutex is held when calling this.
