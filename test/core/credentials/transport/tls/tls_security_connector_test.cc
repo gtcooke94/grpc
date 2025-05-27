@@ -767,7 +767,6 @@ TEST_F(TlsSecurityConnectorTest,
 // Tests for Certificate Providers in ServerSecurityConnector.
 //
 
-// xkcd here
 TEST_F(TlsSecurityConnectorTest,
        RootAndIdentityCertsObtainedWhenCreateServerSecurityConnector) {
   RefCountedPtr<grpc_tls_certificate_distributor> distributor =
@@ -929,6 +928,7 @@ TEST_F(TlsSecurityConnectorTest, CreateServerSecurityConnectorFailNoOptions) {
   EXPECT_EQ(connector, nullptr);
 }
 
+// xkcd here
 TEST_F(TlsSecurityConnectorTest,
        CompareServerSecurityConnectorSucceedsOnSameCredentials) {
   RefCountedPtr<grpc_tls_certificate_distributor> distributor =
@@ -1352,6 +1352,44 @@ TEST_F(TlsSecurityConnectorTest,
   EXPECT_NE(tls_connector->ServerHandshakerFactoryForTesting(), nullptr);
   EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_1_);
   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_1_);
+}
+
+TEST_F(TlsSecurityConnectorTest,
+       SpiffeDistributorHasErrorForServerSecurityConnector) {
+  RefCountedPtr<grpc_tls_certificate_distributor> distributor =
+      MakeRefCounted<grpc_tls_certificate_distributor>();
+  distributor->SetKeyMaterials(kRootCertName, spiffe_bundle_map_0_,
+                               std::nullopt);
+  distributor->SetKeyMaterials(kIdentityCertName, std::nullopt,
+                               identity_pairs_0_);
+  RefCountedPtr<grpc_tls_certificate_provider> provider =
+      MakeRefCounted<TlsTestCertificateProvider>(distributor);
+  RefCountedPtr<grpc_tls_credentials_options> options =
+      MakeRefCounted<grpc_tls_credentials_options>();
+  options->set_certificate_provider(provider);
+  options->set_watch_root_cert(true);
+  options->set_watch_identity_pair(true);
+  options->set_root_cert_name(kRootCertName);
+  options->set_identity_cert_name(kIdentityCertName);
+  RefCountedPtr<TlsServerCredentials> credential =
+      MakeRefCounted<TlsServerCredentials>(options);
+  RefCountedPtr<grpc_server_security_connector> connector =
+      credential->create_security_connector(ChannelArgs());
+  EXPECT_NE(connector, nullptr);
+  TlsServerSecurityConnector* tls_connector =
+      static_cast<TlsServerSecurityConnector*>(connector.get());
+  EXPECT_NE(tls_connector->ServerHandshakerFactoryForTesting(), nullptr);
+  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_0_);
+  EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
+  // Calling SetErrorForCert on distributor shouldn't invalidate the previous
+  // valid credentials.
+  distributor->SetErrorForCert(kRootCertName, GRPC_ERROR_CREATE(kErrorMessage),
+                               std::nullopt);
+  distributor->SetErrorForCert(kIdentityCertName, std::nullopt,
+                               GRPC_ERROR_CREATE(kErrorMessage));
+  EXPECT_NE(tls_connector->ServerHandshakerFactoryForTesting(), nullptr);
+  EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), *spiffe_bundle_map_0_);
+  EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
 }
 
 }  // namespace testing
