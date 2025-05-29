@@ -428,7 +428,8 @@ TEST(AltsZeroCopyFrameProtectorTest,
             TSI_OK);
   // Splits protected slice buffer into two: first one is staging_sb, and
   // second one is protected_sb.
-  // The first 4 bytes are the size, so splitting to 10 will be valid to read the frame size from.
+  // The first 4 bytes are the size, so splitting to 10 will be valid to read
+  // the frame size from.
   uint32_t staging_sb_size = 10;
   grpc_slice_buffer_move_first(&var->protected_sb, staging_sb_size,
                                &var->staging_sb);
@@ -436,7 +437,8 @@ TEST(AltsZeroCopyFrameProtectorTest,
   ASSERT_TRUE(tsi_zero_copy_grpc_protector_read_frame_size(
       fixture->server, &var->staging_sb, &frame_size));
   EXPECT_EQ(frame_size, kSmallBufferSize + kOverhead);
-  // Call with the other slice with different size, but it won't change the value or even read this.
+  // Call with the other slice with different size, but it won't change the
+  // value or even read this.
   ASSERT_TRUE(tsi_zero_copy_grpc_protector_read_frame_size(
       fixture->server, &var->protected_sb, &frame_size));
   EXPECT_EQ(frame_size, kSmallBufferSize + kOverhead);
