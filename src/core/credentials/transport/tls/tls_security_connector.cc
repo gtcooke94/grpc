@@ -436,17 +436,18 @@ void TlsChannelSecurityConnector::TlsChannelCertificateWatcher::
             root_certs,
         std::optional<PemKeyCertPairList> key_cert_pairs) {
   CHECK_NE(security_connector_, nullptr);
+  // NOLINTBEGIN
+  MutexLock lock(&security_connector_->mu_);
+  // THe mutex lock is held when calling this
   auto visitor = absl::Overload{
       [&](const absl::string_view& pem_root_certs) {
-        // NOLINTNEXTLINE: The mutex is held when calling this.
         security_connector_->pem_root_certs_ = pem_root_certs;
       },
       [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
-        // NOLINTNEXTLINE: The mutex is held when calling this.
         security_connector_->spiffe_bundle_map_ = spiffe_bundle_map;
       },
   };
-  MutexLock lock(&security_connector_->mu_);
+  // NOLINTEND
   if (root_certs.has_value()) {
     std::visit(visitor, *root_certs);
   }
@@ -717,18 +718,18 @@ void TlsServerSecurityConnector::TlsServerCertificateWatcher::
         std::optional<PemKeyCertPairList> key_cert_pairs) {
   CHECK_NE(security_connector_, nullptr);
 
+  // NOLINTBEGIN
+  MutexLock lock(&security_connector_->mu_);
+  // The mutex lock is held when calling this.
   auto visitor = absl::Overload{
       [&](const absl::string_view& pem_root_certs) {
-        // NOLINTNEXTLINE: The mutex is held when calling this.
         security_connector_->pem_root_certs_ = pem_root_certs;
       },
       [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
-        // NOLINTNEXTLINE: The mutex is held when calling this.
         security_connector_->spiffe_bundle_map_ = spiffe_bundle_map;
-        return;
       },
   };
-  MutexLock lock(&security_connector_->mu_);
+  // NOLINTEND
   if (roots.has_value()) {
     std::visit(visitor, *roots);
   }
