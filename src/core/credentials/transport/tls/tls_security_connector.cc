@@ -542,7 +542,9 @@ TlsChannelSecurityConnector::UpdateHandshakerFactoryLocked() {
   }
   // TODO(gtcooke94) Spiffe bundle maps - ALSO server side
   std::string pem_root_certs;
-  if (pem_root_certs_.has_value()) {
+  if (spiffe_bundle_map_.has_value()) {
+    pem_root_certs = "";
+  } else if (pem_root_certs_.has_value()) {
     // TODO(ZhenLian): update the underlying TSI layer to use C++ types like
     // std::string and absl::string_view to avoid making another copy here.
     pem_root_certs = std::string(*pem_root_certs_);
@@ -561,7 +563,9 @@ TlsChannelSecurityConnector::UpdateHandshakerFactoryLocked() {
       grpc_get_tsi_tls_version(options_->min_tls_version()),
       grpc_get_tsi_tls_version(options_->max_tls_version()), ssl_session_cache_,
       tls_session_key_logger_.get(), options_->crl_directory().c_str(),
-      options_->crl_provider(), &client_handshaker_factory_);
+      options_->crl_provider(),
+      spiffe_bundle_map_.has_value() ? *spiffe_bundle_map_ : nullptr,
+      &client_handshaker_factory_);
   // Free memory.
   if (pem_key_cert_pair != nullptr) {
     grpc_tsi_ssl_pem_key_cert_pairs_destroy(pem_key_cert_pair, 1);
@@ -823,7 +827,9 @@ TlsServerSecurityConnector::UpdateHandshakerFactoryLocked() {
   CHECK(pem_key_cert_pair_list_.has_value());
   CHECK(!(*pem_key_cert_pair_list_).empty());
   std::string pem_root_certs;
-  if (pem_root_certs_.has_value()) {
+  if (spiffe_bundle_map_.has_value()) {
+    pem_root_certs = "";
+  } else if (pem_root_certs_.has_value()) {
     // TODO(ZhenLian): update the underlying TSI layer to use C++ types like
     // std::string and absl::string_view to avoid making another copy here.
     pem_root_certs = std::string(*pem_root_certs_);
@@ -839,6 +845,7 @@ TlsServerSecurityConnector::UpdateHandshakerFactoryLocked() {
       grpc_get_tsi_tls_version(options_->max_tls_version()),
       tls_session_key_logger_.get(), options_->crl_directory().c_str(),
       options_->send_client_ca_list(), options_->crl_provider(),
+      spiffe_bundle_map_.has_value() ? *spiffe_bundle_map_ : nullptr,
       &server_handshaker_factory_);
   // Free memory.
   grpc_tsi_ssl_pem_key_cert_pairs_destroy(pem_key_cert_pairs,

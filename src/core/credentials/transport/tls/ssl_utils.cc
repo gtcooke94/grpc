@@ -40,6 +40,7 @@
 #include "absl/strings/str_split.h"
 #include "src/core/config/config_vars.h"
 #include "src/core/credentials/transport/tls/load_system_roots.h"
+#include "src/core/credentials/transport/tls/spiffe_utils.h"
 #include "src/core/ext/transport/chttp2/alpn/alpn.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/transport/auth_context.h"
@@ -434,6 +435,7 @@ grpc_security_status grpc_ssl_tsi_client_handshaker_factory_init(
     tsi::TlsSessionKeyLoggerCache::TlsSessionKeyLogger* tls_session_key_logger,
     const char* crl_directory,
     std::shared_ptr<grpc_core::experimental::CrlProvider> crl_provider,
+    std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map,
     tsi_ssl_client_handshaker_factory** handshaker_factory) {
   const char* root_certs;
   const tsi_ssl_root_certs_store* root_store;
@@ -459,6 +461,7 @@ grpc_security_status grpc_ssl_tsi_client_handshaker_factory_init(
   tsi_ssl_client_handshaker_options options;
   options.pem_root_certs = root_certs;
   options.root_store = root_store;
+  options.spiffe_bundle_map = spiffe_bundle_map;
   options.alpn_protocols =
       grpc_fill_alpn_protocol_strings(&options.num_alpn_protocols);
   if (has_key_cert_pair) {
