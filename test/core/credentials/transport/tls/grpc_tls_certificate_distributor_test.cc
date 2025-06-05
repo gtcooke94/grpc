@@ -97,7 +97,7 @@ class GrpcTlsCertificateDistributorTest : public ::testing::Test {
           [&](const absl::string_view& pem_root_certs) {
             root_certs = pem_root_certs;
           },
-          [&](const std::shared_ptr<grpc_core::SpiffeBundleMap>& bundle_map) {
+          [&](const std::shared_ptr<SpiffeBundleMap>& bundle_map) {
             spiffe_bundle_map = std::move(*bundle_map);
           },
       };
@@ -105,7 +105,7 @@ class GrpcTlsCertificateDistributorTest : public ::testing::Test {
     }
     bool operator==(const CredentialInfo& other) const {
       return root_certs == other.root_certs &&
-              spiffe_bundle_map == other.spiffe_bundle_map &&
+             spiffe_bundle_map == other.spiffe_bundle_map &&
              key_cert_pairs == other.key_cert_pairs;
     }
   };

@@ -1324,7 +1324,8 @@ TEST_F(TlsSecurityConnectorTest,
        SpiffeRootAndIdentityCertsObtainedWhenCreateServerSecurityConnector) {
   RefCountedPtr<grpc_tls_certificate_distributor> distributor =
       MakeRefCounted<grpc_tls_certificate_distributor>();
-  distributor->SetKeyMaterials(kRootCertName, spiffe_bundle_map_0_, std::nullopt);
+  distributor->SetKeyMaterials(kRootCertName, spiffe_bundle_map_0_,
+                               std::nullopt);
   distributor->SetKeyMaterials(kIdentityCertName, std::nullopt,
                                identity_pairs_0_);
   RefCountedPtr<grpc_tls_certificate_provider> provider =
@@ -1346,7 +1347,8 @@ TEST_F(TlsSecurityConnectorTest,
   EXPECT_NE(tls_connector->ServerHandshakerFactoryForTesting(), nullptr);
   EXPECT_EQ(tls_connector->SpiffeBundleMapForTesting(), spiffe_bundle_map_0_);
   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
-  distributor->SetKeyMaterials(kRootCertName, spiffe_bundle_map_1_, std::nullopt);
+  distributor->SetKeyMaterials(kRootCertName, spiffe_bundle_map_1_,
+                               std::nullopt);
   distributor->SetKeyMaterials(kIdentityCertName, std::nullopt,
                                identity_pairs_1_);
   EXPECT_NE(tls_connector->ServerHandshakerFactoryForTesting(), nullptr);
