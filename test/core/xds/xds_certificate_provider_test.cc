@@ -95,8 +95,8 @@ class TestCertificatesWatcher
             }
             root_certs_ = pem_root_certs;
           },
-          [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
-            // TODO add spiffe bundle related code
+          [&](std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map) {
+            // TODO(unknown): add spiffe bundle related code
             spiffe_bundle_map_ = spiffe_bundle_map;
           },
       };
