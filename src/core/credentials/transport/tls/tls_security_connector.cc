@@ -443,7 +443,7 @@ void TlsChannelSecurityConnector::TlsChannelCertificateWatcher::
       [&](const absl::string_view& pem_root_certs) {
         security_connector_->pem_root_certs_ = pem_root_certs;
       },
-      [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
+      [&](std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map) {
         security_connector_->spiffe_bundle_map_ = spiffe_bundle_map;
       },
   };
@@ -725,7 +725,7 @@ void TlsServerSecurityConnector::TlsServerCertificateWatcher::
       [&](const absl::string_view& pem_root_certs) {
         security_connector_->pem_root_certs_ = pem_root_certs;
       },
-      [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
+      [&](std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map) {
         security_connector_->spiffe_bundle_map_ = spiffe_bundle_map;
       },
   };
@@ -737,7 +737,8 @@ void TlsServerSecurityConnector::TlsServerCertificateWatcher::
     security_connector_->pem_key_cert_pair_list_ = std::move(key_cert_pairs);
   }
   bool root_being_watched = security_connector_->options_->watch_root_cert();
-  bool root_has_value = security_connector_->pem_root_certs_.has_value() || security_connector_->spiffe_bundle_map_.has_value();
+  bool root_has_value = security_connector_->pem_root_certs_.has_value() ||
+                        security_connector_->spiffe_bundle_map_.has_value();
   bool identity_being_watched =
       security_connector_->options_->watch_identity_pair();
   bool identity_has_value =
