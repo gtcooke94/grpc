@@ -81,16 +81,28 @@ class TestCertificatesWatcher
   ~TestCertificatesWatcher() override {}
 
   void OnCertificatesChanged(
-      std::optional<absl::string_view> root_certs,
+      std::optional<
+          std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
+          roots,
       std::optional<PemKeyCertPairList> key_cert_pairs) override {
-    if (root_certs.has_value()) {
-      if (!root_certs_.has_value() ||
-          (root_certs_.has_value() &&
-           std::string(root_certs.value()) != root_certs_.value())) {
-        root_cert_error_ = absl::OkStatus();
-      }
-      root_certs_.emplace(std::string(root_certs.value()));
+    if (roots.has_value()) {
+      auto visitor = absl::Overload{
+          [&](const absl::string_view& pem_root_certs) {
+            if (!root_certs_.has_value() ||
+                (root_certs_.has_value() &&
+                 pem_root_certs != root_certs_.value())) {
+              root_cert_error_ = absl::OkStatus();
+            }
+            root_certs_ = pem_root_certs;
+          },
+          [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
+            // TODO add spiffe bundle related code
+            spiffe_bundle_map_ = spiffe_bundle_map;
+          },
+      };
+      std::visit(visitor, *roots);
     }
+
     if (key_cert_pairs.has_value()) {
       if (key_cert_pairs != key_cert_pairs_) {
         identity_cert_error_ = absl::OkStatus();
@@ -118,6 +130,7 @@ class TestCertificatesWatcher
  private:
   std::optional<std::string> root_certs_;
   std::optional<PemKeyCertPairList> key_cert_pairs_;
+  std::optional<std::shared_ptr<SpiffeBundleMap>> spiffe_bundle_map_;
   grpc_error_handle root_cert_error_;
   grpc_error_handle identity_cert_error_;
 };
