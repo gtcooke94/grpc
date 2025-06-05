@@ -27,6 +27,7 @@
 #include "src/core/lib/event_engine/event_engine_context.h"
 #include "src/core/lib/iomgr/exec_ctx.h"
 #include "src/core/lib/promise/activity.h"
+#include "src/core/util/json/json_writer.h"
 #include "src/core/util/latent_see.h"
 #include "src/core/util/sync.h"
 
@@ -154,6 +155,7 @@ Party::Participant::~Participant() {
 // Party::SpawnSerializer
 
 bool Party::SpawnSerializer::PollParticipantPromise() {
+  GRPC_LATENT_SEE_INNER_SCOPE("SpawnSerializer::PollParticipantPromise");
   if (active_ == nullptr) {
     active_ = next_.Pop().value_or(nullptr);
   }
@@ -236,8 +238,8 @@ Json::Object Party::ToJsonLocked() {
     if (auto* p = participants_[i].load(std::memory_order_acquire);
         p != nullptr) {
       auto obj = p->ToJson();
-      obj["participant_index"] = Json::FromNumber(i);
-      participants.emplace_back(Json::FromObject(std::move(obj)));
+      participants.emplace_back(
+          Json::FromString(JsonDump(Json::FromObject(std::move(obj)))));
     }
   }
   obj["participants"] = Json::FromArray(std::move(participants));
@@ -317,6 +319,7 @@ void Party::RunLockedAndUnref(Party* party, uint64_t prev_state) {
       g_run_state = this;
       do {
         GRPC_LATENT_SEE_INNER_SCOPE("run_one_party");
+        CHECK(first.party != nullptr);
         first.party->RunPartyAndUnref(first.prev_state);
         first = std::exchange(next, PartyWakeup{});
       } while (first.party != nullptr);
@@ -347,10 +350,12 @@ void Party::RunLockedAndUnref(Party* party, uint64_t prev_state) {
       // gets held for a really long time.
       auto wakeup =
           std::exchange(g_run_state->next, PartyWakeup{party, prev_state});
-      auto arena = party->arena_.get();
+      auto arena = wakeup.party->arena_.get();
+      CHECK(arena != nullptr);
       auto* event_engine =
           arena->GetContext<grpc_event_engine::experimental::EventEngine>();
       CHECK(event_engine != nullptr) << "; " << GRPC_DUMP_ARGS(party, arena);
+      GRPC_LATENT_SEE_INNER_SCOPE("offload_one_party");
       event_engine->Run([wakeup]() {
         GRPC_LATENT_SEE_PARENT_SCOPE("Party::RunLocked offload");
         ExecCtx exec_ctx;
