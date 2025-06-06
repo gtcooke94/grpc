@@ -206,7 +206,7 @@ TEST(FileWatcherConfigTest, EmptyJsonObject) {
       config.status().message(),
       "validation errors: [field: error:at least one of \"certificate_file\" "
       "and a "
-      "root (\"ca_certificate_file\" or \"spiffe_bundle_map_file\" must be "
+      "root (\"ca_certificate_file\" or \"spiffe_bundle_map_file\") must be "
       "specified]")
       << config.status();
 }
