@@ -437,6 +437,8 @@ void TlsChannelSecurityConnector::TlsChannelCertificateWatcher::
         std::optional<PemKeyCertPairList> key_cert_pairs) {
   CHECK_NE(security_connector_, nullptr);
   // NOLINTBEGIN
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wthread-safety-analysis"
   MutexLock lock(&security_connector_->mu_);
   // THe mutex lock is held when calling this
   auto visitor = absl::Overload{
@@ -447,6 +449,7 @@ void TlsChannelSecurityConnector::TlsChannelCertificateWatcher::
         security_connector_->spiffe_bundle_map_ = spiffe_bundle_map;
       },
   };
+#pragma clang diagnostic pop
   // NOLINTEND
   if (root_certs.has_value()) {
     std::visit(visitor, *root_certs);
@@ -721,6 +724,8 @@ void TlsServerSecurityConnector::TlsServerCertificateWatcher::
   // NOLINTBEGIN
   MutexLock lock(&security_connector_->mu_);
   // The mutex lock is held when calling this.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wthread-safety-analysis"
   auto visitor = absl::Overload{
       [&](const absl::string_view& pem_root_certs) {
         security_connector_->pem_root_certs_ = pem_root_certs;
@@ -729,6 +734,7 @@ void TlsServerSecurityConnector::TlsServerCertificateWatcher::
         security_connector_->spiffe_bundle_map_ = spiffe_bundle_map;
       },
   };
+#pragma clang diagnostic pop
   // NOLINTEND
   if (roots.has_value()) {
     std::visit(visitor, *roots);
