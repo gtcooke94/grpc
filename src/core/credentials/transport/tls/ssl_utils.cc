@@ -505,6 +505,7 @@ grpc_security_status grpc_ssl_tsi_server_handshaker_factory_init(
   options.pem_key_cert_pairs = pem_key_cert_pairs;
   options.num_key_cert_pairs = num_key_cert_pairs;
   options.pem_client_root_certs = pem_root_certs;
+  options.spiffe_bundle_map = spiffe_bundle_map;
   options.client_certificate_request =
       grpc_get_tsi_client_certificate_request_type(client_certificate_request);
   options.cipher_suites = grpc_get_ssl_cipher_suites();
