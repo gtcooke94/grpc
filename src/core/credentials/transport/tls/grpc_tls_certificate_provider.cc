@@ -308,8 +308,6 @@ void FileWatcherCertificateProvider::ForceUpdate() {
   std::optional<std::string> root_certificate;
   std::optional<std::shared_ptr<SpiffeBundleMap>> spiffe_bundle_map;
   std::optional<PemKeyCertPairList> pem_key_cert_pairs;
-  // TODO(gtcooke94) impl spiffe bundle loading - working here now
-  // If the SPIFFE bundle map is set, use it over the root cert
   if (!spiffe_bundle_map_path_.empty()) {
     auto map = SpiffeBundleMap::FromFile(spiffe_bundle_map_path_);
     if (map.ok()) {

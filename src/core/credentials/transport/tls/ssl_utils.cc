@@ -427,7 +427,6 @@ void grpc_shallow_peer_destruct(tsi_peer* peer) {
   if (peer->properties != nullptr) gpr_free(peer->properties);
 }
 
-// TODO(gtcooke94) add spiffe bundle maps
 grpc_security_status grpc_ssl_tsi_client_handshaker_factory_init(
     tsi_ssl_pem_key_cert_pair* pem_key_cert_pair, const char* pem_root_certs,
     bool skip_server_certificate_verification, tsi_tls_version min_tls_version,

@@ -544,7 +544,6 @@ TlsChannelSecurityConnector::UpdateHandshakerFactoryLocked() {
   if (client_handshaker_factory_ != nullptr) {
     tsi_ssl_client_handshaker_factory_unref(client_handshaker_factory_);
   }
-  // TODO(gtcooke94) Spiffe bundle maps - ALSO server side
   std::string pem_root_certs;
   if (spiffe_bundle_map_.has_value()) {
     pem_root_certs = "";
@@ -558,7 +557,6 @@ TlsChannelSecurityConnector::UpdateHandshakerFactoryLocked() {
     pem_key_cert_pair = ConvertToTsiPemKeyCertPair(*pem_key_cert_pair_list_);
   }
   bool use_default_roots = !options_->watch_root_cert();
-  // TODO(gtcooke94) more roots here
   grpc_security_status status = grpc_ssl_tsi_client_handshaker_factory_init(
       pem_key_cert_pair,
       pem_root_certs.empty() || use_default_roots ? nullptr
