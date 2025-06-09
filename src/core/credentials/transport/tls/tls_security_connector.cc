@@ -436,7 +436,11 @@ void TlsChannelSecurityConnector::TlsChannelCertificateWatcher::
             root_certs,
         std::optional<PemKeyCertPairList> key_cert_pairs) {
   CHECK_NE(security_connector_, nullptr);
-  // NOLINTBEGIN
+// The compiler can't tell that the modifications in the absl::Overload are done
+// within the mutex lock. This can be logically verified: the visitor is defined
+// after the lock, and the lock is held until the end of the function when all
+// of this goes out of scope.
+// NOLINTBEGIN
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wthread-safety-analysis"
   MutexLock lock(&security_connector_->mu_);
@@ -719,9 +723,12 @@ void TlsServerSecurityConnector::TlsServerCertificateWatcher::
         std::optional<PemKeyCertPairList> key_cert_pairs) {
   CHECK_NE(security_connector_, nullptr);
 
-  // NOLINTBEGIN
   MutexLock lock(&security_connector_->mu_);
-  // The mutex lock is held when calling this.
+// The compiler can't tell that the modifications in the absl::Overload are done
+// within the mutex lock. This can be logically verified: the visitor is defined
+// after the lock, and the lock is held until the end of the function when all
+// of this goes out of scope.
+// NOLINTBEGIN
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wthread-safety-analysis"
   auto visitor = absl::Overload{

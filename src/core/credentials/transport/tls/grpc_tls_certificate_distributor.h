@@ -28,7 +28,6 @@
 #include <utility>
 
 #include "absl/base/thread_annotations.h"
-#include "absl/functional/overload.h"
 #include "absl/strings/string_view.h"
 #include "src/core/credentials/transport/tls/spiffe_utils.h"
 #include "src/core/credentials/transport/tls/ssl_utils.h"
@@ -205,7 +204,7 @@ struct grpc_tls_certificate_distributor
     std::variant<absl::string_view, std::shared_ptr<grpc_core::SpiffeBundleMap>>
     GetRoots();
 
-    // Returns if the variant contains either "", an empty SpiffeBundleMap, or a
+    // Returns if the root variant contains either "", an empty SpiffeBundleMap, or a
     // nullptr to a SpiffeBundleMap
     bool AreRootsEmpty();
   };

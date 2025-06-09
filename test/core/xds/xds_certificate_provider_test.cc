@@ -23,6 +23,7 @@
 #include <optional>
 
 #include "absl/base/no_destructor.h"
+#include "absl/functional/overload.h"
 #include "absl/status/status.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"

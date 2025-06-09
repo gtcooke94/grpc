@@ -181,7 +181,7 @@ FileWatcherCertificateProvider::FileWatcherCertificateProvider(
     std::string root_cert_path, int64_t refresh_interval_sec)
     : FileWatcherCertificateProvider(
           private_key_path, identity_certificate_path, root_cert_path,
-          /*spiffe_bundle_map_path*/ "", refresh_interval_sec) {}
+          /*spiffe_bundle_map_path=*/"", refresh_interval_sec) {}
 
 FileWatcherCertificateProvider::FileWatcherCertificateProvider(
     std::string private_key_path, std::string identity_certificate_path,

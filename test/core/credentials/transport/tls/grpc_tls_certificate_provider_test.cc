@@ -60,7 +60,6 @@ constexpr absl::string_view kGoodSpiffeBundleMapPath2 =
 constexpr absl::string_view kMalformedSpiffeBundleMapPath =
     "test/core/credentials/transport/tls/test_data/spiffe/test_bundles/"
     "spiffebundle_malformed.json";
-}  // namespace
 
 std::shared_ptr<SpiffeBundleMap> GetGoodSpiffeBundleMap() {
   static const absl::NoDestructor<std::shared_ptr<SpiffeBundleMap>>
@@ -83,6 +82,7 @@ std::shared_ptr<SpiffeBundleMap> GetGoodSpiffeBundleMap2() {
       }());
   return *kSpiffeBundleMap2;
 }
+}  // namespace
 
 constexpr const char* kCertName = "cert_name";
 constexpr const char* kRootError = "Unable to get latest root certificates.";

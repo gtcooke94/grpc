@@ -438,7 +438,9 @@ grpc_security_status grpc_ssl_tsi_client_handshaker_factory_init(
     tsi_ssl_client_handshaker_factory** handshaker_factory) {
   const char* root_certs;
   const tsi_ssl_root_certs_store* root_store;
-  bool roots_are_configured = pem_root_certs != nullptr;
+  bool roots_are_configured =
+      pem_root_certs != nullptr ||
+      (spiffe_bundle_map != nullptr && spiffe_bundle_map->size() != 0);
   if (!roots_are_configured && !skip_server_certificate_verification) {
     GRPC_TRACE_LOG(tsi, INFO)
         << "No root certificates specified; use ones stored in system "

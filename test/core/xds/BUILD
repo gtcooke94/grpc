@@ -78,7 +78,10 @@ grpc_cc_test(
         "//test/core/credentials/transport/tls/test_data:spiffe/client_spiffebundle.json",
         "//test/core/credentials/transport/tls/test_data:spiffe/test_bundles/spiffebundle2.json",
     ],
-    external_deps = ["gtest"],
+    external_deps = [
+        "gtest",
+        "absl/functional:overload",
+    ],
     uses_event_engine = False,
     uses_polling = False,
     deps = [

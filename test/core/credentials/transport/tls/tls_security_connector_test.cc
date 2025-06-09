@@ -157,6 +157,7 @@ TEST_F(TlsSecurityConnectorTest,
   auto root = tls_connector->RootCertsForTesting();
   EXPECT_EQ(*root, root_cert_0_);
   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
+  // TODO(gtcooke94)
   //   distributor->SetKeyMaterials(kRootCertName, root_cert_1_, std::nullopt);
   //   distributor->SetKeyMaterials(kIdentityCertName, std::nullopt,
   //                                identity_pairs_1_);
@@ -928,7 +929,6 @@ TEST_F(TlsSecurityConnectorTest, CreateServerSecurityConnectorFailNoOptions) {
   EXPECT_EQ(connector, nullptr);
 }
 
-// xkcd here
 TEST_F(TlsSecurityConnectorTest,
        CompareServerSecurityConnectorSucceedsOnSameCredentials) {
   RefCountedPtr<grpc_tls_certificate_distributor> distributor =
