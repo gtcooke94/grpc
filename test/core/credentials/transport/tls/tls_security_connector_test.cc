@@ -157,14 +157,13 @@ TEST_F(TlsSecurityConnectorTest,
   auto root = tls_connector->RootCertsForTesting();
   EXPECT_EQ(*root, root_cert_0_);
   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_0_);
-  // TODO(gtcooke94)
-  //   distributor->SetKeyMaterials(kRootCertName, root_cert_1_, std::nullopt);
-  //   distributor->SetKeyMaterials(kIdentityCertName, std::nullopt,
-  //                                identity_pairs_1_);
-  //   EXPECT_NE(tls_connector->ClientHandshakerFactoryForTesting(), nullptr);
-  //   auto root = tls_connector->RootCertsForTesting();
-  //   EXPECT_EQ(*root, root_cert_1_);
-  //   EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_1_);
+  distributor->SetKeyMaterials(kRootCertName, root_cert_1_, std::nullopt);
+  distributor->SetKeyMaterials(kIdentityCertName, std::nullopt,
+                               identity_pairs_1_);
+  EXPECT_NE(tls_connector->ClientHandshakerFactoryForTesting(), nullptr);
+  root = tls_connector->RootCertsForTesting();
+  EXPECT_EQ(*root, root_cert_1_);
+  EXPECT_EQ(tls_connector->KeyCertPairListForTesting(), identity_pairs_1_);
 }
 
 TEST_F(TlsSecurityConnectorTest,
