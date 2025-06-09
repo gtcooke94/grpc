@@ -98,7 +98,7 @@ class GrpcTlsCertificateDistributorTest : public ::testing::Test {
             root_certs = pem_root_certs;
           },
           [&](const std::shared_ptr<SpiffeBundleMap>& bundle_map) {
-            spiffe_bundle_map = std::move(*bundle_map);
+            spiffe_bundle_map = *bundle_map;
           },
       };
       std::visit(visitor, roots);

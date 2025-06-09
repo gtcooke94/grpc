@@ -30,7 +30,7 @@ grpc_tls_certificate_distributor::CertificateInfo::GetRoots() {
   std::variant<absl::string_view, std::shared_ptr<grpc_core::SpiffeBundleMap>>
       roots_to_return;
   auto visitor = absl::Overload{
-      [&](const std::string& pem_root_certs) {
+      [&](const absl::string_view& pem_root_certs) {
         roots_to_return = pem_root_certs;
       },
       [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
@@ -47,7 +47,9 @@ bool grpc_tls_certificate_distributor::CertificateInfo::AreRootsEmpty() {
   // equivalent to unset/default.  We need a way to safely see if the variant
   // has essentially been default constructed.
   auto visitor = absl::Overload{
-      [&](const std::string& pem_root_certs) { return pem_root_certs.empty(); },
+      [&](const absl::string_view& pem_root_certs) {
+        return pem_root_certs.empty();
+      },
       [&](std::shared_ptr<grpc_core::SpiffeBundleMap> spiffe_bundle_map) {
         return spiffe_bundle_map == nullptr || spiffe_bundle_map->size() == 0;
       },
@@ -129,7 +131,7 @@ bool grpc_tls_certificate_distributor::HasRootCerts(
     const std::string& root_cert_name) {
   grpc_core::MutexLock lock(&mu_);
   const auto it = certificate_info_map_.find(root_cert_name);
-  return it != certificate_info_map_.end() && it->second.AreRootsEmpty();
+  return it != certificate_info_map_.end() && !it->second.AreRootsEmpty();
 };
 
 bool grpc_tls_certificate_distributor::HasKeyCertPairs(
