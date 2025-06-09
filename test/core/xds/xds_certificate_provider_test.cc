@@ -159,8 +159,7 @@ class TestCertificatesWatcher
     return key_cert_pairs_;
   }
 
-  const std::optional<std::shared_ptr<SpiffeBundleMap>> spiffe_bundle_map()
-      const {
+  std::optional<std::shared_ptr<SpiffeBundleMap>> spiffe_bundle_map() const {
     return spiffe_bundle_map_;
   }
 
