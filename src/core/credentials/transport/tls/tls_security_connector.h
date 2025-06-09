@@ -172,7 +172,7 @@ class TlsChannelSecurityConnector final
       ABSL_GUARDED_BY(mu_) = nullptr;
   tsi_ssl_session_cache* ssl_session_cache_ ABSL_GUARDED_BY(mu_) = nullptr;
   RefCountedPtr<TlsSessionKeyLogger> tls_session_key_logger_;
-  std::optional<absl::string_view> pem_root_certs_ ABSL_GUARDED_BY(mu_);
+  std::optional<std::string> pem_root_certs_ ABSL_GUARDED_BY(mu_);
   std::optional<PemKeyCertPairList> pem_key_cert_pair_list_
       ABSL_GUARDED_BY(mu_);
   std::optional<std::shared_ptr<SpiffeBundleMap>> spiffe_bundle_map_
