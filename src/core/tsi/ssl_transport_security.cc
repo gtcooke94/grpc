@@ -2430,7 +2430,8 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
     const bool custom_roots_configured =
         options->spiffe_bundle_map != nullptr ||
         options->pem_root_certs != nullptr;
-    if (OPENSSL_VERSION_NUMBER < 0x10100000 || (options->root_store == nullptr && custom_roots_configured)) {
+    if (OPENSSL_VERSION_NUMBER < 0x10100000 ||
+        (options->root_store == nullptr && custom_roots_configured)) {
       if (options->spiffe_bundle_map != nullptr) {
         // TODO(gtcooke94)
         // Set SPIFFE ex data
