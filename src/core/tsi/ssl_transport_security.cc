@@ -2643,49 +2643,55 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
         }
       }
 
-      if (options->pem_client_root_certs != nullptr) {
-        STACK_OF(X509_NAME)* root_names = nullptr;
-        result = ssl_ctx_load_verification_certs(
-            impl->ssl_contexts[i], options->pem_client_root_certs,
-            strlen(options->pem_client_root_certs),
-            options->send_client_ca_list ? &root_names : nullptr);
-        if (result != TSI_OK) {
-          LOG(ERROR) << "Invalid verification certs.";
-          break;
+      const bool custom_roots_configured =
+          options->pem_client_root_certs != nullptr ||
+          options->spiffe_bundle_map != nullptr;
+      if (custom_roots_configured) {
+        if (options->spiffe_bundle_map != nullptr) {
+          // TODO(gtcooke94)
+        } else if (options->pem_client_root_certs != nullptr) {
+          STACK_OF(X509_NAME)* root_names = nullptr;
+          result = ssl_ctx_load_verification_certs(
+              impl->ssl_contexts[i], options->pem_client_root_certs,
+              strlen(options->pem_client_root_certs),
+              options->send_client_ca_list ? &root_names : nullptr);
+          if (result != TSI_OK) {
+            LOG(ERROR) << "Invalid verification certs.";
+            break;
+          }
+          if (options->send_client_ca_list) {
+            SSL_CTX_set_client_CA_list(impl->ssl_contexts[i], root_names);
+          }
         }
-        if (options->send_client_ca_list) {
-          SSL_CTX_set_client_CA_list(impl->ssl_contexts[i], root_names);
+        switch (options->client_certificate_request) {
+          case TSI_DONT_REQUEST_CLIENT_CERTIFICATE:
+            SSL_CTX_set_verify(impl->ssl_contexts[i], SSL_VERIFY_NONE, nullptr);
+            break;
+          case TSI_REQUEST_CLIENT_CERTIFICATE_BUT_DONT_VERIFY:
+            SSL_CTX_set_verify(impl->ssl_contexts[i], SSL_VERIFY_PEER, nullptr);
+            SSL_CTX_set_cert_verify_callback(impl->ssl_contexts[i],
+                                             NullVerifyCallback, nullptr);
+            break;
+          case TSI_REQUEST_CLIENT_CERTIFICATE_AND_VERIFY:
+            SSL_CTX_set_verify(impl->ssl_contexts[i], SSL_VERIFY_PEER, nullptr);
+            SSL_CTX_set_cert_verify_callback(
+                impl->ssl_contexts[i], CustomVerificationFunction, nullptr);
+            break;
+          case TSI_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_BUT_DONT_VERIFY:
+            SSL_CTX_set_verify(
+                impl->ssl_contexts[i],
+                SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, nullptr);
+            SSL_CTX_set_cert_verify_callback(impl->ssl_contexts[i],
+                                             NullVerifyCallback, nullptr);
+            break;
+          case TSI_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY:
+            SSL_CTX_set_verify(
+                impl->ssl_contexts[i],
+                SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, nullptr);
+            SSL_CTX_set_cert_verify_callback(
+                impl->ssl_contexts[i], CustomVerificationFunction, nullptr);
+            break;
         }
-      }
-      switch (options->client_certificate_request) {
-        case TSI_DONT_REQUEST_CLIENT_CERTIFICATE:
-          SSL_CTX_set_verify(impl->ssl_contexts[i], SSL_VERIFY_NONE, nullptr);
-          break;
-        case TSI_REQUEST_CLIENT_CERTIFICATE_BUT_DONT_VERIFY:
-          SSL_CTX_set_verify(impl->ssl_contexts[i], SSL_VERIFY_PEER, nullptr);
-          SSL_CTX_set_cert_verify_callback(impl->ssl_contexts[i],
-                                           NullVerifyCallback, nullptr);
-          break;
-        case TSI_REQUEST_CLIENT_CERTIFICATE_AND_VERIFY:
-          SSL_CTX_set_verify(impl->ssl_contexts[i], SSL_VERIFY_PEER, nullptr);
-          SSL_CTX_set_cert_verify_callback(impl->ssl_contexts[i],
-                                           CustomVerificationFunction, nullptr);
-          break;
-        case TSI_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_BUT_DONT_VERIFY:
-          SSL_CTX_set_verify(impl->ssl_contexts[i],
-                             SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
-                             nullptr);
-          SSL_CTX_set_cert_verify_callback(impl->ssl_contexts[i],
-                                           NullVerifyCallback, nullptr);
-          break;
-        case TSI_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY:
-          SSL_CTX_set_verify(impl->ssl_contexts[i],
-                             SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
-                             nullptr);
-          SSL_CTX_set_cert_verify_callback(impl->ssl_contexts[i],
-                                           CustomVerificationFunction, nullptr);
-          break;
-      }
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
       if (options->crl_provider != nullptr) {
@@ -2737,12 +2743,13 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
             ssl_keylogging_callback<tsi_ssl_server_handshaker_factory>);
       }
 #endif
-    } while (false);
+      }
+      while (false);
 
-    if (result != TSI_OK) {
-      tsi_ssl_handshaker_factory_unref(&impl->base);
-      return result;
-    }
+      if (result != TSI_OK) {
+        tsi_ssl_handshaker_factory_unref(&impl->base);
+        return result;
+      }
   }
 
   *factory = impl;
