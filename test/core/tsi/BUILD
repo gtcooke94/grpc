@@ -165,6 +165,44 @@ grpc_cc_test(
 )
 
 grpc_cc_test(
+    name = "spiffe_ssl_transport_security_test",
+    srcs = ["spiffe_ssl_transport_security_test.cc"],
+    data = [
+        "//test/core/tsi/test_creds/crl_data:ca.pem",
+        "//test/core/tsi/test_creds/crl_data:intermediate_ca.key",
+        "//test/core/tsi/test_creds/crl_data:intermediate_ca.pem",
+        "//test/core/tsi/test_creds/crl_data:leaf_and_intermediate_chain.pem",
+        "//test/core/tsi/test_creds/crl_data:leaf_signed_by_intermediate.key",
+        "//test/core/tsi/test_creds/crl_data:leaf_signed_by_intermediate.pem",
+        "//test/core/tsi/test_creds/crl_data:revoked.key",
+        "//test/core/tsi/test_creds/crl_data:revoked.pem",
+        "//test/core/tsi/test_creds/crl_data:valid.key",
+        "//test/core/tsi/test_creds/crl_data:valid.pem",
+        "//test/core/tsi/test_creds/crl_data/bad_crls:evil.crl",
+        "//test/core/tsi/test_creds/crl_data/bad_crls:invalid_content.crl",
+        "//test/core/tsi/test_creds/crl_data/bad_crls:invalid_signature.crl",
+        "//test/core/tsi/test_creds/crl_data/crls:ab06acdd.r0",
+        "//test/core/tsi/test_creds/crl_data/crls:b9322cac.r0",
+        "//test/core/tsi/test_creds/crl_data/crls:current.crl",
+        "//test/core/tsi/test_creds/crl_data/crls:intermediate.crl",
+        "//test/core/tsi/test_creds/crl_data/crls_missing_intermediate:ab06acdd.r0",
+        "//test/core/tsi/test_creds/crl_data/crls_missing_root:b9322cac.r0",
+    ],
+    external_deps = [
+        "absl/log:check",
+        "gtest",
+    ],
+    tags = ["no_windows"],
+    deps = [
+        ":transport_security_test_lib",
+        "//:gpr",
+        "//:grpc",
+        "//:tsi",
+        "//test/core/test_util:grpc_test_util",
+    ],
+)
+
+grpc_cc_test(
     name = "transport_security_test",
     srcs = ["transport_security_test.cc"],
     external_deps = [

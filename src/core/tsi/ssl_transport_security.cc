@@ -1350,12 +1350,13 @@ absl::Status ConfigureSpiffeRoots(X509_STORE_CTX* ctx,
 // returns 1 on success, indicating a trusted chain to a root of trust was
 // found, 0 if a trusted chain could not be built.
 static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
-  // TODO(gtcooke94)
-  // If a SPIFFE Bundle Map is configured, we'll create this root stack during
-  // the verification function. We use X509_STORE_CTX_set0_trusted_stack to then
-  // configure these as the roots for verification, which does not take
-  // ownership. We must ensure the lifetime of this object is long enough, thus
-  // the declaration here.
+  // TODO(gtcooke94) - setting verification flags that might be missed if we
+  // don't have pem_root_certs
+  // If a SPIFFE Bundle Map is configured, we'll
+  // create this root stack during the verification function. We use
+  // X509_STORE_CTX_set0_trusted_stack to then configure these as the roots for
+  // verification, which does not take ownership. We must ensure the lifetime of
+  // this object is long enough, thus the declaration here.
   STACK_OF(X509)* root_stack = sk_X509_new_null();
   grpc_core::SpiffeBundleMap* spiffe_bundle_map = GetSpiffeBundleMap(ctx);
   if (spiffe_bundle_map != nullptr) {
