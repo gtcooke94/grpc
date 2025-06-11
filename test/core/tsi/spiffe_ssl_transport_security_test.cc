@@ -263,15 +263,17 @@ class SpiffeSslTransportSecurityTest
 struct tsi_test_fixture_vtable
     SpiffeSslTransportSecurityTest::SslTsiTestFixture::kVtable = {
         &SpiffeSslTransportSecurityTest::SslTsiTestFixture::SetupHandshakers,
-        &SpiffeSslTransportSecurityTest::SslTsiTestFixture::CheckHandshakerPeers,
+        &SpiffeSslTransportSecurityTest::SslTsiTestFixture::
+            CheckHandshakerPeers,
         &SpiffeSslTransportSecurityTest::SslTsiTestFixture::Destruct};
 
 TEST_P(SpiffeSslTransportSecurityTest, Basic) {
   auto* fixture = new SslTsiTestFixture(
-      kRevokedKeyPath, kRevokedCertPath, kValidKeyPath, kValidCertPath,
-      nullptr, nullptr, /*expect_server_success=*/false, /*expect_client_success_1_2=*/false, /*expected_client_success_1_3*/false);
+      kRevokedKeyPath, kRevokedCertPath, kValidKeyPath, kValidCertPath, nullptr,
+      nullptr, /*expect_server_success=*/false,
+      /*expect_client_success_1_2=*/false,
+      /*expected_client_success_1_3*/ false);
   fixture->Run();
-
 }
 
 // TEST_P(SpiffeSslTransportSecurityTest, RevokedServerCert) {
@@ -304,26 +306,28 @@ TEST_P(SpiffeSslTransportSecurityTest, Basic) {
 
 // TEST_P(SpiffeSslTransportSecurityTest, UseRevokedIntermediateValidCrl) {
 //   auto* fixture = new SslTsiTestFixture(
-//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath, kValidKeyPath,
-//       kValidCertPath, kSslTsiTestCrlSupportedCrlDir, nullptr, false, false,
-//       false);
+//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath,
+//       kValidKeyPath, kValidCertPath, kSslTsiTestCrlSupportedCrlDir, nullptr,
+//       false, false, false);
 //   fixture->Run();
 // }
 
 // TEST_P(SpiffeSslTransportSecurityTest,
 //        UseRevokedIntermediateWithMissingIntermediateCrl) {
 //   auto* fixture = new SslTsiTestFixture(
-//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath, kValidKeyPath,
-//       kValidCertPath, kSslTsiTestCrlSupportedCrlDirMissingIntermediate, nullptr,
-//       false, false, false);
+//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath,
+//       kValidKeyPath, kValidCertPath,
+//       kSslTsiTestCrlSupportedCrlDirMissingIntermediate, nullptr, false,
+//       false, false);
 //   fixture->Run();
 // }
 
-// TEST_P(SpiffeSslTransportSecurityTest, UseRevokedIntermediateWithMissingRootCrl) {
+// TEST_P(SpiffeSslTransportSecurityTest,
+// UseRevokedIntermediateWithMissingRootCrl) {
 //   auto* fixture = new SslTsiTestFixture(
-//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath, kValidKeyPath,
-//       kValidCertPath, kSslTsiTestCrlSupportedCrlDirMissingRoot, nullptr, true,
-//       true, true);
+//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath,
+//       kValidKeyPath, kValidCertPath,
+//       kSslTsiTestCrlSupportedCrlDirMissingRoot, nullptr, true, true, true);
 //   fixture->Run();
 // }
 
@@ -338,8 +342,9 @@ TEST_P(SpiffeSslTransportSecurityTest, Basic) {
 //   ASSERT_TRUE(provider.ok());
 
 //   auto* fixture = new SslTsiTestFixture(kValidKeyPath, kValidCertPath,
-//                                         kValidKeyPath, kValidCertPath, nullptr,
-//                                         *provider, true, true, true);
+//                                         kValidKeyPath, kValidCertPath,
+//                                         nullptr, *provider, true, true,
+//                                         true);
 //   fixture->Run();
 // }
 
@@ -354,8 +359,9 @@ TEST_P(SpiffeSslTransportSecurityTest, Basic) {
 //   ASSERT_TRUE(provider.ok());
 
 //   auto* fixture = new SslTsiTestFixture(kRevokedKeyPath, kRevokedCertPath,
-//                                         kValidKeyPath, kValidCertPath, nullptr,
-//                                         *provider, false, false, false);
+//                                         kValidKeyPath, kValidCertPath,
+//                                         nullptr, *provider, false, false,
+//                                         false);
 //   fixture->Run();
 // }
 
@@ -371,11 +377,13 @@ TEST_P(SpiffeSslTransportSecurityTest, Basic) {
 
 //   auto* fixture = new SslTsiTestFixture(kValidKeyPath, kValidCertPath,
 //                                         kRevokedKeyPath, kRevokedCertPath,
-//                                         nullptr, *provider, false, false, true);
+//                                         nullptr, *provider, false, false,
+//                                         true);
 //   fixture->Run();
 // }
 
-// TEST_P(SpiffeSslTransportSecurityTest, CrlProviderRevokedIntermediateValidCrl) {
+// TEST_P(SpiffeSslTransportSecurityTest,
+// CrlProviderRevokedIntermediateValidCrl) {
 //   std::string root_crl = grpc_core::testing::GetFileContents(kRootCrlPath);
 //   std::string intermediate_crl =
 //       grpc_core::testing::GetFileContents(kIntermediateCrlPath);
@@ -386,8 +394,9 @@ TEST_P(SpiffeSslTransportSecurityTest, Basic) {
 //   ASSERT_TRUE(provider.ok());
 
 //   auto* fixture = new SslTsiTestFixture(
-//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath, kValidKeyPath,
-//       kValidCertPath, nullptr, *provider, false, false, false);
+//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath,
+//       kValidKeyPath, kValidCertPath, nullptr, *provider, false, false,
+//       false);
 //   fixture->Run();
 // }
 
@@ -396,12 +405,14 @@ TEST_P(SpiffeSslTransportSecurityTest, Basic) {
 //   std::string root_crl = grpc_core::testing::GetFileContents(kRootCrlPath);
 
 //   absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-//       provider = grpc_core::experimental::CreateStaticCrlProvider({root_crl});
+//       provider =
+//       grpc_core::experimental::CreateStaticCrlProvider({root_crl});
 //   ASSERT_TRUE(provider.ok());
 
 //   auto* fixture = new SslTsiTestFixture(
-//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath, kValidKeyPath,
-//       kValidCertPath, nullptr, *provider, false, false, false);
+//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath,
+//       kValidKeyPath, kValidCertPath, nullptr, *provider, false, false,
+//       false);
 //   fixture->Run();
 // }
 
@@ -416,8 +427,8 @@ TEST_P(SpiffeSslTransportSecurityTest, Basic) {
 //   ASSERT_TRUE(provider.ok());
 
 //   auto* fixture = new SslTsiTestFixture(
-//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath, kValidKeyPath,
-//       kValidCertPath, nullptr, *provider, true, true, true);
+//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath,
+//       kValidKeyPath, kValidCertPath, nullptr, *provider, true, true, true);
 //   fixture->Run();
 // }
 
@@ -452,8 +463,9 @@ TEST_P(SpiffeSslTransportSecurityTest, Basic) {
 //   ASSERT_TRUE(provider.ok()) << provider.status();
 
 //   auto* fixture = new SslTsiTestFixture(kValidKeyPath, kValidCertPath,
-//                                         kValidKeyPath, kValidCertPath, nullptr,
-//                                         *provider, false, false, false);
+//                                         kValidKeyPath, kValidCertPath,
+//                                         nullptr, *provider, false, false,
+//                                         false);
 //   fixture->Run();
 // }
 
@@ -468,8 +480,9 @@ TEST_P(SpiffeSslTransportSecurityTest, Basic) {
 //   ASSERT_TRUE(provider.ok()) << provider.status();
 
 //   auto* fixture = new SslTsiTestFixture(kValidKeyPath, kValidCertPath,
-//                                         kValidKeyPath, kValidCertPath, nullptr,
-//                                         *provider, false, false, false);
+//                                         kValidKeyPath, kValidCertPath,
+//                                         nullptr, *provider, false, false,
+//                                         false);
 //   fixture->Run();
 // }
 
