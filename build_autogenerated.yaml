@@ -16415,6 +16415,22 @@ targets:
   deps:
   - gtest
   uses_polling: false
+- name: spiffe_ssl_transport_security_test
+  gtest: true
+  build: test
+  language: c++
+  headers:
+  - test/core/tsi/transport_security_test_lib.h
+  src:
+  - test/core/tsi/spiffe_ssl_transport_security_test.cc
+  - test/core/tsi/transport_security_test_lib.cc
+  deps:
+  - gtest
+  - grpc_test_util
+  platforms:
+  - linux
+  - posix
+  - mac
 - name: spiffe_utils_test
   gtest: true
   build: test
