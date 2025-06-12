@@ -28,6 +28,8 @@
 
 namespace grpc_core {
 
+std::string BundleRootToPem(absl::string_view bundle_root);
+
 // A representation of a SPIFFE ID per the spec:
 // https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE-ID.md#the-spiffe-identity-and-verifiable-identity-document
 class SpiffeId final {

@@ -53,6 +53,22 @@ constexpr absl::string_view kServerKeyPath =
     "test/core/tsi/test_creds/spiffe_end2end/server.key";
 constexpr absl::string_view kServerCertPath =
     "test/core/tsi/test_creds/spiffe_end2end/server_spiffe.pem";
+constexpr absl::string_view kClientSpiffeBundleMapPath =
+    "test/core/tsi/test_creds/spiffe_end2end/client_spiffebundle.json";
+constexpr absl::string_view kServerSpiffeBundleMapPath =
+    "test/core/tsi/test_creds/spiffe_end2end/server_spiffebundle.json";
+
+std::shared_ptr<grpc_core::SpiffeBundleMap> GetClientSpiffeBundleMap() {
+  auto map = grpc_core::SpiffeBundleMap::FromFile(kClientSpiffeBundleMapPath);
+  EXPECT_TRUE(map.ok()) << map.status();
+  return *map;
+}
+
+std::shared_ptr<grpc_core::SpiffeBundleMap> GetServerSpiffeBundleMap() {
+  auto map = grpc_core::SpiffeBundleMap::FromFile(kServerSpiffeBundleMapPath);
+  EXPECT_TRUE(map.ok()) << map.status();
+  return *map;
+}
 
 class SpiffeSslTransportSecurityTest
     : public testing::TestWithParam<tsi_tls_version> {
@@ -76,8 +92,8 @@ class SpiffeSslTransportSecurityTest
       client_key_ = grpc_core::testing::GetFileContents(client_key_path.data());
       client_cert_ =
           grpc_core::testing::GetFileContents(client_cert_path.data());
-      root_cert_ = grpc_core::testing::GetFileContents(kCaPemPath.data());
-      root_store_ = tsi_ssl_root_certs_store_create(root_cert_.c_str());
+      // root_cert_ = grpc_core::testing::GetFileContents(kCaPemPath.data());
+      // root_store_ = tsi_ssl_root_certs_store_create(root_cert_.c_str());
       server_spiffe_bundle_map_ = server_spiffe_bundle_map;
       client_spiffe_bundle_map_ = client_spiffe_bundle_map;
       expect_server_success_ = expect_server_success;
@@ -92,7 +108,7 @@ class SpiffeSslTransportSecurityTest
           gpr_malloc(sizeof(tsi_ssl_pem_key_cert_pair)));
       client_pem_key_cert_pairs_[0].private_key = client_key_.c_str();
       client_pem_key_cert_pairs_[0].cert_chain = client_cert_.c_str();
-      CHECK_NE(root_store_, nullptr);
+      // CHECK_NE(root_store_, nullptr);
     }
 
     void Run() {
@@ -249,8 +265,9 @@ struct tsi_test_fixture_vtable
 
 TEST_P(SpiffeSslTransportSecurityTest, Basic) {
   auto* fixture = new SslTsiTestFixture(
-      kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath, nullptr,
-      nullptr, /*expect_server_success=*/true,
+      kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
+      GetServerSpiffeBundleMap(), GetClientSpiffeBundleMap(),
+      /*expect_server_success=*/true,
       /*expect_client_success_1_2=*/true, /*expected_client_success_1_3*/ true);
   fixture->Run();
 

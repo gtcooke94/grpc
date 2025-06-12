@@ -130,6 +130,10 @@ absl::Status ValidatePath(absl::string_view path) {
 
 }  // namespace
 
+std::string BundleRootToPem(absl::string_view bundle_root) {
+  return absl::StrCat(kCertificatePrefix, bundle_root, kCertificateSuffix);
+}
+
 absl::StatusOr<SpiffeId> SpiffeId::FromString(absl::string_view input) {
   GRPC_RETURN_IF_ERROR(DoInitialUriValidation(input));
   if (!absl::StartsWithIgnoreCase(input, kSpiffePrefix)) {
@@ -202,8 +206,9 @@ void SpiffeBundleKey::JsonPostLoad(const Json& json, const JsonArgs& args,
     }
     if (!x5c->empty()) {
       ValidationErrors::ScopedField field(errors, "[0]");
-      std::string pem_cert =
-          absl::StrCat(kCertificatePrefix, (*x5c)[0], kCertificateSuffix);
+      // std::string pem_cert =
+      //     absl::StrCat(kCertificatePrefix, (*x5c)[0], kCertificateSuffix);
+      std::string pem_cert = BundleRootToPem((*x5c)[0]);
       auto certs = ParsePemCertificateChain(pem_cert);
       if (!certs.ok()) {
         errors->AddError(certs.status().ToString());

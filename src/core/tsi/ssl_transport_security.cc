@@ -1261,31 +1261,50 @@ static grpc_core::SpiffeBundleMap* GetSpiffeBundleMap(X509_STORE_CTX* ctx) {
   return spiffe_bundle_map;
 }
 
-static absl::StatusOr<std::string> GetSubjectNameFromCert(X509* cert) {
-  X509_NAME* subject_name = X509_get_subject_name(cert);
-  if (subject_name == nullptr) {
-    X509_NAME_free(subject_name);
-    return absl::InvalidArgumentError(
-        "could not get subject name from certificate");
+static absl::StatusOr<std::string> GetSpiffeURIromCert(X509* cert) {
+  GENERAL_NAMES* subject_alt_names = static_cast<GENERAL_NAMES*>(
+      X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr));
+  int uri_count = 0;
+  std::string spiffe_uri;
+  if (subject_alt_names != nullptr) {
+    size_t subject_alt_name_count = sk_GENERAL_NAME_num(subject_alt_names);
+    for (size_t i = 0; i < subject_alt_name_count; i++) {
+      GENERAL_NAME* subject_alt_name =
+          sk_GENERAL_NAME_value(subject_alt_names, TSI_SIZE_AS_SIZE(i));
+      if (subject_alt_name->type == GEN_URI) {
+        uri_count++;
+        if (uri_count > 1) {
+          return absl::InvalidArgumentError(
+              "more than one SAN URI found while doing SPIFFE validation. Must "
+              "have exactly one URI SAN that is the SPIFFE ID.");
+        }
+        unsigned char* name = nullptr;
+        int name_size = ASN1_STRING_to_UTF8(
+            &name, subject_alt_name->d.uniformResourceIdentifier);
+        if (name_size < 0) {
+          return absl::InvalidArgumentError(
+              "spiffe: could not get utf8 from asn1 string");
+        }
+        spiffe_uri =
+            std::string(reinterpret_cast<const char*>(name), name_size);
+        OPENSSL_free(name);
+      }
+    }
+    sk_GENERAL_NAME_pop_free(subject_alt_names, GENERAL_NAME_free);
   }
-  BIO* bio = BIO_new(BIO_s_mem());
-  X509_NAME_print_ex(bio, subject_name, 0, XN_FLAG_RFC2253);
-  X509_NAME_free(subject_name);
-  char* contents;
-  long len = BIO_get_mem_data(bio, &contents);
-  if (len <= 0) {
-    BIO_free(bio);
+  if (spiffe_uri.empty()) {
     return absl::InvalidArgumentError(
-        "could not get subject name from certificate");
+        "spiffe: no URI SAN found in leaf certificate");
   }
-  return std::string(contents);
+  return spiffe_uri;
 }
 
 static absl::StatusOr<std::string> SpiffeTrustDomainFromCert(X509* cert) {
-  auto subject_name = GetSubjectNameFromCert(cert);
+  auto subject_name = GetSpiffeURIromCert(cert);
   if (!subject_name.ok()) {
     return subject_name.status();
   }
+  std::cout << "GREG: " << *subject_name << "\n";
   auto spiffe_id = grpc_core::SpiffeId::FromString(*subject_name);
   if (!spiffe_id.ok()) {
     return spiffe_id.status();
@@ -1298,23 +1317,23 @@ absl::Status PemCertsToX509Stack(const absl::Span<const std::string> pem_certs,
   for (const auto& pem_cert : pem_certs) {
     X509* cert = nullptr;
     BIO* pem =
-        BIO_new_mem_buf(pem_cert.c_str(), static_cast<int>(pem_cert.length()));
+        BIO_new_mem_buf(pem_cert.data(), static_cast<int>(pem_cert.length()));
     if (pem == nullptr) {
-      return absl::InvalidArgumentError("Could not parse certificate");
+      return absl::InvalidArgumentError("Could not parse certificate to BIO");
     }
-    cert = PEM_read_bio_X509(pem, nullptr, nullptr, const_cast<char*>(""));
+    cert = PEM_read_bio_X509(pem, nullptr, nullptr, nullptr);
     BIO_free(pem);
     if (cert == nullptr) {
-      return absl::InvalidArgumentError("Could not parse certificate");
+      return absl::InvalidArgumentError("Could not parse certificate PEM");
     }
     sk_X509_push(*cert_stack, cert);
   }
   return absl::OkStatus();
 }
 
-// Fills ctx's trusted roots with the roots in the SPIFFE Bundle Map that are
-// associated with the to-be-verified leaf certificate's trust domain. For more
-// detail see
+// Fills ctx's trusted roots with the roots in the SPIFFE Bundle Map that
+// are associated with the to-be-verified leaf certificate's trust domain.
+// For more detail see
 // https://github.com/grpc/proposal/blob/master/A87-mtls-spiffe-support.md
 absl::Status ConfigureSpiffeRoots(X509_STORE_CTX* ctx,
                                   grpc_core::SpiffeBundleMap* spiffe_bundle_map,
@@ -1334,7 +1353,11 @@ absl::Status ConfigureSpiffeRoots(X509_STORE_CTX* ctx,
   if (!roots.ok()) {
     return roots.status();
   }
-  absl::Status status = PemCertsToX509Stack(*roots, &root_stack);
+  std::vector<std::string> pem_roots;
+  for (const auto& root : *roots) {
+    pem_roots.emplace_back(grpc_core::BundleRootToPem(root));
+  }
+  absl::Status status = PemCertsToX509Stack(pem_roots, &root_stack);
   if (!status.ok()) {
     return status;
   }
@@ -1354,9 +1377,9 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
   // don't have pem_root_certs
   // If a SPIFFE Bundle Map is configured, we'll
   // create this root stack during the verification function. We use
-  // X509_STORE_CTX_set0_trusted_stack to then configure these as the roots for
-  // verification, which does not take ownership. We must ensure the lifetime of
-  // this object is long enough, thus the declaration here.
+  // X509_STORE_CTX_set0_trusted_stack to then configure these as the roots
+  // for verification, which does not take ownership. We must ensure the
+  // lifetime of this object is long enough, thus the declaration here.
   STACK_OF(X509)* root_stack = sk_X509_new_null();
   grpc_core::SpiffeBundleMap* spiffe_bundle_map = GetSpiffeBundleMap(ctx);
   if (spiffe_bundle_map != nullptr) {
@@ -1372,8 +1395,8 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
   if (ret <= 0) {
     VLOG(2) << "Failed to verify cert chain.";
     // Verification failed. We shouldn't expect to have a verified chain, so
-    // there is no need to attempt to extract the root cert from it, check for
-    // revocation, or check anything else.
+    // there is no need to attempt to extract the root cert from it, check
+    // for revocation, or check anything else.
     sk_X509_pop_free(root_stack, X509_free);
     return ret;
   }
@@ -1391,9 +1414,9 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
   return ret;
 }
 
-// Sets the min and max TLS version of |ssl_context| to |min_tls_version| and
-// |max_tls_version|, respectively. Calling this method is a no-op when using
-// OpenSSL versions < 1.1.
+// Sets the min and max TLS version of |ssl_context| to |min_tls_version|
+// and |max_tls_version|, respectively. Calling this method is a no-op when
+// using OpenSSL versions < 1.1.
 static tsi_result tsi_set_min_and_max_tls_versions(
     SSL_CTX* ssl_context, tsi_tls_version min_tls_version,
     tsi_tls_version max_tls_version) {
