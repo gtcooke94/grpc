@@ -323,7 +323,7 @@ TEST_P(SpiffeSslTransportSecurityTest, ServerSideSpiffeBundle) {
 // Use the good client spiffebundle on the server side so we don't get a
 // matching trust domain on the server side for the client's leaf certificate
 // Client-side TLS 1.3 sees success
-TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffeServerMismatch) {
+TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffeServerMismatchFail) {
   auto* fixture = new SslTsiTestFixture(
       kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
       GetClientSpiffeBundleMap(), GetClientSpiffeBundleMap(), kNonSpiffeCAPath,
@@ -335,7 +335,7 @@ TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffeServerMismatch) {
 
 // Use the good server side spiffebundle on the client side so we don't get a
 // matching trust domain on the client side for the server's leaf certificate
-TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffeClientMismatch) {
+TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffeClientMismatchFail) {
   auto* fixture = new SslTsiTestFixture(
       kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
       GetServerSpiffeBundleMap(), GetServerSpiffeBundleMap(), kNonSpiffeCAPath,
@@ -345,7 +345,7 @@ TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffeClientMismatch) {
   fixture->Run();
 }
 
-TEST_P(SpiffeSslTransportSecurityTest, NonSpiffeServerCert) {
+TEST_P(SpiffeSslTransportSecurityTest, NonSpiffeServerCertFail) {
   auto* fixture = new SslTsiTestFixture(
       kNonSpiffeKeyPath, kNonSpiffeCertPath, kClientKeyPath, kClientCertPath,
       GetServerSpiffeBundleMap(), GetClientSpiffeBundleMap(), kNonSpiffeCAPath,
@@ -355,7 +355,7 @@ TEST_P(SpiffeSslTransportSecurityTest, NonSpiffeServerCert) {
   fixture->Run();
 }
 
-TEST_P(SpiffeSslTransportSecurityTest, NonSpiffeClientCert) {
+TEST_P(SpiffeSslTransportSecurityTest, NonSpiffeClientCertFail) {
   // TLS1.3 client will pass because it validates the server
   auto* fixture = new SslTsiTestFixture(
       kServerKeyPath, kServerCertPath, kNonSpiffeKeyPath, kNonSpiffeCertPath,
@@ -366,208 +366,7 @@ TEST_P(SpiffeSslTransportSecurityTest, NonSpiffeClientCert) {
   fixture->Run();
 }
 
-// Spiffe but not in bundle
-// SPIFFE Chain
-// CRLs + Spiffe
-
-// TEST_P(SpiffeSslTransportSecurityTest, RevokedServerCert) {
-//   auto* fixture = new SslTsiTestFixture(
-//       kRevokedKeyPath, kRevokedCertPath, kValidKeyPath, kValidCertPath,
-//       kSslTsiTestCrlSupportedCrlDir, nullptr, false, false, false);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest, RevokedClientCert) {
-//   auto* fixture = new SslTsiTestFixture(
-//       kValidKeyPath, kValidCertPath, kRevokedKeyPath, kRevokedCertPath,
-//       kSslTsiTestCrlSupportedCrlDir, nullptr, false, false, true);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest, ValidCerts) {
-//   auto* fixture = new SslTsiTestFixture(
-//       kValidKeyPath, kValidCertPath, kValidKeyPath, kValidCertPath,
-//       kSslTsiTestCrlSupportedCrlDir, nullptr, true, true, true);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest, UseFaultyCrlDirectory) {
-//   auto* fixture = new SslTsiTestFixture(
-//       kRevokedKeyPath, kRevokedCertPath, kValidKeyPath, kValidCertPath,
-//       kSslTsiTestFaultyCrlsDir, nullptr, true, true, true);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest, UseRevokedIntermediateValidCrl) {
-//   auto* fixture = new SslTsiTestFixture(
-//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath, kValidKeyPath,
-//       kValidCertPath, kSslTsiTestCrlSupportedCrlDir, nullptr, false, false,
-//       false);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest,
-//        UseRevokedIntermediateWithMissingIntermediateCrl) {
-//   auto* fixture = new SslTsiTestFixture(
-//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath, kValidKeyPath,
-//       kValidCertPath, kSslTsiTestCrlSupportedCrlDirMissingIntermediate, nullptr,
-//       false, false, false);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest, UseRevokedIntermediateWithMissingRootCrl) {
-//   auto* fixture = new SslTsiTestFixture(
-//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath, kValidKeyPath,
-//       kValidCertPath, kSslTsiTestCrlSupportedCrlDirMissingRoot, nullptr, true,
-//       true, true);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest, CrlProviderValidCerts) {
-//   std::string root_crl = grpc_core::testing::GetFileContents(kRootCrlPath);
-//   std::string intermediate_crl =
-//       grpc_core::testing::GetFileContents(kIntermediateCrlPath);
-
-//   absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-//       provider = grpc_core::experimental::CreateStaticCrlProvider(
-//           {root_crl, intermediate_crl});
-//   ASSERT_TRUE(provider.ok());
-
-//   auto* fixture = new SslTsiTestFixture(kValidKeyPath, kValidCertPath,
-//                                         kValidKeyPath, kValidCertPath, nullptr,
-//                                         *provider, true, true, true);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest, CrlProviderRevokedServer) {
-//   std::string root_crl = grpc_core::testing::GetFileContents(kRootCrlPath);
-//   std::string intermediate_crl =
-//       grpc_core::testing::GetFileContents(kIntermediateCrlPath);
-
-//   absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-//       provider = grpc_core::experimental::CreateStaticCrlProvider(
-//           {root_crl, intermediate_crl});
-//   ASSERT_TRUE(provider.ok());
-
-//   auto* fixture = new SslTsiTestFixture(kRevokedKeyPath, kRevokedCertPath,
-//                                         kValidKeyPath, kValidCertPath, nullptr,
-//                                         *provider, false, false, false);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest, CrlProviderRevokedClient) {
-//   std::string root_crl = grpc_core::testing::GetFileContents(kRootCrlPath);
-//   std::string intermediate_crl =
-//       grpc_core::testing::GetFileContents(kIntermediateCrlPath);
-
-//   absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-//       provider = grpc_core::experimental::CreateStaticCrlProvider(
-//           {root_crl, intermediate_crl});
-//   ASSERT_TRUE(provider.ok());
-
-//   auto* fixture = new SslTsiTestFixture(kValidKeyPath, kValidCertPath,
-//                                         kRevokedKeyPath, kRevokedCertPath,
-//                                         nullptr, *provider, false, false, true);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest, CrlProviderRevokedIntermediateValidCrl) {
-//   std::string root_crl = grpc_core::testing::GetFileContents(kRootCrlPath);
-//   std::string intermediate_crl =
-//       grpc_core::testing::GetFileContents(kIntermediateCrlPath);
-
-//   absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-//       provider = grpc_core::experimental::CreateStaticCrlProvider(
-//           {root_crl, intermediate_crl});
-//   ASSERT_TRUE(provider.ok());
-
-//   auto* fixture = new SslTsiTestFixture(
-//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath, kValidKeyPath,
-//       kValidCertPath, nullptr, *provider, false, false, false);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest,
-//        CrlProviderRevokedIntermediateMissingIntermediateCrl) {
-//   std::string root_crl = grpc_core::testing::GetFileContents(kRootCrlPath);
-
-//   absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-//       provider = grpc_core::experimental::CreateStaticCrlProvider({root_crl});
-//   ASSERT_TRUE(provider.ok());
-
-//   auto* fixture = new SslTsiTestFixture(
-//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath, kValidKeyPath,
-//       kValidCertPath, nullptr, *provider, false, false, false);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest,
-//        CrlProviderRevokedIntermediateMissingRootCrl) {
-//   std::string intermediate_crl =
-//       grpc_core::testing::GetFileContents(kIntermediateCrlPath);
-
-//   absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-//       provider =
-//           grpc_core::experimental::CreateStaticCrlProvider({intermediate_crl});
-//   ASSERT_TRUE(provider.ok());
-
-//   auto* fixture = new SslTsiTestFixture(
-//       kRevokedIntermediateKeyPath, kRevokedIntermediateCertPath, kValidKeyPath,
-//       kValidCertPath, nullptr, *provider, true, true, true);
-//   fixture->Run();
-// }
-
-// std::string TestNameSuffix(
-//     const ::testing::TestParamInfo<tsi_tls_version>& version) {
-//   if (version.param == tsi_tls_version::TSI_TLS1_2) return "TLS_1_2";
-//   CHECK(version.param == tsi_tls_version::TSI_TLS1_3);
-//   return "TLS_1_3";
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest, CrlProviderModifiedContentCrl) {
-//   std::string root_crl =
-//       grpc_core::testing::GetFileContents(kModifiedContentPath);
-//   std::string intermediate_crl =
-//       grpc_core::testing::GetFileContents(kIntermediateCrlPath);
-
-//   absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-//       provider = grpc_core::experimental::CreateStaticCrlProvider(
-//           {root_crl, intermediate_crl});
-//   ASSERT_NE(provider.status(), absl::OkStatus()) << provider.status();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest, CrlProviderModifiedSignatureCrl) {
-//   std::string root_crl =
-//       grpc_core::testing::GetFileContents(kModifiedSignaturePath);
-//   std::string intermediate_crl =
-//       grpc_core::testing::GetFileContents(kIntermediateCrlPath);
-
-//   absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-//       provider = grpc_core::experimental::CreateStaticCrlProvider(
-//           {root_crl, intermediate_crl});
-//   ASSERT_TRUE(provider.ok()) << provider.status();
-
-//   auto* fixture = new SslTsiTestFixture(kValidKeyPath, kValidCertPath,
-//                                         kValidKeyPath, kValidCertPath, nullptr,
-//                                         *provider, false, false, false);
-//   fixture->Run();
-// }
-
-// TEST_P(SpiffeSslTransportSecurityTest, CrlFromBadCa) {
-//   std::string root_crl = grpc_core::testing::GetFileContents(kEvilCrlPath);
-//   std::string intermediate_crl =
-//       grpc_core::testing::GetFileContents(kIntermediateCrlPath);
-
-//   absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-//       provider = grpc_core::experimental::CreateStaticCrlProvider(
-//           {root_crl, intermediate_crl});
-//   ASSERT_TRUE(provider.ok()) << provider.status();
-
-//   auto* fixture = new SslTsiTestFixture(kValidKeyPath, kValidCertPath,
-//                                         kValidKeyPath, kValidCertPath, nullptr,
-//                                         *provider, false, false, false);
-//   fixture->Run();
-// }
+// CRLs + Spiffe?
 
 std::string TestNameSuffix(
     const ::testing::TestParamInfo<tsi_tls_version>& version) {
