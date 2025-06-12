@@ -53,6 +53,10 @@ constexpr absl::string_view kServerKeyPath =
     "test/core/tsi/test_creds/spiffe_end2end/server.key";
 constexpr absl::string_view kServerCertPath =
     "test/core/tsi/test_creds/spiffe_end2end/server_spiffe.pem";
+constexpr absl::string_view kServerChainKeyPath =
+    "test/core/tsi/test_creds/spiffe_end2end/leaf_signed_by_intermediate.key";
+constexpr absl::string_view kServerChainCertPath =
+    "test/core/tsi/test_creds/spiffe_end2end/leaf_and_intermediate_chain.pem";
 constexpr absl::string_view kClientSpiffeBundleMapPath =
     "test/core/tsi/test_creds/spiffe_end2end/client_spiffebundle.json";
 constexpr absl::string_view kServerSpiffeBundleMapPath =
@@ -276,6 +280,19 @@ TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffe) {
   auto* fixture = new SslTsiTestFixture(
       kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
       GetServerSpiffeBundleMap(), GetClientSpiffeBundleMap(), kNonSpiffeCAPath,
+      /*expect_server_success=*/true,
+      /*expect_client_success_1_2=*/true, /*expected_client_success_1_3=*/true);
+  fixture->Run();
+}
+
+// Valid SPIFFE Bundles on both sides with the root configured for the
+// appropriate trust domain, and a certificate chain with an intermediate CA on
+// the server side
+TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffeChain) {
+  auto* fixture = new SslTsiTestFixture(
+      kServerChainKeyPath, kServerChainCertPath, kClientKeyPath,
+      kClientCertPath, GetServerSpiffeBundleMap(), GetClientSpiffeBundleMap(),
+      kNonSpiffeCAPath,
       /*expect_server_success=*/true,
       /*expect_client_success_1_2=*/true, /*expected_client_success_1_3=*/true);
   fixture->Run();
