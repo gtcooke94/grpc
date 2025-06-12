@@ -270,24 +270,63 @@ struct tsi_test_fixture_vtable
         &SpiffeSslTransportSecurityTest::SslTsiTestFixture::CheckHandshakerPeers,
         &SpiffeSslTransportSecurityTest::SslTsiTestFixture::Destruct};
 
+// Valid SPIFFE Bundles on both sides with the root configured for the
+// appropriate trust domain
 TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffe) {
   auto* fixture = new SslTsiTestFixture(
       kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
       GetServerSpiffeBundleMap(), GetClientSpiffeBundleMap(), kNonSpiffeCAPath,
       /*expect_server_success=*/true,
-      /*expect_client_success_1_2=*/true, /*expected_client_success_1_3*/ true);
+      /*expect_client_success_1_2=*/true, /*expected_client_success_1_3=*/true);
   fixture->Run();
 }
 
-// TEST_P(SpiffeSslTransportSecurityTest, ClientSideSpiffeBundle) {
-//   auto* fixture = new SslTsiTestFixture(
-//       kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
-//       GetServerSpiffeBundleMap(), GetClientSpiffeBundleMap(),
-//       /*expect_server_success=*/true,
-//       /*expect_client_success_1_2=*/true, /*expected_client_success_1_3*/
-//       true);
-//   fixture->Run();
-// }
+// Just Spiffe bundles on the client side - the server side has the root
+// configured as a certificate
+TEST_P(SpiffeSslTransportSecurityTest, ClientSideSpiffeBundle) {
+  auto* fixture = new SslTsiTestFixture(
+      kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath, nullptr,
+      GetClientSpiffeBundleMap(), kCaPemPath,
+      /*expect_server_success=*/true,
+      /*expect_client_success_1_2=*/true, /*expected_client_success_1_3=*/true);
+  fixture->Run();
+}
+
+// Just SPIFFE bundles on the server side - the client side has the root
+// configured as a certificate
+TEST_P(SpiffeSslTransportSecurityTest, ServerSideSpiffeBundle) {
+  auto* fixture = new SslTsiTestFixture(
+      kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
+      GetServerSpiffeBundleMap(), nullptr, kCaPemPath,
+      /*expect_server_success=*/true,
+      /*expect_client_success_1_2=*/true, /*expected_client_success_1_3=*/true);
+  fixture->Run();
+}
+
+// Use the good client spiffebundle on the server side so we don't get a
+// matching trust domain on the server side for the client's leaf certificate
+// Client-side TLS 1.3 sees success
+TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffeServerMismatch) {
+  auto* fixture = new SslTsiTestFixture(
+      kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
+      GetClientSpiffeBundleMap(), GetClientSpiffeBundleMap(), kNonSpiffeCAPath,
+      /*expect_server_success=*/false,
+      /*expect_client_success_1_2=*/false,
+      /*expected_client_success_1_3=*/true);
+  fixture->Run();
+}
+
+// Use the good server side spiffebundle on the client side so we don't get a
+// matching trust domain on the client side for the server's leaf certificate
+TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffeClientMismatch) {
+  auto* fixture = new SslTsiTestFixture(
+      kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
+      GetServerSpiffeBundleMap(), GetServerSpiffeBundleMap(), kNonSpiffeCAPath,
+      /*expect_server_success=*/false,
+      /*expect_client_success_1_2=*/false,
+      /*expected_client_success_1_3=*/false);
+  fixture->Run();
+}
 
 TEST_P(SpiffeSslTransportSecurityTest, NonSpiffeServerCert) {
   auto* fixture = new SslTsiTestFixture(
@@ -311,7 +350,7 @@ TEST_P(SpiffeSslTransportSecurityTest, NonSpiffeClientCert) {
 }
 
 // Spiffe but not in bundle
-// One sided without Spiffe
+// SPIFFE Chain
 // CRLs + Spiffe
 
 // TEST_P(SpiffeSslTransportSecurityTest, RevokedServerCert) {
