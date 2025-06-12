@@ -58,6 +58,13 @@ constexpr absl::string_view kClientSpiffeBundleMapPath =
 constexpr absl::string_view kServerSpiffeBundleMapPath =
     "test/core/tsi/test_creds/spiffe_end2end/server_spiffebundle.json";
 
+constexpr absl::string_view kNonSpiffeKeyPath =
+    "test/core/tsi/test_creds/crl_data/valid.key";
+constexpr absl::string_view kNonSpiffeCertPath =
+    "test/core/tsi/test_creds/crl_data/valid.pem";
+constexpr absl::string_view kNonSpiffeCAPath =
+    "test/core/tsi/test_creds/crl_data/ca.pem";
+
 std::shared_ptr<grpc_core::SpiffeBundleMap> GetClientSpiffeBundleMap() {
   auto map = grpc_core::SpiffeBundleMap::FromFile(kClientSpiffeBundleMapPath);
   EXPECT_TRUE(map.ok()) << map.status();
@@ -81,8 +88,8 @@ class SpiffeSslTransportSecurityTest
         absl::string_view client_key_path, absl::string_view client_cert_path,
         std::shared_ptr<grpc_core::SpiffeBundleMap> server_spiffe_bundle_map,
         std::shared_ptr<grpc_core::SpiffeBundleMap> client_spiffe_bundle_map,
-        bool expect_server_success, bool expect_client_success_1_2,
-        bool expect_client_success_1_3) {
+        absl::string_view ca_path, bool expect_server_success,
+        bool expect_client_success_1_2, bool expect_client_success_1_3) {
       tsi_test_fixture_init(&base_);
       base_.test_unused_bytes = true;
       base_.vtable = &kVtable;
@@ -92,8 +99,8 @@ class SpiffeSslTransportSecurityTest
       client_key_ = grpc_core::testing::GetFileContents(client_key_path.data());
       client_cert_ =
           grpc_core::testing::GetFileContents(client_cert_path.data());
-      // root_cert_ = grpc_core::testing::GetFileContents(kCaPemPath.data());
-      // root_store_ = tsi_ssl_root_certs_store_create(root_cert_.c_str());
+      // We set this and it shouldn't matter if we set spiffe bundles
+      root_cert_ = grpc_core::testing::GetFileContents(ca_path.data());
       server_spiffe_bundle_map_ = server_spiffe_bundle_map;
       client_spiffe_bundle_map_ = client_spiffe_bundle_map;
       expect_server_success_ = expect_server_success;
@@ -263,15 +270,49 @@ struct tsi_test_fixture_vtable
         &SpiffeSslTransportSecurityTest::SslTsiTestFixture::CheckHandshakerPeers,
         &SpiffeSslTransportSecurityTest::SslTsiTestFixture::Destruct};
 
-TEST_P(SpiffeSslTransportSecurityTest, Basic) {
+TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffe) {
   auto* fixture = new SslTsiTestFixture(
       kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
-      GetServerSpiffeBundleMap(), GetClientSpiffeBundleMap(),
+      GetServerSpiffeBundleMap(), GetClientSpiffeBundleMap(), kNonSpiffeCAPath,
       /*expect_server_success=*/true,
       /*expect_client_success_1_2=*/true, /*expected_client_success_1_3*/ true);
   fixture->Run();
-
 }
+
+// TEST_P(SpiffeSslTransportSecurityTest, ClientSideSpiffeBundle) {
+//   auto* fixture = new SslTsiTestFixture(
+//       kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
+//       GetServerSpiffeBundleMap(), GetClientSpiffeBundleMap(),
+//       /*expect_server_success=*/true,
+//       /*expect_client_success_1_2=*/true, /*expected_client_success_1_3*/
+//       true);
+//   fixture->Run();
+// }
+
+TEST_P(SpiffeSslTransportSecurityTest, NonSpiffeServerCert) {
+  auto* fixture = new SslTsiTestFixture(
+      kNonSpiffeKeyPath, kNonSpiffeCertPath, kClientKeyPath, kClientCertPath,
+      GetServerSpiffeBundleMap(), GetClientSpiffeBundleMap(), kNonSpiffeCAPath,
+      /*expect_server_success=*/false,
+      /*expect_client_success_1_2=*/false,
+      /*expected_client_success_1_3=*/false);
+  fixture->Run();
+}
+
+TEST_P(SpiffeSslTransportSecurityTest, NonSpiffeClientCert) {
+  // TLS1.3 client will pass because it validates the server
+  auto* fixture = new SslTsiTestFixture(
+      kServerKeyPath, kServerCertPath, kNonSpiffeKeyPath, kNonSpiffeCertPath,
+      GetServerSpiffeBundleMap(), GetClientSpiffeBundleMap(), kNonSpiffeCAPath,
+      /*expect_server_success=*/false,
+      /*expect_client_success_1_2=*/false,
+      /*expected_client_success_1_3=*/true);
+  fixture->Run();
+}
+
+// Spiffe but not in bundle
+// One sided without Spiffe
+// CRLs + Spiffe
 
 // TEST_P(SpiffeSslTransportSecurityTest, RevokedServerCert) {
 //   auto* fixture = new SslTsiTestFixture(
