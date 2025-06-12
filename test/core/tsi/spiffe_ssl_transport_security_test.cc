@@ -43,34 +43,16 @@ extern "C" {
 }
 
 namespace {
-
-const char* kSslTsiTestCrlSupportedCredentialsDir =
-    "test/core/tsi/test_creds/crl_data/";
-const char* kSslTsiTestCrlSupportedCrlDir =
-    "test/core/tsi/test_creds/crl_data/crls/";
-const char* kSslTsiTestCrlSupportedCrlDirMissingIntermediate =
-    "test/core/tsi/test_creds/crl_data/crls_missing_intermediate/";
-const char* kSslTsiTestCrlSupportedCrlDirMissingRoot =
-    "test/core/tsi/test_creds/crl_data/crls_missing_root/";
-const char* kSslTsiTestFaultyCrlsDir = "bad_path/";
-const char* kRevokedKeyPath = "test/core/tsi/test_creds/crl_data/revoked.key";
-const char* kRevokedCertPath = "test/core/tsi/test_creds/crl_data/revoked.pem";
-const char* kValidKeyPath = "test/core/tsi/test_creds/crl_data/valid.key";
-const char* kValidCertPath = "test/core/tsi/test_creds/crl_data/valid.pem";
-
-const char* kRevokedIntermediateKeyPath =
-    "test/core/tsi/test_creds/crl_data/leaf_signed_by_intermediate.key";
-const char* kRevokedIntermediateCertPath =
-    "test/core/tsi/test_creds/crl_data/leaf_and_intermediate_chain.pem";
-const char* kRootCrlPath = "test/core/tsi/test_creds/crl_data/crls/current.crl";
-const char* kIntermediateCrlPath =
-    "test/core/tsi/test_creds/crl_data/crls/intermediate.crl";
-const char* kModifiedSignaturePath =
-    "test/core/tsi/test_creds/crl_data/bad_crls/invalid_signature.crl";
-const char* kModifiedContentPath =
-    "test/core/tsi/test_creds/crl_data/bad_crls/invalid_content.crl";
-const char* kEvilCrlPath =
-    "test/core/tsi/test_creds/crl_data/bad_crls/evil.crl";
+constexpr absl::string_view kCaPemPath =
+    "test/core/tsi/test_creds/spiffe_end2end/ca.pem";
+constexpr absl::string_view kClientKeyPath =
+    "test/core/tsi/test_creds/spiffe_end2end/client.key";
+constexpr absl::string_view kClientCertPath =
+    "test/core/tsi/test_creds/spiffe_end2end/client_spiffe.pem";
+constexpr absl::string_view kServerKeyPath =
+    "test/core/tsi/test_creds/spiffe_end2end/server.key";
+constexpr absl::string_view kServerCertPath =
+    "test/core/tsi/test_creds/spiffe_end2end/server_spiffe.pem";
 
 class SpiffeSslTransportSecurityTest
     : public testing::TestWithParam<tsi_tls_version> {
@@ -94,8 +76,7 @@ class SpiffeSslTransportSecurityTest
       client_key_ = grpc_core::testing::GetFileContents(client_key_path.data());
       client_cert_ =
           grpc_core::testing::GetFileContents(client_cert_path.data());
-      root_cert_ = grpc_core::testing::GetFileContents(
-          absl::StrCat(kSslTsiTestCrlSupportedCredentialsDir, "ca.pem").data());
+      root_cert_ = grpc_core::testing::GetFileContents(kCaPemPath.data());
       root_store_ = tsi_ssl_root_certs_store_create(root_cert_.c_str());
       server_spiffe_bundle_map_ = server_spiffe_bundle_map;
       client_spiffe_bundle_map_ = client_spiffe_bundle_map;
@@ -268,8 +249,9 @@ struct tsi_test_fixture_vtable
 
 TEST_P(SpiffeSslTransportSecurityTest, Basic) {
   auto* fixture = new SslTsiTestFixture(
-      kRevokedKeyPath, kRevokedCertPath, kValidKeyPath, kValidCertPath,
-      nullptr, nullptr, /*expect_server_success=*/false, /*expect_client_success_1_2=*/false, /*expected_client_success_1_3*/false);
+      kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath, nullptr,
+      nullptr, /*expect_server_success=*/true,
+      /*expect_client_success_1_2=*/true, /*expected_client_success_1_3*/ true);
   fixture->Run();
 
 }
