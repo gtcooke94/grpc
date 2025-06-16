@@ -141,8 +141,10 @@ class FileWatcherCertificateProvider final
                                  int64_t refresh_interval_sec);
 
   FileWatcherCertificateProvider(std::string private_key_path,
-                                 std::string identity_certificate_path, std::string root_cert_path,
-                                 std::string spiffe_bundle_map_path, int64_t refresh_interval_sec);
+                                 std::string identity_certificate_path,
+                                 std::string root_cert_path,
+                                 std::string spiffe_bundle_map_path,
+                                 int64_t refresh_interval_sec);
 
   ~FileWatcherCertificateProvider() override;
 
