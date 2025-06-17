@@ -99,8 +99,9 @@ class StaticDataCertificateProvider final
   StaticDataCertificateProvider(std::string root_certificate,
                                 PemKeyCertPairList pem_key_cert_pairs);
 
-  StaticDataCertificateProvider(std::string root_certificate, PemKeyCertPairList pem_key_cert_pairs,
-                                grpc_core::SpiffeBundleMap* spiffe_bundle_map);
+  StaticDataCertificateProvider(std::string root_certificate,
+                                PemKeyCertPairList pem_key_cert_pairs,
+                                SpiffeBundleMap* spiffe_bundle_map);
 
   ~StaticDataCertificateProvider() override;
 
@@ -145,8 +146,10 @@ class FileWatcherCertificateProvider final
                                  int64_t refresh_interval_sec);
 
   FileWatcherCertificateProvider(std::string private_key_path,
-                                 std::string identity_certificate_path, std::string root_cert_path,
-                                 std::string spiffe_bundle_map_path, int64_t refresh_interval_sec);
+                                 std::string identity_certificate_path,
+                                 std::string root_cert_path,
+                                 std::string spiffe_bundle_map_path,
+                                 int64_t refresh_interval_sec);
 
   ~FileWatcherCertificateProvider() override;
 
