@@ -65,33 +65,35 @@ const char* kCrlDirectoryPath =
     "test/core/tsi/test_creds/crl_data/crl_provider_test_dir/";
 constexpr char kMessage[] = "Hello";
 
-// This test must be at the top of the file because the
-// DirectoryReloaderCrlProvider gets the default event engine on construction.
-// To get the default event engine, grpc_init must have been called, otherwise a
-// segfault occurs. This test checks that no segfault occurs while getting the
-// default event engine during the construction of a
-// DirectoryReloaderCrlProvider. `grpc_init` is global state, so if another test
-// runs first, then this test could pass because of another test modifying the
-// global state
-TEST(DirectoryReloaderCrlProviderTestNoFixture, Construction) {
-  auto provider = grpc_core::experimental::CreateDirectoryReloaderCrlProvider(
-      kCrlDirectoryPath, std::chrono::seconds(60), nullptr);
-  ASSERT_TRUE(provider.ok()) << provider.status();
-}
+constexpr absl::string_view kCaPemPath =
+    "test/core/tsi/test_creds/spiffe_end2end/ca.pem";
+constexpr absl::string_view kClientKeyPath =
+    "test/core/tsi/test_creds/spiffe_end2end/client.key";
+constexpr absl::string_view kClientCertPath =
+    "test/core/tsi/test_creds/spiffe_end2end/client_spiffe.pem";
+constexpr absl::string_view kServerKeyPath =
+    "test/core/tsi/test_creds/spiffe_end2end/server.key";
+constexpr absl::string_view kServerCertPath =
+    "test/core/tsi/test_creds/spiffe_end2end/server_spiffe.pem";
+constexpr absl::string_view kServerChainKeyPath =
+    "test/core/tsi/test_creds/spiffe_end2end/leaf_signed_by_intermediate.key";
+constexpr absl::string_view kServerChainCertPath =
+    "test/core/tsi/test_creds/spiffe_end2end/leaf_and_intermediate_chain.pem";
+constexpr absl::string_view kClientSpiffeBundleMapPath =
+    "test/core/tsi/test_creds/spiffe_end2end/client_spiffebundle.json";
+constexpr absl::string_view kServerSpiffeBundleMapPath =
+    "test/core/tsi/test_creds/spiffe_end2end/server_spiffebundle.json";
 
 class SpiffeBundleMapTest : public ::testing::Test {
  protected:
-  void RunServer(absl::Notification* notification, absl::string_view server_key,
-                 absl::string_view server_cert) {
-    experimental::IdentityKeyCertPair key_cert_pair;
-    std::string root = grpc_core::testing::GetFileContents(kRootPath);
-    key_cert_pair.private_key = server_key.data();
-    key_cert_pair.certificate_chain = server_cert.data();
-    std::vector<experimental::IdentityKeyCertPair> identity_key_cert_pairs;
-    identity_key_cert_pairs.emplace_back(key_cert_pair);
+  void RunServer(absl::Notification* notification, absl::string_view key_path,
+                 absl::string_view cert_path, absl::string_view root_path,
+                 absl::string_view spiffe_bundle_map_path) {
     auto certificate_provider =
-        std::make_shared<experimental::StaticDataCertificateProvider>(
-            root, identity_key_cert_pairs);
+        std::make_shared<experimental::FileWatcherCertificateProvider>(
+            std::string(key_path), std::string(cert_path),
+            std::string(root_path), std::string(spiffe_bundle_map_path),
+            10000000000);
     grpc::experimental::TlsServerCredentialsOptions options(
         certificate_provider);
     options.watch_root_certs();
@@ -141,7 +143,7 @@ void DoRpc(const std::string& server_addr,
   grpc::testing::EchoResponse response;
   request.set_message(kMessage);
   ClientContext context;
-  context.set_deadline(grpc_timeout_seconds_to_deadline(/*time_s=*/15));
+  context.set_deadline(grpc_timeout_seconds_to_deadline(/*time_s=*/150000));
   grpc::Status result = stub->Echo(&context, request, &response);
   if (expect_success) {
     EXPECT_TRUE(result.ok());
@@ -155,19 +157,22 @@ void DoRpc(const std::string& server_addr,
   }
 }
 
-TEST_F(SpiffeBundleMapTest, CrlProviderValidStaticProvider) {
+TEST_F(SpiffeBundleMapTest, TODOGood) {
   server_addr_ = absl::StrCat("localhost:",
                               std::to_string(grpc_pick_unused_port_or_die()));
   absl::Notification notification;
-  std::string server_key = grpc_core::testing::GetFileContents(kValidKeyPath);
-  std::string server_cert = grpc_core::testing::GetFileContents(kValidCertPath);
-  server_thread_ = new std::thread(
-      [&]() { RunServer(&notification, server_key, server_cert); });
+  server_thread_ = new std::thread([&]() {
+    RunServer(&notification, kServerKeyPath, kServerCertPath, "",
+              kServerSpiffeBundleMapPath);
+  });
   notification.WaitForNotification();
 
-  std::string root_cert = grpc_core::testing::GetFileContents(kRootPath);
-  std::string client_key = grpc_core::testing::GetFileContents(kValidKeyPath);
-  std::string client_cert = grpc_core::testing::GetFileContents(kValidCertPath);
+  std::string root_cert =
+      grpc_core::testing::GetFileContents(std::string(kCaPemPath));
+  std::string client_key =
+      grpc_core::testing::GetFileContents(std::string(kClientKeyPath));
+  std::string client_cert =
+      grpc_core::testing::GetFileContents(std::string(kClientCertPath));
   experimental::IdentityKeyCertPair key_cert_pair;
   key_cert_pair.private_key = client_key;
   key_cert_pair.certificate_chain = client_cert;
@@ -184,11 +189,6 @@ TEST_F(SpiffeBundleMapTest, CrlProviderValidStaticProvider) {
   options.set_identity_cert_name("identity");
   std::string root_crl = grpc_core::testing::GetFileContents(kRootCrlPath);
 
-  absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-      provider = grpc_core::experimental::CreateStaticCrlProvider({root_crl});
-  ASSERT_TRUE(provider.ok());
-
-  options.set_crl_provider(*provider);
   options.set_check_call_host(false);
   auto verifier = std::make_shared<experimental::NoOpCertificateVerifier>();
   options.set_certificate_verifier(verifier);
@@ -196,88 +196,8 @@ TEST_F(SpiffeBundleMapTest, CrlProviderValidStaticProvider) {
   DoRpc(server_addr_, options, true);
 }
 
-TEST_F(SpiffeBundleMapTest, CrlProviderRevokedServer) {
-  server_addr_ = absl::StrCat("localhost:",
-                              std::to_string(grpc_pick_unused_port_or_die()));
-  absl::Notification notification;
-  std::string server_key = grpc_core::testing::GetFileContents(kRevokedKeyPath);
-  std::string server_cert =
-      grpc_core::testing::GetFileContents(kRevokedCertPath);
-  server_thread_ = new std::thread(
-      [&]() { RunServer(&notification, server_key, server_cert); });
-  notification.WaitForNotification();
-
-  std::string root_cert = grpc_core::testing::GetFileContents(kRootPath);
-  std::string client_key = grpc_core::testing::GetFileContents(kValidKeyPath);
-  std::string client_cert = grpc_core::testing::GetFileContents(kValidCertPath);
-  experimental::IdentityKeyCertPair key_cert_pair;
-  key_cert_pair.private_key = client_key;
-  key_cert_pair.certificate_chain = client_cert;
-  std::vector<experimental::IdentityKeyCertPair> identity_key_cert_pairs;
-  identity_key_cert_pairs.emplace_back(key_cert_pair);
-  auto certificate_provider =
-      std::make_shared<experimental::StaticDataCertificateProvider>(
-          root_cert, identity_key_cert_pairs);
-  grpc::experimental::TlsChannelCredentialsOptions options;
-  options.set_certificate_provider(certificate_provider);
-  options.watch_root_certs();
-  options.set_root_cert_name("root");
-  options.watch_identity_key_cert_pairs();
-  options.set_identity_cert_name("identity");
-  std::string root_crl = grpc_core::testing::GetFileContents(kRootCrlPath);
-
-  absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-      provider = grpc_core::experimental::CreateStaticCrlProvider({root_crl});
-  ASSERT_TRUE(provider.ok());
-
-  options.set_crl_provider(*provider);
-  options.set_check_call_host(false);
-  auto verifier = std::make_shared<experimental::NoOpCertificateVerifier>();
-  options.set_certificate_verifier(verifier);
-
-  DoRpc(server_addr_, options, false);
-}
-
-TEST_F(SpiffeBundleMapTest, CrlProviderValidReloaderProvider) {
-  server_addr_ = absl::StrCat("localhost:",
-                              std::to_string(grpc_pick_unused_port_or_die()));
-  absl::Notification notification;
-  std::string server_key = grpc_core::testing::GetFileContents(kValidKeyPath);
-  std::string server_cert = grpc_core::testing::GetFileContents(kValidCertPath);
-  server_thread_ = new std::thread(
-      [&]() { RunServer(&notification, server_key, server_cert); });
-  notification.WaitForNotification();
-
-  std::string root_cert = grpc_core::testing::GetFileContents(kRootPath);
-  std::string client_key = grpc_core::testing::GetFileContents(kValidKeyPath);
-  std::string client_cert = grpc_core::testing::GetFileContents(kValidCertPath);
-  experimental::IdentityKeyCertPair key_cert_pair;
-  key_cert_pair.private_key = client_key;
-  key_cert_pair.certificate_chain = client_cert;
-  std::vector<experimental::IdentityKeyCertPair> identity_key_cert_pairs;
-  identity_key_cert_pairs.emplace_back(key_cert_pair);
-  auto certificate_provider =
-      std::make_shared<experimental::StaticDataCertificateProvider>(
-          root_cert, identity_key_cert_pairs);
-  grpc::experimental::TlsChannelCredentialsOptions options;
-  options.set_certificate_provider(certificate_provider);
-  options.watch_root_certs();
-  options.set_root_cert_name("root");
-  options.watch_identity_key_cert_pairs();
-  options.set_identity_cert_name("identity");
-
-  absl::StatusOr<std::shared_ptr<grpc_core::experimental::CrlProvider>>
-      provider = grpc_core::experimental::CreateDirectoryReloaderCrlProvider(
-          kCrlDirectoryPath, std::chrono::seconds(60), nullptr);
-  ASSERT_TRUE(provider.ok());
-
-  options.set_crl_provider(*provider);
-  options.set_check_call_host(false);
-  auto verifier = std::make_shared<experimental::NoOpCertificateVerifier>();
-  options.set_certificate_verifier(verifier);
-
-  DoRpc(server_addr_, options, true);
-}
+// Spiffe chain
+// Failures
 
 }  // namespace
 }  // namespace testing

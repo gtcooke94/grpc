@@ -659,6 +659,13 @@ grpc_tls_certificate_provider_file_watcher_create(
     const char* private_key_path, const char* identity_certificate_path,
     const char* root_cert_path, unsigned int refresh_interval_sec);
 
+GRPCAPI grpc_tls_certificate_provider*
+grpc_tls_certificate_provider_file_watcher_create_with_spiffe(const char* private_key_path,
+                                                              const char* identity_certificate_path,
+                                                              const char* root_cert_path,
+                                                              const char* spiffe_bundle_map,
+                                                              unsigned int refresh_interval_sec);
+
 /**
  * EXPERIMENTAL API - Subject to change
  *

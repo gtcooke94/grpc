@@ -78,7 +78,7 @@ TEST(DirectoryReloaderCrlProviderTestNoFixture, Construction) {
   ASSERT_TRUE(provider.ok()) << provider.status();
 }
 
-class SpiffeBundleMapTest : public ::testing::Test {
+class CrlProviderTest : public ::testing::Test {
  protected:
   void RunServer(absl::Notification* notification, absl::string_view server_key,
                  absl::string_view server_cert) {
@@ -154,7 +154,7 @@ void DoRpc(const std::string& server_addr,
   }
 }
 
-TEST_F(SpiffeBundleMapTest, CrlProviderValidStaticProvider) {
+TEST_F(CrlProviderTest, CrlProviderValidStaticProvider) {
   server_addr_ = absl::StrCat("localhost:",
                               std::to_string(grpc_pick_unused_port_or_die()));
   absl::Notification notification;
@@ -195,7 +195,7 @@ TEST_F(SpiffeBundleMapTest, CrlProviderValidStaticProvider) {
   DoRpc(server_addr_, options, true);
 }
 
-TEST_F(SpiffeBundleMapTest, CrlProviderRevokedServer) {
+TEST_F(CrlProviderTest, CrlProviderRevokedServer) {
   server_addr_ = absl::StrCat("localhost:",
                               std::to_string(grpc_pick_unused_port_or_die()));
   absl::Notification notification;
@@ -237,7 +237,7 @@ TEST_F(SpiffeBundleMapTest, CrlProviderRevokedServer) {
   DoRpc(server_addr_, options, false);
 }
 
-TEST_F(SpiffeBundleMapTest, CrlProviderValidReloaderProvider) {
+TEST_F(CrlProviderTest, CrlProviderValidReloaderProvider) {
   server_addr_ = absl::StrCat("localhost:",
                               std::to_string(grpc_pick_unused_port_or_die()));
   absl::Notification notification;

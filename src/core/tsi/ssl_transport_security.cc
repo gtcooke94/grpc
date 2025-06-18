@@ -131,6 +131,9 @@ struct tsi_ssl_server_handshaker_factory {
   unsigned char* alpn_protocol_list;
   size_t alpn_protocol_list_length;
   grpc_core::RefCountedPtr<TlsSessionKeyLogger> key_logger;
+  // TODO(gtcooke94) maybe store here to guarantee lifetime with the
+  // ssl_context?
+  std::vector<grpc_core::SpiffeBundleMap> spiffe_bundle_maps;
 };
 
 struct tsi_ssl_handshaker {
@@ -1348,6 +1351,7 @@ absl::Status ConfigureSpiffeRoots(X509_STORE_CTX* ctx,
   if (!trust_domain.ok()) {
     return trust_domain.status();
   }
+  std::cout << "GREG: " << *trust_domain << "\n";
   absl::StatusOr<absl::Span<const std::string>> roots =
       spiffe_bundle_map->GetRoots(*trust_domain);
   if (!roots.ok()) {
@@ -2793,6 +2797,8 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
           options->spiffe_bundle_map != nullptr;
       if (custom_roots_configured) {
         if (options->spiffe_bundle_map != nullptr) {
+          // TODO(gtcooke94) Lifetime on the bundlemap
+          impl->spiffe_bundle_maps[i] = options->spiffe_bundle_map.get();
           SSL_CTX_set_ex_data(impl->ssl_contexts[i],
                               g_ssl_ctx_ex_spiffe_bundle_map_index,
                               options->spiffe_bundle_map.get());

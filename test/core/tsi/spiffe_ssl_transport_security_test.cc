@@ -72,13 +72,13 @@ constexpr absl::string_view kNonSpiffeCAPath =
 std::shared_ptr<grpc_core::SpiffeBundleMap> GetClientSpiffeBundleMap() {
   auto map = grpc_core::SpiffeBundleMap::FromFile(kClientSpiffeBundleMapPath);
   EXPECT_TRUE(map.ok()) << map.status();
-  return *map;
+  return std::make_shared<grpc_core::SpiffeBundleMap>(*map);
 }
 
 std::shared_ptr<grpc_core::SpiffeBundleMap> GetServerSpiffeBundleMap() {
   auto map = grpc_core::SpiffeBundleMap::FromFile(kServerSpiffeBundleMapPath);
   EXPECT_TRUE(map.ok()) << map.status();
-  return *map;
+  return std::make_shared<grpc_core::SpiffeBundleMap>(*map);
 }
 
 class SpiffeSslTransportSecurityTest

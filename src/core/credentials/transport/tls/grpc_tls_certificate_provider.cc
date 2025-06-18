@@ -542,6 +542,20 @@ grpc_tls_certificate_provider_file_watcher_create(
       root_cert_path == nullptr ? "" : root_cert_path, refresh_interval_sec);
 }
 
+grpc_tls_certificate_provider*
+grpc_tls_certificate_provider_file_watcher_create_with_spiffe(
+    const char* private_key_path, const char* identity_certificate_path,
+    const char* root_cert_path, const char* spiffe_bundle_map_path,
+    unsigned int refresh_interval_sec) {
+  grpc_core::ExecCtx exec_ctx;
+  return new grpc_core::FileWatcherCertificateProvider(
+      private_key_path == nullptr ? "" : private_key_path,
+      identity_certificate_path == nullptr ? "" : identity_certificate_path,
+      root_cert_path == nullptr ? "" : root_cert_path,
+      spiffe_bundle_map_path == nullptr ? "" : spiffe_bundle_map_path,
+      refresh_interval_sec);
+}
+
 void grpc_tls_certificate_provider_release(
     grpc_tls_certificate_provider* provider) {
   GRPC_TRACE_LOG(api, INFO)
