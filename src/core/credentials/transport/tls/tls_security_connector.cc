@@ -30,7 +30,6 @@
 #include <vector>
 
 #include "absl/functional/bind_front.h"
-#include "absl/functional/overload.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
@@ -47,6 +46,7 @@
 #include "src/core/tsi/ssl_transport_security.h"
 #include "src/core/util/debug_location.h"
 #include "src/core/util/host_port.h"
+#include "src/core/util/match.h"
 #include "src/core/util/status_helper.h"
 
 namespace grpc_core {
@@ -313,7 +313,7 @@ TlsChannelSecurityConnector::TlsChannelSecurityConnector(
   // hence no need to register the watcher.
   bool use_default_roots = !options_->watch_root_cert();
   if (use_default_roots && !options_->watch_identity_pair()) {
-    watcher_ptr->OnCertificatesChanged(std::nullopt, std::nullopt);
+    watcher_ptr->OnCertificatesChanged(nullptr, std::nullopt);
   } else {
     distributor->WatchTlsCertificates(std::move(watcher_ptr),
                                       watched_root_cert_name,
@@ -430,40 +430,18 @@ ArenaPromise<absl::Status> TlsChannelSecurityConnector::CheckCallHost(
 }
 
 void TlsChannelSecurityConnector::TlsChannelCertificateWatcher::
-    OnCertificatesChanged(
-        std::optional<
-            std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
-            root_certs,
-        std::optional<PemKeyCertPairList> key_cert_pairs) {
+    OnCertificatesChanged(std::shared_ptr<RootCertInfo> root_certs,
+                          std::optional<PemKeyCertPairList> key_cert_pairs) {
   CHECK_NE(security_connector_, nullptr);
-// The compiler can't tell that the modifications in the absl::Overload are done
-// within the mutex lock. This can be logically verified: the visitor is defined
-// after the lock, and the lock is held until the end of the function when all
-// of this goes out of scope.
-// NOLINTBEGIN
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wthread-safety-analysis"
   MutexLock lock(&security_connector_->mu_);
-  // THe mutex lock is held when calling this
-  auto visitor = absl::Overload{
-      [&](const absl::string_view& pem_root_certs) {
-        security_connector_->pem_root_certs_ = pem_root_certs;
-      },
-      [&](std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map) {
-        security_connector_->spiffe_bundle_map_ = spiffe_bundle_map;
-      },
-  };
-#pragma clang diagnostic pop
-  // NOLINTEND
-  if (root_certs.has_value()) {
-    std::visit(visitor, *root_certs);
+  if (root_certs != nullptr) {
+    security_connector_->root_cert_info_ = std::move(root_certs);
   }
   if (key_cert_pairs.has_value()) {
     security_connector_->pem_key_cert_pair_list_ = std::move(key_cert_pairs);
   }
   const bool root_ready = !security_connector_->options_->watch_root_cert() ||
-                          security_connector_->pem_root_certs_.has_value() ||
-                          security_connector_->spiffe_bundle_map_.has_value();
+                          security_connector_->root_cert_info_ != nullptr;
   const bool identity_ready =
       !security_connector_->options_->watch_identity_pair() ||
       security_connector_->pem_key_cert_pair_list_.has_value();
@@ -548,14 +526,6 @@ TlsChannelSecurityConnector::UpdateHandshakerFactoryLocked() {
   if (client_handshaker_factory_ != nullptr) {
     tsi_ssl_client_handshaker_factory_unref(client_handshaker_factory_);
   }
-  std::string pem_root_certs;
-  if (spiffe_bundle_map_.has_value()) {
-    pem_root_certs = "";
-  } else if (pem_root_certs_.has_value()) {
-    // TODO(ZhenLian): update the underlying TSI layer to use C++ types like
-    // std::string and absl::string_view to avoid making another copy here.
-    pem_root_certs = std::string(*pem_root_certs_);
-  }
   tsi_ssl_pem_key_cert_pair* pem_key_cert_pair = nullptr;
   if (pem_key_cert_pair_list_.has_value()) {
     pem_key_cert_pair = ConvertToTsiPemKeyCertPair(*pem_key_cert_pair_list_);
@@ -563,15 +533,13 @@ TlsChannelSecurityConnector::UpdateHandshakerFactoryLocked() {
   bool use_default_roots = !options_->watch_root_cert();
   grpc_security_status status = grpc_ssl_tsi_client_handshaker_factory_init(
       pem_key_cert_pair,
-      pem_root_certs.empty() || use_default_roots ? nullptr
-                                                  : pem_root_certs.c_str(),
+      root_cert_info_ == nullptr || use_default_roots ? nullptr
+                                                      : root_cert_info_,
       skip_server_certificate_verification,
       grpc_get_tsi_tls_version(options_->min_tls_version()),
       grpc_get_tsi_tls_version(options_->max_tls_version()), ssl_session_cache_,
       tls_session_key_logger_.get(), options_->crl_directory().c_str(),
-      options_->crl_provider(),
-      spiffe_bundle_map_.has_value() ? *spiffe_bundle_map_ : nullptr,
-      &client_handshaker_factory_);
+      options_->crl_provider(), &client_handshaker_factory_);
   // Free memory.
   if (pem_key_cert_pair != nullptr) {
     grpc_tsi_ssl_pem_key_cert_pairs_destroy(pem_key_cert_pair, 1);
@@ -716,40 +684,18 @@ int TlsServerSecurityConnector::cmp(
 }
 
 void TlsServerSecurityConnector::TlsServerCertificateWatcher::
-    OnCertificatesChanged(
-        std::optional<
-            std::variant<absl::string_view, std::shared_ptr<SpiffeBundleMap>>>
-            roots,
-        std::optional<PemKeyCertPairList> key_cert_pairs) {
+    OnCertificatesChanged(std::shared_ptr<RootCertInfo> roots,
+                          std::optional<PemKeyCertPairList> key_cert_pairs) {
   CHECK_NE(security_connector_, nullptr);
-
   MutexLock lock(&security_connector_->mu_);
-// The compiler can't tell that the modifications in the absl::Overload are done
-// within the mutex lock. This can be logically verified: the visitor is defined
-// after the lock, and the lock is held until the end of the function when all
-// of this goes out of scope.
-// NOLINTBEGIN
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wthread-safety-analysis"
-  auto visitor = absl::Overload{
-      [&](const absl::string_view& pem_root_certs) {
-        security_connector_->pem_root_certs_ = pem_root_certs;
-      },
-      [&](std::shared_ptr<SpiffeBundleMap> spiffe_bundle_map) {
-        security_connector_->spiffe_bundle_map_ = spiffe_bundle_map;
-      },
-  };
-#pragma clang diagnostic pop
-  // NOLINTEND
-  if (roots.has_value()) {
-    std::visit(visitor, *roots);
+  if (roots != nullptr) {
+    security_connector_->root_cert_info_ = std::move(roots);
   }
   if (key_cert_pairs.has_value()) {
     security_connector_->pem_key_cert_pair_list_ = std::move(key_cert_pairs);
   }
   bool root_being_watched = security_connector_->options_->watch_root_cert();
-  bool root_has_value = security_connector_->pem_root_certs_.has_value() ||
-                        security_connector_->spiffe_bundle_map_.has_value();
+  bool root_has_value = security_connector_->root_cert_info_ != nullptr;
   bool identity_being_watched =
       security_connector_->options_->watch_identity_pair();
   bool identity_has_value =
@@ -839,26 +785,16 @@ TlsServerSecurityConnector::UpdateHandshakerFactoryLocked() {
   // The identity certs on the server side shouldn't be empty.
   CHECK(pem_key_cert_pair_list_.has_value());
   CHECK(!(*pem_key_cert_pair_list_).empty());
-  std::string pem_root_certs;
-  if (spiffe_bundle_map_.has_value()) {
-    pem_root_certs = "";
-  } else if (pem_root_certs_.has_value()) {
-    // TODO(ZhenLian): update the underlying TSI layer to use C++ types like
-    // std::string and absl::string_view to avoid making another copy here.
-    pem_root_certs = std::string(*pem_root_certs_);
-  }
   tsi_ssl_pem_key_cert_pair* pem_key_cert_pairs = nullptr;
   pem_key_cert_pairs = ConvertToTsiPemKeyCertPair(*pem_key_cert_pair_list_);
   size_t num_key_cert_pairs = (*pem_key_cert_pair_list_).size();
   grpc_security_status status = grpc_ssl_tsi_server_handshaker_factory_init(
-      pem_key_cert_pairs, num_key_cert_pairs,
-      pem_root_certs.empty() ? nullptr : pem_root_certs.c_str(),
+      pem_key_cert_pairs, num_key_cert_pairs, root_cert_info_,
       options_->cert_request_type(),
       grpc_get_tsi_tls_version(options_->min_tls_version()),
       grpc_get_tsi_tls_version(options_->max_tls_version()),
       tls_session_key_logger_.get(), options_->crl_directory().c_str(),
       options_->send_client_ca_list(), options_->crl_provider(),
-      spiffe_bundle_map_.has_value() ? *spiffe_bundle_map_ : nullptr,
       &server_handshaker_factory_);
   // Free memory.
   grpc_tsi_ssl_pem_key_cert_pairs_destroy(pem_key_cert_pairs,

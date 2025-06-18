@@ -39,6 +39,8 @@ struct grpc_tls_identity_pairs {
   grpc_core::PemKeyCertPairList pem_key_cert_pairs;
 };
 
+using RootCertInfo = std::variant<std::string, grpc_core::SpiffeBundleMap>;
+
 // TLS certificate distributor.
 struct grpc_tls_certificate_distributor
     : public grpc_core::RefCounted<grpc_tls_certificate_distributor> {
@@ -58,9 +60,7 @@ struct grpc_tls_certificate_distributor
     // @param key_cert_pairs the contents of the reloaded identity key-cert
     // pairs.
     virtual void OnCertificatesChanged(
-        std::optional<std::variant<absl::string_view,
-                                   std::shared_ptr<grpc_core::SpiffeBundleMap>>>
-            roots,
+        std::shared_ptr<RootCertInfo> roots,
         std::optional<grpc_core::PemKeyCertPairList> key_cert_pairs) = 0;
 
     // Handles an error that occurs while attempting to fetch certificate data.
@@ -88,10 +88,7 @@ struct grpc_tls_certificate_distributor
   // the SpiffeBundleMap.
   // @param pem_key_cert_pairs The content of identity key-cert pairs.
   void SetKeyMaterials(
-      const std::string& cert_name,
-      std::optional<std::variant<absl::string_view,
-                                 std::shared_ptr<grpc_core::SpiffeBundleMap>>>
-          roots,
+      const std::string& cert_name, std::shared_ptr<RootCertInfo> roots,
       std::optional<grpc_core::PemKeyCertPairList> pem_key_cert_pairs);
 
   bool HasRootCerts(const std::string& root_cert_name);
@@ -178,11 +175,12 @@ struct grpc_tls_certificate_distributor
   // root certs, while pem_root_certs still contains the valid old data.
   struct CertificateInfo {
     // The contents of the root certificates.
-    std::variant<std::string, std::shared_ptr<grpc_core::SpiffeBundleMap>>
-        roots;
+    std::shared_ptr<RootCertInfo> roots;
     // The contents of the identity key-certificate pairs.
     grpc_core::PemKeyCertPairList pem_key_cert_pairs;
-    // The root cert reloading error propagated by the caller.
+    // TODO(gtcooke94) Swap to using absl::StatusOr<>
+    // https://github.com/grpc/grpc/pull/39708/files#r2144014200 The root cert
+    // reloading error propagated by the caller.
     grpc_error_handle root_cert_error;
     // The identity cert reloading error propagated by the caller.
     grpc_error_handle identity_cert_error;
@@ -196,13 +194,12 @@ struct grpc_tls_certificate_distributor
     std::set<TlsCertificatesWatcherInterface*> identity_cert_watchers;
 
     ~CertificateInfo() {}
+    // TODO(gtcooke94) These can be set directly, no need for setters
+    // https://github.com/grpc/grpc/pull/39708/files#r2144015746
     void SetRootError(grpc_error_handle error) { root_cert_error = error; }
     void SetIdentityError(grpc_error_handle error) {
       identity_cert_error = error;
     }
-
-    std::variant<absl::string_view, std::shared_ptr<grpc_core::SpiffeBundleMap>>
-    GetRoots();
 
     // Returns if the root variant contains either "", an empty SpiffeBundleMap,
     // or a nullptr to a SpiffeBundleMap

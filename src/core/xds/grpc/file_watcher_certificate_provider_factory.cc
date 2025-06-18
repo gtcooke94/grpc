@@ -37,6 +37,8 @@ namespace grpc_core {
 namespace {
 
 constexpr absl::string_view kFileWatcherPlugin = "file_watcher";
+constexpr absl::string_view kSpiffeEnabledEnvVar =
+    "GRPC_EXPERIMENTAL_XDS_MTLS_SPIFFE";
 
 }  // namespace
 

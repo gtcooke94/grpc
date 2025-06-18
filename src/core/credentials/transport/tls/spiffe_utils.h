@@ -92,7 +92,7 @@ class SpiffeBundle final {
   }
 
   bool operator!=(const SpiffeBundle& other) const {
-    return !(roots_ == other.roots_);
+    return roots_ != other.roots_;
   }
 
  private:
@@ -123,21 +123,20 @@ class SpiffeBundleMap final {
   // returned value represents a valid and SPIFFE Bundle Map.
   // The only supported use is configuring X509 roots for a given trust domain -
   // no other SPIFFE Bundle configurations are supported.
-  static absl::StatusOr<std::shared_ptr<SpiffeBundleMap>> FromFile(
-      absl::string_view file_path);
+  static absl::StatusOr<SpiffeBundleMap> FromFile(absl::string_view file_path);
 
   // Returns the roots for a given trust domain in the SPIFFE Bundle Map.
   absl::StatusOr<absl::Span<const std::string>> GetRoots(
       absl::string_view trust_domain);
 
-  size_t size() { return bundles_.size(); }
+  size_t size() const { return bundles_.size(); }
 
   bool operator==(const SpiffeBundleMap& other) const {
     return bundles_ == other.bundles_;
   }
 
   bool operator!=(const SpiffeBundleMap& other) const {
-    return !(bundles_ == other.bundles_);
+    return bundles_ != other.bundles_;
   }
 
  private:
