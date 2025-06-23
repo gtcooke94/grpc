@@ -133,7 +133,6 @@ struct tsi_ssl_server_handshaker_factory {
   grpc_core::RefCountedPtr<TlsSessionKeyLogger> key_logger;
   // TODO(gtcooke94) maybe store here to guarantee lifetime with the
   // ssl_context?
-  std::vector<grpc_core::SpiffeBundleMap> spiffe_bundle_maps;
 };
 
 struct tsi_ssl_handshaker {
@@ -2799,8 +2798,6 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
           options->spiffe_bundle_map != nullptr;
       if (custom_roots_configured) {
         if (options->spiffe_bundle_map != nullptr) {
-          // TODO(gtcooke94) Lifetime on the bundlemap
-          // impl->spiffe_bundle_maps[i] = options->spiffe_bundle_map.get();
           const void* p = options->spiffe_bundle_map;
           void* map = const_cast<void*>(p);
           SSL_CTX_set_ex_data(impl->ssl_contexts[i],
