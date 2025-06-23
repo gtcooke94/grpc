@@ -2582,8 +2582,10 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
         options->pem_root_certs != nullptr;
     if (OPENSSL_VERSION_NUMBER < 0x10100000 || (options->root_store == nullptr && custom_roots_configured)) {
       if (options->spiffe_bundle_map != nullptr) {
+        const void* p = options->spiffe_bundle_map;
+        void* map = const_cast<void*>(p);
         SSL_CTX_set_ex_data(ssl_context, g_ssl_ctx_ex_spiffe_bundle_map_index,
-                            options->spiffe_bundle_map.get());
+                            map);
       } else if (options->pem_root_certs != nullptr) {
         result = ssl_ctx_load_verification_certs(
             ssl_context, options->pem_root_certs,
@@ -2798,10 +2800,11 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
       if (custom_roots_configured) {
         if (options->spiffe_bundle_map != nullptr) {
           // TODO(gtcooke94) Lifetime on the bundlemap
-          impl->spiffe_bundle_maps[i] = options->spiffe_bundle_map.get();
+          // impl->spiffe_bundle_maps[i] = options->spiffe_bundle_map.get();
+          const void* p = options->spiffe_bundle_map;
+          void* map = const_cast<void*>(p);
           SSL_CTX_set_ex_data(impl->ssl_contexts[i],
-                              g_ssl_ctx_ex_spiffe_bundle_map_index,
-                              options->spiffe_bundle_map.get());
+                              g_ssl_ctx_ex_spiffe_bundle_map_index, map);
         } else if (options->pem_client_root_certs != nullptr) {
           STACK_OF(X509_NAME)* root_names = nullptr;
           result = ssl_ctx_load_verification_certs(
