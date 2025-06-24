@@ -131,8 +131,6 @@ struct tsi_ssl_server_handshaker_factory {
   unsigned char* alpn_protocol_list;
   size_t alpn_protocol_list_length;
   grpc_core::RefCountedPtr<TlsSessionKeyLogger> key_logger;
-  // TODO(gtcooke94) maybe store here to guarantee lifetime with the
-  // ssl_context?
 };
 
 struct tsi_ssl_handshaker {
@@ -1246,15 +1244,15 @@ static grpc_core::SpiffeBundleMap* GetSpiffeBundleMap(X509_STORE_CTX* ctx) {
     char err_str[256];
     ERR_error_string_n(ERR_get_error(), err_str, sizeof(err_str));
     GRPC_TRACE_LOG(tsi, INFO)
-        << "error getting the SSL index from the X509_STORE_CTX while looking "
-           "up Crl: "
+        << "error getting the SSL index from the X509_STORE_CTX while getting "
+           "the SPIFFE Bundle Map: "
         << err_str;
     return nullptr;
   }
   SSL* ssl = static_cast<SSL*>(X509_STORE_CTX_get_ex_data(ctx, ssl_index));
   if (ssl == nullptr) {
     GRPC_TRACE_LOG(tsi, INFO)
-        << "error while fetching from CrlProvider. SSL object is null";
+        << "error while fetching SPIFFE Bundle Map. SSL object is null";
     return nullptr;
   }
   SSL_CTX* ssl_ctx = SSL_get_SSL_CTX(ssl);
@@ -1277,7 +1275,7 @@ static absl::StatusOr<std::string> GetSpiffeURIromCert(X509* cert) {
         uri_count++;
         if (uri_count > 1) {
           return absl::InvalidArgumentError(
-              "more than one SAN URI found while doing SPIFFE validation. Must "
+              "spiffe: more than one SAN URI found while doing SPIFFE validation. Must "
               "have exactly one URI SAN that is the SPIFFE ID.");
         }
         unsigned char* name = nullptr;
@@ -1306,7 +1304,6 @@ static absl::StatusOr<std::string> SpiffeTrustDomainFromCert(X509* cert) {
   if (!subject_name.ok()) {
     return subject_name.status();
   }
-  std::cout << "GREG: " << *subject_name << "\n";
   auto spiffe_id = grpc_core::SpiffeId::FromString(*subject_name);
   if (!spiffe_id.ok()) {
     return spiffe_id.status();
@@ -1315,7 +1312,7 @@ static absl::StatusOr<std::string> SpiffeTrustDomainFromCert(X509* cert) {
 }
 
 absl::Status PemCertsToX509Stack(const absl::Span<const std::string> pem_certs,
-                                 STACK_OF(X509) * *cert_stack) {
+                                 STACK_OF(X509) * cert_stack) {
   for (const auto& pem_cert : pem_certs) {
     X509* cert = nullptr;
     BIO* pem =
@@ -1328,7 +1325,7 @@ absl::Status PemCertsToX509Stack(const absl::Span<const std::string> pem_certs,
     if (cert == nullptr) {
       return absl::InvalidArgumentError("Could not parse certificate PEM");
     }
-    sk_X509_push(*cert_stack, cert);
+    sk_X509_push(cert_stack, cert);
   }
   return absl::OkStatus();
 }
@@ -1360,7 +1357,7 @@ absl::Status ConfigureSpiffeRoots(X509_STORE_CTX* ctx,
   for (const auto& root : *roots) {
     pem_roots.emplace_back(grpc_core::BundleRootToPem(root));
   }
-  absl::Status status = PemCertsToX509Stack(pem_roots, &root_stack);
+  absl::Status status = PemCertsToX509Stack(pem_roots, root_stack);
   if (!status.ok()) {
     return status;
   }
@@ -1376,8 +1373,6 @@ absl::Status ConfigureSpiffeRoots(X509_STORE_CTX* ctx,
 // returns 1 on success, indicating a trusted chain to a root of trust was
 // found, 0 if a trusted chain could not be built.
 static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
-  // TODO(gtcooke94) - setting verification flags that might be missed if we
-  // don't have pem_root_certs
   // If a SPIFFE Bundle Map is configured, we'll
   // create this root stack during the verification function. We use
   // X509_STORE_CTX_set0_trusted_stack to then configure these as the roots

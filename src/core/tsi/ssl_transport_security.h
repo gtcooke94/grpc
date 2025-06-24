@@ -191,6 +191,7 @@ struct tsi_ssl_client_handshaker_options {
   // options as a shared_ptr.
   std::shared_ptr<grpc_core::experimental::CrlProvider> crl_provider;
 
+  // The SPIFFE Bundle Map containing the trusted roots.
   const grpc_core::SpiffeBundleMap* spiffe_bundle_map = nullptr;
 
   // TODO(gtcooke94) this ctor is not needed
@@ -365,7 +366,8 @@ struct tsi_ssl_server_handshaker_options {
   // will be unusable.
   bool send_client_ca_list;
 
-  const grpc_core::SpiffeBundleMap* spiffe_bundle_map = nullptr;
+  // The SPIFFE Bundle Map containing the trusted roots.
+   const grpc_core::SpiffeBundleMap* spiffe_bundle_map = nullptr;
 
   // TODO(gtcooke94) this ctor is not needed
   // https://github.com/grpc/grpc/pull/39708/files#r2143735662

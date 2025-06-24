@@ -206,8 +206,6 @@ void SpiffeBundleKey::JsonPostLoad(const Json& json, const JsonArgs& args,
     }
     if (!x5c->empty()) {
       ValidationErrors::ScopedField field(errors, "[0]");
-      // std::string pem_cert =
-      //     absl::StrCat(kCertificatePrefix, (*x5c)[0], kCertificateSuffix);
       std::string pem_cert = BundleRootToPem((*x5c)[0]);
       auto certs = ParsePemCertificateChain(pem_cert);
       if (!certs.ok()) {
