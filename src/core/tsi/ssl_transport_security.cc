@@ -902,7 +902,6 @@ static tsi_result ssl_ctx_load_verification_certs(SSL_CTX* context,
                                                   STACK_OF(X509_NAME) *
                                                       *root_name) {
   X509_STORE* cert_store = SSL_CTX_get_cert_store(context);
-  // TODO(gtcooke94) do I need to set these flags for the SPIFFE case
   X509_STORE_set_flags(cert_store,
                        X509_V_FLAG_PARTIAL_CHAIN | X509_V_FLAG_TRUSTED_FIRST);
   return x509_store_load_certs(cert_store, pem_roots, pem_roots_size,
@@ -1347,7 +1346,6 @@ absl::Status ConfigureSpiffeRoots(X509_STORE_CTX* ctx,
   if (!trust_domain.ok()) {
     return trust_domain.status();
   }
-  std::cout << "GREG: " << *trust_domain << "\n";
   absl::StatusOr<absl::Span<const std::string>> roots =
       spiffe_bundle_map->GetRoots(*trust_domain);
   if (!roots.ok()) {
