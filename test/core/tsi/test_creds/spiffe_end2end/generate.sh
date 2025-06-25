@@ -25,6 +25,24 @@ openssl x509 -req -CA ca.pem -CAkey ca.key -CAcreateserial \
  -in spiffe-cert.csr -out server_spiffe.pem -extensions spiffe_server_e2e \
   -extfile spiffe-openssl.cnf -days 3650 -sha256
 
+openssl genrsa -out multi_san.key.rsa 2048
+openssl pkcs8 -topk8 -in multi_san.key.rsa -out multi_san.key -nocrypt
+openssl req -new -key multi_san.key -out spiffe-cert.csr \
+ -subj /C=US/ST=CA/L=SVL/O=gRPC/CN=testclient/ \
+ -config spiffe-openssl.cnf -reqexts spiffe_server_e2e
+openssl x509 -req -CA ca.pem -CAkey ca.key -CAcreateserial \
+ -in spiffe-cert.csr -out multi_san_spiffe.pem -extensions spiffe_client_multi \
+  -extfile spiffe-openssl.cnf -days 3650 -sha256
+
+openssl genrsa -out invalid_utf8_san.key.rsa 2048
+openssl pkcs8 -topk8 -in invalid_utf8_san.key.rsa -out invalid_utf8_san.key -nocrypt
+openssl req -new -key invalid_utf8_san.key -out spiffe-cert.csr \
+ -subj /C=US/ST=CA/L=SVL/O=gRPC/CN=testclient/ \
+ -config spiffe-openssl.cnf -reqexts spiffe_server_e2e
+openssl x509 -req -CA ca.pem -CAkey ca.key -CAcreateserial \
+ -in spiffe-cert.csr -out invalid_utf8_san_spiffe.pem -extensions spiffe_client_non_utf8 \
+  -extfile spiffe-openssl.cnf -days 3650 -sha256
+
 rm *.rsa
 rm *.csr
 rm *.srl

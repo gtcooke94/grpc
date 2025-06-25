@@ -28,7 +28,9 @@
 
 namespace grpc_core {
 
-std::string BundleRootToPem(absl::string_view bundle_root);
+// Adds the leading and trailing lines expected for a PEM formatted certificate around the raw
+// base64 certificate data stored in a SPIFFE bundle map.
+std::string SpiffeBundleRootToPem(absl::string_view spiffe_bundle_root);
 
 // A representation of a SPIFFE ID per the spec:
 // https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE-ID.md#the-spiffe-identity-and-verifiable-identity-document

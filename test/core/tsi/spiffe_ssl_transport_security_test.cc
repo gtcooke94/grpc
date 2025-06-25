@@ -68,6 +68,14 @@ constexpr absl::string_view kNonSpiffeCertPath =
     "test/core/tsi/test_creds/crl_data/valid.pem";
 constexpr absl::string_view kNonSpiffeCAPath =
     "test/core/tsi/test_creds/crl_data/ca.pem";
+constexpr absl::string_view kMultiSanKeyPath =
+    "test/core/tsi/test_creds/spiffe_end2end/multi_san.key";
+constexpr absl::string_view kMultiSanCertPath =
+    "test/core/tsi/test_creds/spiffe_end2end/multi_san_spiffe.pem";
+constexpr absl::string_view kInvalidUtf8SanKeyPath =
+    "test/core/tsi/test_creds/spiffe_end2end/invalid_utf8_san.key";
+constexpr absl::string_view kInvalidUtf8SanCertPath =
+    "test/core/tsi/test_creds/spiffe_end2end/invalid_utf8_san_spiffe.pem";
 
 grpc_core::SpiffeBundleMap GetClientSpiffeBundleMap() {
   auto map = grpc_core::SpiffeBundleMap::FromFile(kClientSpiffeBundleMapPath);
@@ -381,6 +389,60 @@ TEST_P(SpiffeSslTransportSecurityTest, NonSpiffeClientCertFail) {
       /*expect_client_success_1_2=*/false,
       /*expected_client_success_1_3=*/true);
   fixture->Run();
+}
+
+// Just SPIFFE bundles on the server side - the client side has what should be a
+// valid cert but with multiple URI SANs which should fail SPIFFE verification.
+// This specific failure should show up in logs. If SPIFFE verification is NOT
+// done, we would expect this to pass - it's a function of the SPIFFE spec to
+// fail on multiple URI SANs. We verify that the certificates used here would
+// otherwise succeed when the root CA is used directly rather than the SPIFFE
+// Bundle Map, then that same setup fails when a SPIFFE Bundle Map is used.
+TEST_P(SpiffeSslTransportSecurityTest, MultiSanSpiffeCertFails) {
+  // Passes because SPIFFE verification is not done, and this would be valid in
+  // that case.
+  auto* fixture_pass =
+      new SslTsiTestFixture(kServerKeyPath, kServerCertPath, kMultiSanKeyPath,
+                            kMultiSanCertPath, "", "", kCaPemPath,
+                            /*expect_server_success=*/true,
+                            /*expect_client_success_1_2=*/true,
+                            /*expected_client_success_1_3=*/true);
+  fixture_pass->Run();
+  // Should fail SPIFFE verification because of multiple URI SANs.
+  auto* fixture_fail = new SslTsiTestFixture(
+      kServerKeyPath, kServerCertPath, kMultiSanKeyPath, kMultiSanCertPath,
+      kServerSpiffeBundleMapPath, "", kCaPemPath,
+      /*expect_server_success=*/false,
+      /*expect_client_success_1_2=*/false,
+      /*expected_client_success_1_3=*/true);
+  fixture_fail->Run();
+}
+
+// Just SPIFFE bundles on the server side - the client side has what should be a
+// valid cert but with multiple URI SANs which should fail SPIFFE verification.
+// This specific failure should show up in logs. If SPIFFE verification is NOT
+// done, we would expect this to pass - it's a function of the SPIFFE spec to
+// fail on multiple URI SANs. We verify that the certificates used here would
+// otherwise succeed when the root CA is used directly rather than the SPIFFE
+// Bundle Map, then that same setup fails when a SPIFFE Bundle Map is used.
+TEST_P(SpiffeSslTransportSecurityTest, InvalidUTF8Fails) {
+  // Passes because SPIFFE verification is not done, and this would be valid in
+  // that case.
+  auto* fixture_pass = new SslTsiTestFixture(
+      kServerKeyPath, kServerCertPath, kInvalidUtf8SanKeyPath,
+      kInvalidUtf8SanCertPath, "", "", kCaPemPath,
+      /*expect_server_success=*/true,
+      /*expect_client_success_1_2=*/true,
+      /*expected_client_success_1_3=*/true);
+  fixture_pass->Run();
+  // Should fail SPIFFE verification because of multiple URI SANs.
+  auto* fixture_fail = new SslTsiTestFixture(
+      kServerKeyPath, kServerCertPath, kInvalidUtf8SanKeyPath,
+      kInvalidUtf8SanCertPath, kServerSpiffeBundleMapPath, "", kCaPemPath,
+      /*expect_server_success=*/false,
+      /*expect_client_success_1_2=*/false,
+      /*expected_client_success_1_3=*/true);
+  fixture_fail->Run();
 }
 
 // CRLs + Spiffe?

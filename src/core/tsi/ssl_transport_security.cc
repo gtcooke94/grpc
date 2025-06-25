@@ -1237,6 +1237,7 @@ static int CheckChainRevocation(
 }
 
 static grpc_core::SpiffeBundleMap* GetSpiffeBundleMap(X509_STORE_CTX* ctx) {
+  CHECK(ctx != nullptr);
   ERR_clear_error();
   int ssl_index = SSL_get_ex_data_X509_STORE_CTX_idx();
   if (ssl_index < 0) {
@@ -1255,12 +1256,12 @@ static grpc_core::SpiffeBundleMap* GetSpiffeBundleMap(X509_STORE_CTX* ctx) {
     return nullptr;
   }
   SSL_CTX* ssl_ctx = SSL_get_SSL_CTX(ssl);
-  auto* spiffe_bundle_map = static_cast<grpc_core::SpiffeBundleMap*>(
+  return static_cast<grpc_core::SpiffeBundleMap*>(
       SSL_CTX_get_ex_data(ssl_ctx, g_ssl_ctx_ex_spiffe_bundle_map_index));
-  return spiffe_bundle_map;
 }
 
-static absl::StatusOr<std::string> GetSpiffeURIromCert(X509* cert) {
+static absl::StatusOr<std::string> GetSpiffeUriFromCert(X509* cert) {
+  CHECK(cert != nullptr);
   GENERAL_NAMES* subject_alt_names = static_cast<GENERAL_NAMES*>(
       X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr));
   int uri_count = 0;
@@ -1270,6 +1271,9 @@ static absl::StatusOr<std::string> GetSpiffeURIromCert(X509* cert) {
     for (size_t i = 0; i < subject_alt_name_count; i++) {
       GENERAL_NAME* subject_alt_name =
           sk_GENERAL_NAME_value(subject_alt_names, TSI_SIZE_AS_SIZE(i));
+      if (subject_alt_name == nullptr) {
+        continue;
+      }
       if (subject_alt_name->type == GEN_URI) {
         uri_count++;
         if (uri_count > 1) {
@@ -1281,6 +1285,7 @@ static absl::StatusOr<std::string> GetSpiffeURIromCert(X509* cert) {
         int name_size = ASN1_STRING_to_UTF8(
             &name, subject_alt_name->d.uniformResourceIdentifier);
         if (name_size < 0) {
+          OPENSSL_free(name);
           return absl::InvalidArgumentError(
               "spiffe: could not get utf8 from asn1 string");
         }
@@ -1299,19 +1304,17 @@ static absl::StatusOr<std::string> GetSpiffeURIromCert(X509* cert) {
 }
 
 static absl::StatusOr<std::string> SpiffeTrustDomainFromCert(X509* cert) {
-  auto subject_name = GetSpiffeURIromCert(cert);
-  if (!subject_name.ok()) {
-    return subject_name.status();
-  }
+  CHECK(cert != nullptr);
+  auto subject_name = GetSpiffeUriFromCert(cert);
+  GRPC_RETURN_IF_ERROR(subject_name.status());
   auto spiffe_id = grpc_core::SpiffeId::FromString(*subject_name);
-  if (!spiffe_id.ok()) {
-    return spiffe_id.status();
-  }
+  GRPC_RETURN_IF_ERROR(spiffe_id.status());
   return std::string(spiffe_id->trust_domain());
 }
 
 absl::Status PemCertsToX509Stack(const absl::Span<const std::string> pem_certs,
                                  STACK_OF(X509) * cert_stack) {
+  CHECK(cert_stack != nullptr);
   for (const auto& pem_cert : pem_certs) {
     X509* cert = nullptr;
     BIO* pem =
@@ -1336,6 +1339,7 @@ absl::Status PemCertsToX509Stack(const absl::Span<const std::string> pem_certs,
 absl::Status ConfigureSpiffeRoots(X509_STORE_CTX* ctx,
                                   grpc_core::SpiffeBundleMap* spiffe_bundle_map,
                                   STACK_OF(X509) * root_stack) {
+  CHECK(ctx != nullptr);
   X509* leaf_cert = X509_STORE_CTX_get0_cert(ctx);
   if (leaf_cert == nullptr) {
     return absl::InvalidArgumentError(
@@ -1343,22 +1347,15 @@ absl::Status ConfigureSpiffeRoots(X509_STORE_CTX* ctx,
   }
   absl::StatusOr<std::string> trust_domain =
       SpiffeTrustDomainFromCert(leaf_cert);
-  if (!trust_domain.ok()) {
-    return trust_domain.status();
-  }
+  GRPC_RETURN_IF_ERROR(trust_domain.status());
   absl::StatusOr<absl::Span<const std::string>> roots =
       spiffe_bundle_map->GetRoots(*trust_domain);
-  if (!roots.ok()) {
-    return roots.status();
-  }
+  GRPC_RETURN_IF_ERROR(roots.status());
   std::vector<std::string> pem_roots;
   for (const auto& root : *roots) {
-    pem_roots.emplace_back(grpc_core::BundleRootToPem(root));
+    pem_roots.emplace_back(grpc_core::SpiffeBundleRootToPem(root));
   }
-  absl::Status status = PemCertsToX509Stack(pem_roots, root_stack);
-  if (!status.ok()) {
-    return status;
-  }
+  GRPC_RETURN_IF_ERROR(PemCertsToX509Stack(pem_roots, root_stack));
   // Set the root certs for this handshake
   X509_STORE_CTX_set0_trusted_stack(ctx, root_stack);
   return absl::OkStatus();
@@ -1376,9 +1373,11 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
   // X509_STORE_CTX_set0_trusted_stack to then configure these as the roots
   // for verification, which does not take ownership. We must ensure the
   // lifetime of this object is long enough, thus the declaration here.
-  STACK_OF(X509)* root_stack = sk_X509_new_null();
+  CHECK(ctx != nullptr);
+  STACK_OF(X509)* root_stack = nullptr;
   grpc_core::SpiffeBundleMap* spiffe_bundle_map = GetSpiffeBundleMap(ctx);
   if (spiffe_bundle_map != nullptr) {
+    root_stack = sk_X509_new_null();
     absl::Status status =
         ConfigureSpiffeRoots(ctx, spiffe_bundle_map, root_stack);
     if (!status.ok()) {
@@ -1406,7 +1405,9 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
     }
   }
   ret = RootCertExtractCallback(ctx, arg);
-  sk_X509_pop_free(root_stack, X509_free);
+  if (root_stack != nullptr) {
+    sk_X509_pop_free(root_stack, X509_free);
+  }
   return ret;
 }
 
