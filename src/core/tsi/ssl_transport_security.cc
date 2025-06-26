@@ -2367,7 +2367,7 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
   if (factory == nullptr) return TSI_INVALID_ARGUMENT;
   *factory = nullptr;
   if (options->pem_root_certs == nullptr && options->root_store == nullptr &&
-    options->root_cert_info == nullptr &&
+      options->root_cert_info == nullptr &&
       !options->skip_server_certificate_verification) {
     return TSI_INVALID_ARGUMENT;
   }
@@ -2437,8 +2437,9 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
     }
 #endif
     const bool custom_roots_configured = options->root_cert_info != nullptr ||
-                                    options->pem_root_certs != nullptr;
-    if (OPENSSL_VERSION_NUMBER < 0x10100000 || (options->root_store == nullptr && custom_roots_configured)) {
+                                         options->pem_root_certs != nullptr;
+    if (OPENSSL_VERSION_NUMBER < 0x10100000 ||
+        (options->root_store == nullptr && custom_roots_configured)) {
       if (options->root_cert_info != nullptr) {
         Match(
             *options->root_cert_info,
