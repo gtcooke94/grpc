@@ -71,6 +71,7 @@
 #include "src/core/tsi/transport_security_interface.h"
 #include "src/core/util/crash.h"
 #include "src/core/util/env.h"
+#include "src/core/util/match.h"
 #include "src/core/util/sync.h"
 #include "src/core/util/useful.h"
 
@@ -2563,15 +2564,23 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
     }
 #endif
 
-    const bool custom_roots_configured =
-        options->spiffe_bundle_map != nullptr ||
-        options->pem_root_certs != nullptr;
+    const bool custom_roots_configured = options->root_cert_info != nullptr ||
+                                         options->pem_root_certs != nullptr;
     if (OPENSSL_VERSION_NUMBER < 0x10100000 || (options->root_store == nullptr && custom_roots_configured)) {
-      if (options->spiffe_bundle_map != nullptr) {
-        const void* p = options->spiffe_bundle_map;
-        void* map = const_cast<void*>(p);
-        SSL_CTX_set_ex_data(ssl_context, g_ssl_ctx_ex_spiffe_bundle_map_index,
-                            map);
+      if (options->root_cert_info != nullptr) {
+        Match(
+            *options->root_cert_info,
+            [&](const std::string& pem_root_certs) {
+              result = ssl_ctx_load_verification_certs(
+                  ssl_context, pem_root_certs.c_str(),
+                  strlen(pem_root_certs.c_str()), nullptr);
+            },
+            [&](const grpc_core::SpiffeBundleMap& spiffe_bundle_map) {
+              const void* p = &spiffe_bundle_map;
+              void* map = const_cast<void*>(p);
+              SSL_CTX_set_ex_data(ssl_context,
+                                  g_ssl_ctx_ex_spiffe_bundle_map_index, map);
+            });
       } else if (options->pem_root_certs != nullptr) {
         result = ssl_ctx_load_verification_certs(
             ssl_context, options->pem_root_certs,
@@ -2780,16 +2789,34 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
           break;
         }
       }
-
       const bool custom_roots_configured =
           options->pem_client_root_certs != nullptr ||
-          options->spiffe_bundle_map != nullptr;
+          options->root_cert_info != nullptr;
       if (custom_roots_configured) {
-        if (options->spiffe_bundle_map != nullptr) {
-          const void* p = options->spiffe_bundle_map;
-          void* map = const_cast<void*>(p);
-          SSL_CTX_set_ex_data(impl->ssl_contexts[i],
-                              g_ssl_ctx_ex_spiffe_bundle_map_index, map);
+        if (options->root_cert_info != nullptr) {
+          Match(
+              *options->root_cert_info,
+              [&](const std::string& pem_root_certs) {
+                STACK_OF(X509_NAME)* root_names = nullptr;
+                result = ssl_ctx_load_verification_certs(
+                    impl->ssl_contexts[i], pem_root_certs.c_str(),
+                    strlen(pem_root_certs.c_str()), nullptr);
+                if (result != TSI_OK) {
+                  LOG(ERROR) << "Invalid verification certs.";
+                }
+                if (options->send_client_ca_list) {
+                  SSL_CTX_set_client_CA_list(impl->ssl_contexts[i], root_names);
+                }
+              },
+              [&](const grpc_core::SpiffeBundleMap& spiffe_bundle_map) {
+                const void* p = &spiffe_bundle_map;
+                void* map = const_cast<void*>(p);
+                SSL_CTX_set_ex_data(impl->ssl_contexts[i],
+                                    g_ssl_ctx_ex_spiffe_bundle_map_index, map);
+              });
+          if (result != TSI_OK) {
+            break;
+          }
         } else if (options->pem_client_root_certs != nullptr) {
           STACK_OF(X509_NAME)* root_names = nullptr;
           result = ssl_ctx_load_verification_certs(
