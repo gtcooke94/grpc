@@ -120,14 +120,12 @@ class SpiffeSslTransportSecurityTest
             grpc_core::SpiffeBundleMap::FromFile(server_spiffe_bundle_map_path);
         EXPECT_TRUE(server_map.ok());
         server_spiffe_bundle_map_ = *server_map;
-        server_spiffe_bundle_map_ptr_ = &server_spiffe_bundle_map_;
       }
       if (!client_spiffe_bundle_map_path.empty()) {
         auto client_map =
             grpc_core::SpiffeBundleMap::FromFile(client_spiffe_bundle_map_path);
         EXPECT_TRUE(client_map.ok());
         client_spiffe_bundle_map_ = *client_map;
-        client_spiffe_bundle_map_ptr_ = &client_spiffe_bundle_map_;
       }
       expect_server_success_ = expect_server_success;
       expect_client_success_1_2_ = expect_client_success_1_2;
@@ -169,7 +167,8 @@ class SpiffeSslTransportSecurityTest
       client_options.pem_key_cert_pair = client_pem_key_cert_pairs_;
       client_options.pem_root_certs = root_cert_.c_str();
       if (client_spiffe_bundle_map_.size() > 0) {
-        client_options.spiffe_bundle_map = client_spiffe_bundle_map_ptr_;
+        client_options.root_cert_info =
+            std::make_shared<RootCertInfo>(client_spiffe_bundle_map_);
       }
       client_options.min_tls_version = GetParam();
       client_options.max_tls_version = GetParam();
@@ -181,7 +180,10 @@ class SpiffeSslTransportSecurityTest
       server_options.pem_key_cert_pairs = server_pem_key_cert_pairs_;
       server_options.num_key_cert_pairs = 1;
       server_options.pem_client_root_certs = root_cert_.c_str();
-      server_options.spiffe_bundle_map = server_spiffe_bundle_map_ptr_;
+      if (server_spiffe_bundle_map_.size() > 0) {
+        server_options.root_cert_info =
+            std::make_shared<RootCertInfo>(server_spiffe_bundle_map_);
+      }
       server_options.client_certificate_request =
           TSI_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
       server_options.session_ticket_key = nullptr;
@@ -275,8 +277,6 @@ class SpiffeSslTransportSecurityTest
     tsi_ssl_client_handshaker_factory* client_handshaker_factory_;
     grpc_core::SpiffeBundleMap server_spiffe_bundle_map_;
     grpc_core::SpiffeBundleMap client_spiffe_bundle_map_;
-    grpc_core::SpiffeBundleMap* server_spiffe_bundle_map_ptr_ = nullptr;
-    grpc_core::SpiffeBundleMap* client_spiffe_bundle_map_ptr_ = nullptr;
 
     std::string server_key_;
     std::string server_cert_;
