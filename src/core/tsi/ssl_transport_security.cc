@@ -2512,7 +2512,7 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
   if (factory == nullptr) return TSI_INVALID_ARGUMENT;
   *factory = nullptr;
   if (options->pem_root_certs == nullptr && options->root_store == nullptr &&
-      IsRootCertInfoEmpty(options->root_cert_info) &&
+    options->root_cert_info == nullptr &&
       !options->skip_server_certificate_verification) {
     return TSI_INVALID_ARGUMENT;
   }
@@ -2600,9 +2600,6 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
                                   g_ssl_ctx_ex_spiffe_bundle_map_index, map);
             });
       } else if (options->pem_root_certs != nullptr) {
-        result = ssl_ctx_load_verification_certs(
-            ssl_context, options->pem_root_certs,
-            strlen(options->pem_root_certs), nullptr);
       }
       X509_STORE* cert_store = SSL_CTX_get_cert_store(ssl_context);
 
