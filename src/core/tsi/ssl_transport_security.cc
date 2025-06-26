@@ -1265,7 +1265,7 @@ static absl::StatusOr<std::string> GetSpiffeUriFromCert(X509* cert) {
   GENERAL_NAMES* subject_alt_names = static_cast<GENERAL_NAMES*>(
       X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr));
   int uri_count = 0;
-  std::string spiffe_uri;
+  absl::StatusOr<std::string> spiffe_uri;
   if (subject_alt_names != nullptr) {
     size_t subject_alt_name_count = sk_GENERAL_NAME_num(subject_alt_names);
     for (size_t i = 0; i < subject_alt_name_count; i++) {
@@ -1281,22 +1281,13 @@ static absl::StatusOr<std::string> GetSpiffeUriFromCert(X509* cert) {
               "spiffe: more than one SAN URI found while doing SPIFFE validation. Must "
               "have exactly one URI SAN that is the SPIFFE ID.");
         }
-        unsigned char* name = nullptr;
-        int name_size = ASN1_STRING_to_UTF8(
-            &name, subject_alt_name->d.uniformResourceIdentifier);
-        if (name_size < 0) {
-          OPENSSL_free(name);
-          return absl::InvalidArgumentError(
-              "spiffe: could not get utf8 from asn1 string");
-        }
-        spiffe_uri =
-            std::string(reinterpret_cast<const char*>(name), name_size);
-        OPENSSL_free(name);
+        spiffe_uri = grpc_core::ParseUriString(subject_alt_name);
       }
     }
     sk_GENERAL_NAME_pop_free(subject_alt_names, GENERAL_NAME_free);
   }
-  if (spiffe_uri.empty()) {
+  GRPC_RETURN_IF_ERROR(spiffe_uri.status());
+  if (spiffe_uri->empty()) {
     return absl::InvalidArgumentError(
         "spiffe: no URI SAN found in leaf certificate");
   }
