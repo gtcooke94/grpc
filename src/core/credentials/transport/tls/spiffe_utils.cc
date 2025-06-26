@@ -128,6 +128,38 @@ absl::Status ValidatePath(absl::string_view path) {
   return absl::OkStatus();
 }
 
+absl::Status PemCertsToX509Stack(const absl::Span<const std::string> pem_certs,
+                                 STACK_OF(X509) * cert_stack) {
+  std::string pem_cert = SpiffeBundleRootToPem((*x5c)[0]);
+  auto certs = ParsePemCertificateChain(pem_cert);
+  if (!certs.ok()) {
+    errors->AddError(certs.status().ToString());
+  } else {
+    root_ = std::move((*x5c)[0]);
+    for (X509* cert : *certs) {
+      X509_free(cert);
+    }
+
+    CHECK(cert_stack != nullptr);
+    for (const auto& pem_cert : pem_certs) {
+      X509* cert = nullptr;
+      BIO* pem =
+          BIO_new_mem_buf(pem_cert.data(), static_cast<int>(pem_cert.length()));
+      if (pem == nullptr) {
+        return absl::InvalidArgumentError("Could not parse certificate to BIO");
+      }
+      cert = PEM_read_bio_X509(pem, nullptr, nullptr, nullptr);
+      BIO_free(pem);
+      if (cert == nullptr) {
+        return absl::InvalidArgumentError("Could not parse certificate PEM");
+      }
+      sk_X509_push(cert_stack, cert);
+    }
+    return absl::OkStatus();
+  }
+
+  absl::Status RootsToX509Stack() {}
+
 }  // namespace
 
 std::string SpiffeBundleRootToPem(absl::string_view spiffe_bundle_root) {
@@ -232,6 +264,12 @@ void SpiffeBundle::JsonPostLoad(const Json& json, const JsonArgs& args,
   }
   for (size_t i = 0; i < keys->size(); ++i) {
     roots_.emplace_back((*keys)[i].GetRoot());
+  }
+  root_stack_ = sk_X509_new_null();
+  ValidationErrors::ScopedField field(errors, "keys");
+  absl::Status status = PemCertsToX509Stack(roots_, root_stack_);
+  if (!status.ok()) {
+    errors->AddError(status.ToString());
   }
 }
 

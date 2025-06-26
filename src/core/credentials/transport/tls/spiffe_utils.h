@@ -19,6 +19,9 @@
 #ifndef GRPC_SRC_CORE_CREDENTIALS_TRANSPORT_TLS_SPIFFE_UTILS_H
 #define GRPC_SRC_CORE_CREDENTIALS_TRANSPORT_TLS_SPIFFE_UTILS_H
 
+#include <openssl/stack.h>
+#include <openssl/x509.h>
+
 #include <string>
 
 #include "absl/status/statusor.h"
@@ -99,6 +102,7 @@ class SpiffeBundle final {
 
  private:
   std::vector<std::string> roots_;
+  STACK_OF(X509) * root_stack_;
 };
 
 // A map of SPIFFE bundles keyed to trust domains. This functions as a map of a
