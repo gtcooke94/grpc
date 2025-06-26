@@ -2484,6 +2484,22 @@ tsi_result tsi_create_ssl_client_handshaker_factory(
                                                                factory);
 }
 
+bool IsRootCertInfoEmpty(std::shared_ptr<RootCertInfo> root_cert_info) {
+  if (root_cert_info == nullptr) {
+    return true;
+  }
+  bool is_empty = true;
+  Match(
+      *root_cert_info,
+      [&](const std::string& pem_root_certs) {
+        is_empty = pem_root_certs.empty();
+      },
+      [&](const grpc_core::SpiffeBundleMap& spiffe_bundle_map) {
+        is_empty = spiffe_bundle_map.size() == 0;
+      });
+  return is_empty;
+}
+
 tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
     const tsi_ssl_client_handshaker_options* options,
     tsi_ssl_client_handshaker_factory** factory) {
@@ -2496,12 +2512,11 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
   if (factory == nullptr) return TSI_INVALID_ARGUMENT;
   *factory = nullptr;
   if (options->pem_root_certs == nullptr && options->root_store == nullptr &&
-      options->root_cert_info == nullptr &&
+      IsRootCertInfoEmpty(options->root_cert_info) &&
       !options->skip_server_certificate_verification) {
     return TSI_INVALID_ARGUMENT;
   }
 
-  impl->root_cert_info = options->root_cert_info;
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
   ssl_context = SSL_CTX_new(TLS_method());
 #else
@@ -2533,6 +2548,9 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
     SSL_CTX_sess_set_new_cb(ssl_context,
                             server_handshaker_factory_new_session_callback);
     SSL_CTX_set_session_cache_mode(ssl_context, SSL_SESS_CACHE_CLIENT);
+  }
+  if (options->root_cert_info != nullptr) {
+    impl->root_cert_info = options->root_cert_info;
   }
 
 #if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
@@ -2713,7 +2731,6 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
       gpr_zalloc(sizeof(*impl)));
   tsi_ssl_handshaker_factory_init(&impl->base);
   impl->base.vtable = &server_handshaker_factory_vtable;
-  impl->root_cert_info = options->root_cert_info;
 
   impl->ssl_contexts = static_cast<SSL_CTX**>(
       gpr_zalloc(options->num_key_cert_pairs * sizeof(SSL_CTX*)));
@@ -2725,6 +2742,9 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
     return TSI_OUT_OF_RESOURCES;
   }
   impl->ssl_context_count = options->num_key_cert_pairs;
+  if (options->root_cert_info != nullptr) {
+    impl->root_cert_info = options->root_cert_info;
+  }
 
   if (options->num_alpn_protocols > 0) {
     result = BuildAlpnProtocolNameList(
