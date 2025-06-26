@@ -86,11 +86,15 @@ class SpiffeBundle final {
     return kLoader;
   }
 
+  ~SpiffeBundle();
+
   void JsonPostLoad(const Json& json, const JsonArgs&,
                     ValidationErrors* errors);
 
   // Returns a vector of the roots in this SPIFFE Bundle.
   absl::Span<const std::string> GetRoots();
+
+  STACK_OF(X509) * GetRootStack() { return root_stack_; }
 
   bool operator==(const SpiffeBundle& other) const {
     return roots_ == other.roots_;
@@ -134,6 +138,8 @@ class SpiffeBundleMap final {
   // Returns the roots for a given trust domain in the SPIFFE Bundle Map.
   absl::StatusOr<absl::Span<const std::string>> GetRoots(
       absl::string_view trust_domain);
+
+  absl::StatusOr<STACK_OF(X509) *> GetRootStack(absl::string_view trust_domain);
 
   size_t size() const { return bundles_.size(); }
 

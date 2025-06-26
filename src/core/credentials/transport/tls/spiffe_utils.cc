@@ -130,35 +130,17 @@ absl::Status ValidatePath(absl::string_view path) {
 
 absl::Status PemCertsToX509Stack(const absl::Span<const std::string> pem_certs,
                                  STACK_OF(X509) * cert_stack) {
-  std::string pem_cert = SpiffeBundleRootToPem((*x5c)[0]);
-  auto certs = ParsePemCertificateChain(pem_cert);
-  if (!certs.ok()) {
-    errors->AddError(certs.status().ToString());
-  } else {
-    root_ = std::move((*x5c)[0]);
-    for (X509* cert : *certs) {
-      X509_free(cert);
+  CHECK(cert_stack != nullptr);
+  for (const auto& pem_cert : pem_certs) {
+    auto cert = ParsePemCertificateChain(SpiffeBundleRootToPem(pem_cert));
+    GRPC_RETURN_IF_ERROR(cert.status());
+    if (cert->size() != 1) {
+      return absl::InvalidArgumentError("Got an invalid root certificate.");
     }
-
-    CHECK(cert_stack != nullptr);
-    for (const auto& pem_cert : pem_certs) {
-      X509* cert = nullptr;
-      BIO* pem =
-          BIO_new_mem_buf(pem_cert.data(), static_cast<int>(pem_cert.length()));
-      if (pem == nullptr) {
-        return absl::InvalidArgumentError("Could not parse certificate to BIO");
-      }
-      cert = PEM_read_bio_X509(pem, nullptr, nullptr, nullptr);
-      BIO_free(pem);
-      if (cert == nullptr) {
-        return absl::InvalidArgumentError("Could not parse certificate PEM");
-      }
-      sk_X509_push(cert_stack, cert);
-    }
+    sk_X509_push(cert_stack, (*cert)[0]);
+  }
     return absl::OkStatus();
   }
-
-  absl::Status RootsToX509Stack() {}
 
 }  // namespace
 
@@ -273,6 +255,12 @@ void SpiffeBundle::JsonPostLoad(const Json& json, const JsonArgs& args,
   }
 }
 
+SpiffeBundle::~SpiffeBundle() {
+  if (root_stack_ != nullptr) {
+      sk_X509_pop_free(root_stack_, X509_free);
+  }
+}
+
 absl::Span<const std::string> SpiffeBundle::GetRoots() { return roots_; }
 
 void SpiffeBundleMap::JsonPostLoad(const Json&, const JsonArgs&,
@@ -303,6 +291,15 @@ absl::StatusOr<absl::Span<const std::string>> SpiffeBundleMap::GetRoots(
     const absl::string_view trust_domain) {
   if (auto it = bundles_.find(trust_domain); it != bundles_.end()) {
     return it->second.GetRoots();
+  }
+  return absl::NotFoundError(absl::StrFormat(
+      "No spiffe bundle found for trust domain %s", trust_domain));
+}
+
+absl::StatusOr<STACK_OF(X509) *> SpiffeBundleMap::GetRootStack(
+    const absl::string_view trust_domain) {
+  if (auto it = bundles_.find(trust_domain); it != bundles_.end()) {
+    return it->second.GetRootStack();
   }
   return absl::NotFoundError(absl::StrFormat(
       "No spiffe bundle found for trust domain %s", trust_domain));

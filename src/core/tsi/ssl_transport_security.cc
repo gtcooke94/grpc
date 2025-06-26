@@ -1330,9 +1330,8 @@ absl::Status PemCertsToX509Stack(const absl::Span<const std::string> pem_certs,
 // are associated with the to-be-verified leaf certificate's trust domain.
 // For more detail see
 // https://github.com/grpc/proposal/blob/master/A87-mtls-spiffe-support.md
-absl::Status ConfigureSpiffeRoots(X509_STORE_CTX* ctx,
-                                  grpc_core::SpiffeBundleMap* spiffe_bundle_map,
-                                  STACK_OF(X509) * root_stack) {
+absl::Status ConfigureSpiffeRoots(
+    X509_STORE_CTX* ctx, grpc_core::SpiffeBundleMap* spiffe_bundle_map) {
   CHECK(ctx != nullptr);
   X509* leaf_cert = X509_STORE_CTX_get0_cert(ctx);
   if (leaf_cert == nullptr) {
@@ -1342,16 +1341,18 @@ absl::Status ConfigureSpiffeRoots(X509_STORE_CTX* ctx,
   absl::StatusOr<std::string> trust_domain =
       SpiffeTrustDomainFromCert(leaf_cert);
   GRPC_RETURN_IF_ERROR(trust_domain.status());
-  absl::StatusOr<absl::Span<const std::string>> roots =
-      spiffe_bundle_map->GetRoots(*trust_domain);
-  GRPC_RETURN_IF_ERROR(roots.status());
-  std::vector<std::string> pem_roots;
-  for (const auto& root : *roots) {
-    pem_roots.emplace_back(grpc_core::SpiffeBundleRootToPem(root));
-  }
-  GRPC_RETURN_IF_ERROR(PemCertsToX509Stack(pem_roots, root_stack));
+  // absl::StatusOr<absl::Span<const std::string>> roots =
+  //     spiffe_bundle_map->GetRoots(*trust_domain);
+  // GRPC_RETURN_IF_ERROR(roots.status());
+  // std::vector<std::string> pem_roots;
+  // for (const auto& root : *roots) {
+  //   pem_roots.emplace_back(grpc_core::SpiffeBundleRootToPem(root));
+  // }
+  // GRPC_RETURN_IF_ERROR(PemCertsToX509Stack(pem_roots, root_stack));
   // Set the root certs for this handshake
-  X509_STORE_CTX_set0_trusted_stack(ctx, root_stack);
+  auto root_stack = spiffe_bundle_map->GetRootStack(*trust_domain);
+  GRPC_RETURN_IF_ERROR(root_stack.status());
+  X509_STORE_CTX_set0_trusted_stack(ctx, *root_stack);
   return absl::OkStatus();
 }
 
@@ -1368,15 +1369,12 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
   // for verification, which does not take ownership. We must ensure the
   // lifetime of this object is long enough, thus the declaration here.
   CHECK(ctx != nullptr);
-  STACK_OF(X509)* root_stack = nullptr;
+  // STACK_OF(X509)* root_stack = nullptr;
   grpc_core::SpiffeBundleMap* spiffe_bundle_map = GetSpiffeBundleMap(ctx);
   if (spiffe_bundle_map != nullptr) {
-    root_stack = sk_X509_new_null();
-    absl::Status status =
-        ConfigureSpiffeRoots(ctx, spiffe_bundle_map, root_stack);
+    absl::Status status = ConfigureSpiffeRoots(ctx, spiffe_bundle_map);
     if (!status.ok()) {
       VLOG(2) << "Failed to configure SPIFFE roots: " << status.message();
-      sk_X509_pop_free(root_stack, X509_free);
       return -1;
     }
   }
@@ -1386,22 +1384,18 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
     // Verification failed. We shouldn't expect to have a verified chain, so
     // there is no need to attempt to extract the root cert from it, check
     // for revocation, or check anything else.
-    sk_X509_pop_free(root_stack, X509_free);
+    // sk_X509_pop_free(root_stack, X509_free);
     return ret;
   }
   grpc_core::experimental::CrlProvider* provider = GetCrlProvider(ctx);
   if (provider != nullptr) {
     ret = CheckChainRevocation(ctx, provider);
     if (ret <= 0) {
-      sk_X509_pop_free(root_stack, X509_free);
       VLOG(2) << "The chain failed revocation checks.";
       return ret;
     }
   }
   ret = RootCertExtractCallback(ctx, arg);
-  if (root_stack != nullptr) {
-    sk_X509_pop_free(root_stack, X509_free);
-  }
   return ret;
 }
 
