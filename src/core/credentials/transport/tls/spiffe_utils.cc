@@ -244,8 +244,10 @@ void SpiffeBundle::JsonPostLoad(const Json& json, const JsonArgs& args,
 }
 
 SpiffeBundle::~SpiffeBundle() {
-  if (root_stack_ != nullptr) {
-    // sk_X509_pop_free(root_stack_, X509_free);
+  STACK_OF(X509)* ptr = *root_stack_;
+  root_stack_.reset();
+  if (root_stack_.use_count() == 0) {
+    sk_X509_pop_free(ptr, X509_free);
   }
 }
 

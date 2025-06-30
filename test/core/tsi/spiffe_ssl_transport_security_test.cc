@@ -156,9 +156,7 @@ class SpiffeSslTransportSecurityTest
       tsi_ssl_client_handshaker_options client_options;
       client_options.pem_key_cert_pair = client_pem_key_cert_pairs_;
       client_options.pem_root_certs = root_cert_.c_str();
-      if (client_spiffe_bundle_map_ != nullptr) {
-        client_options.root_cert_info = client_spiffe_bundle_map_;
-      }
+      client_options.root_cert_info = client_spiffe_bundle_map_;
       client_options.min_tls_version = GetParam();
       client_options.max_tls_version = GetParam();
       EXPECT_EQ(tsi_create_ssl_client_handshaker_factory_with_options(
@@ -169,9 +167,7 @@ class SpiffeSslTransportSecurityTest
       server_options.pem_key_cert_pairs = server_pem_key_cert_pairs_;
       server_options.num_key_cert_pairs = 1;
       server_options.pem_client_root_certs = root_cert_.c_str();
-      if (server_spiffe_bundle_map_ != nullptr) {
-        server_options.root_cert_info = server_spiffe_bundle_map_;
-      }
+      server_options.root_cert_info = server_spiffe_bundle_map_;
       server_options.client_certificate_request =
           TSI_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
       server_options.session_ticket_key = nullptr;
