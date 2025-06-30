@@ -2297,6 +2297,7 @@ static void tsi_ssl_client_handshaker_factory_destroy(
   if (self->alpn_protocol_list != nullptr) gpr_free(self->alpn_protocol_list);
   self->session_cache.reset();
   self->key_logger.reset();
+  self->root_cert_info.reset();
   gpr_free(self);
 }
 
@@ -2347,6 +2348,7 @@ static void tsi_ssl_server_handshaker_factory_destroy(
   }
   if (self->alpn_protocol_list != nullptr) gpr_free(self->alpn_protocol_list);
   self->key_logger.reset();
+  self->root_cert_info.reset();
   gpr_free(self);
 }
 
@@ -2478,22 +2480,6 @@ tsi_result tsi_create_ssl_client_handshaker_factory(
                                                                factory);
 }
 
-bool IsRootCertInfoEmpty(std::shared_ptr<RootCertInfo> root_cert_info) {
-  if (root_cert_info == nullptr) {
-    return true;
-  }
-  bool is_empty = true;
-  Match(
-      *root_cert_info,
-      [&](const std::string& pem_root_certs) {
-        is_empty = pem_root_certs.empty();
-      },
-      [&](const grpc_core::SpiffeBundleMap& spiffe_bundle_map) {
-        is_empty = spiffe_bundle_map.size() == 0;
-      });
-  return is_empty;
-}
-
 tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
     const tsi_ssl_client_handshaker_options* options,
     tsi_ssl_client_handshaker_factory** factory) {
@@ -2506,7 +2492,7 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
   if (factory == nullptr) return TSI_INVALID_ARGUMENT;
   *factory = nullptr;
   if (options->pem_root_certs == nullptr && options->root_store == nullptr &&
-    options->root_cert_info == nullptr &&
+      options->root_cert_info == nullptr &&
       !options->skip_server_certificate_verification) {
     return TSI_INVALID_ARGUMENT;
   }
@@ -2578,7 +2564,8 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
 
     const bool custom_roots_configured = options->root_cert_info != nullptr ||
                                          options->pem_root_certs != nullptr;
-    if (OPENSSL_VERSION_NUMBER < 0x10100000 || (options->root_store == nullptr && custom_roots_configured)) {
+    if (OPENSSL_VERSION_NUMBER < 0x10100000 ||
+        (options->root_store == nullptr && custom_roots_configured)) {
       if (options->root_cert_info != nullptr) {
         Match(
             *options->root_cert_info,
@@ -2974,6 +2961,16 @@ int tsi_ssl_peer_matches_name(const tsi_peer* peer, absl::string_view name) {
   }
 
   return 0;  // Not found.
+}
+
+bool IsRootCertInfoEmpty(const RootCertInfo* root_cert_info) {
+  if (root_cert_info == nullptr) return true;
+  return Match(
+      *root_cert_info,
+      [&](const std::string& pem_root_certs) { return pem_root_certs.empty(); },
+      [&](const grpc_core::SpiffeBundleMap& spiffe_bundle_map) {
+        return spiffe_bundle_map.size() == 0;
+      });
 }
 
 // --- Testing support. ---
