@@ -128,19 +128,6 @@ absl::Status ValidatePath(absl::string_view path) {
   return absl::OkStatus();
 }
 
-absl::Status PemCertsToX509Stack(const absl::Span<const std::string> pem_certs,
-                                 STACK_OF(X509) * cert_stack) {
-  CHECK(cert_stack != nullptr);
-  for (const auto& pem_cert : pem_certs) {
-    auto cert = ParsePemCertificateChain(SpiffeBundleRootToPem(pem_cert));
-    GRPC_RETURN_IF_ERROR(cert.status());
-    if (cert->size() != 1) {
-      return absl::InvalidArgumentError("Got an invalid root certificate.");
-    }
-    sk_X509_push(cert_stack, (*cert)[0]);
-  }
-    return absl::OkStatus();
-  }
 
 }  // namespace
 
@@ -247,9 +234,10 @@ void SpiffeBundle::JsonPostLoad(const Json& json, const JsonArgs& args,
   for (size_t i = 0; i < keys->size(); ++i) {
     roots_.emplace_back((*keys)[i].GetRoot());
   }
-  root_stack_ = sk_X509_new_null();
+  // root_stack_ = std::make_shared<STACK_OF(X509)*>(sk_X509_new_null());
   ValidationErrors::ScopedField field(errors, "keys");
-  absl::Status status = PemCertsToX509Stack(roots_, root_stack_);
+  // absl::Status status = PemCertsToX509Stack(roots_, root_stack_);
+  absl::Status status = CreateX509Stack();
   if (!status.ok()) {
     errors->AddError(status.ToString());
   }
@@ -257,8 +245,21 @@ void SpiffeBundle::JsonPostLoad(const Json& json, const JsonArgs& args,
 
 SpiffeBundle::~SpiffeBundle() {
   if (root_stack_ != nullptr) {
-      sk_X509_pop_free(root_stack_, X509_free);
+    // sk_X509_pop_free(root_stack_, X509_free);
   }
+}
+
+absl::Status SpiffeBundle::CreateX509Stack() {
+  root_stack_ = std::make_shared<STACK_OF(X509)*>(sk_X509_new_null());
+  for (const auto& pem_cert : roots_) {
+    auto cert = ParsePemCertificateChain(SpiffeBundleRootToPem(pem_cert));
+    GRPC_RETURN_IF_ERROR(cert.status());
+    if (cert->size() != 1) {
+      return absl::InvalidArgumentError("Got an invalid root certificate.");
+    }
+    sk_X509_push(*root_stack_, (*cert)[0]);
+  }
+    return absl::OkStatus();
 }
 
 absl::Span<const std::string> SpiffeBundle::GetRoots() { return roots_; }
