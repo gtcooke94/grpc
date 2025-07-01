@@ -1382,7 +1382,7 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
     std::cout << "GREG: Configuring SPIFFE roots\n";
     absl::Status status = ConfigureSpiffeRoots(ctx, spiffe_bundle_map);
     if (!status.ok()) {
-      VLOG(2) << "Failed to configure SPIFFE roots: " << status.message();
+      VLOG(2) << "Failed to configure SPIFFE roots: " << status;
       return -1;
     }
   }
