@@ -266,8 +266,9 @@ absl::Status SpiffeBundle::CreateX509Stack() {
       return absl::InvalidArgumentError("Got an invalid root certificate.");
     }
     sk_X509_push(*root_stack_, (*cert)[0]);
+    // X509_free((*cert)[0]);
   }
-    return absl::OkStatus();
+  return absl::OkStatus();
 }
 
 absl::Span<const std::string> SpiffeBundle::GetRoots() { return roots_; }

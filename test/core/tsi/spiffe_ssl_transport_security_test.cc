@@ -306,12 +306,12 @@ TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffeChain) {
 // Just Spiffe bundles on the client side - the server side has the root
 // configured as a certificate
 TEST_P(SpiffeSslTransportSecurityTest, ClientSideSpiffeBundle) {
-  auto* fixture = new SslTsiTestFixture(
-      kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath, "",
-      kClientSpiffeBundleMapPath, kNonSpiffeCAPath,
-      /*expect_server_success=*/true,
-      /*expect_client_success_1_2=*/true,
-      /*expected_client_success_1_3=*/true);
+  auto* fixture = new SslTsiTestFixture(kServerKeyPath, kServerCertPath,
+                                        kClientKeyPath, kClientCertPath, "",
+                                        kClientSpiffeBundleMapPath, kCaPemPath,
+                                        /*expect_server_success=*/true,
+                                        /*expect_client_success_1_2=*/true,
+                                        /*expected_client_success_1_3=*/true);
   fixture->Run();
 }
 
@@ -320,7 +320,7 @@ TEST_P(SpiffeSslTransportSecurityTest, ClientSideSpiffeBundle) {
 TEST_P(SpiffeSslTransportSecurityTest, ServerSideSpiffeBundle) {
   auto* fixture = new SslTsiTestFixture(
       kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
-      kServerSpiffeBundleMapPath, "", kNonSpiffeCAPath,
+      kServerSpiffeBundleMapPath, "", kCaPemPath,
       /*expect_server_success=*/true,
       /*expect_client_success_1_2=*/true,
       /*expected_client_success_1_3=*/true);

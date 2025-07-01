@@ -1280,6 +1280,7 @@ static absl::StatusOr<std::string> GetSpiffeUriFromCert(X509* cert) {
       if (subject_alt_name->type == GEN_URI) {
         uri_count++;
         if (uri_count > 1) {
+          sk_GENERAL_NAME_pop_free(subject_alt_names, GENERAL_NAME_free);
           return absl::InvalidArgumentError(
               "spiffe: more than one SAN URI found while doing SPIFFE validation. Must "
               "have exactly one URI SAN that is the SPIFFE ID.");
@@ -1287,8 +1288,8 @@ static absl::StatusOr<std::string> GetSpiffeUriFromCert(X509* cert) {
         spiffe_uri = grpc_core::ParseUriString(subject_alt_name);
       }
     }
-    sk_GENERAL_NAME_pop_free(subject_alt_names, GENERAL_NAME_free);
   }
+  sk_GENERAL_NAME_pop_free(subject_alt_names, GENERAL_NAME_free);
   GRPC_RETURN_IF_ERROR(spiffe_uri.status());
   if (spiffe_uri->empty()) {
     return absl::InvalidArgumentError(
@@ -2579,6 +2580,9 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
                   strlen(pem_root_certs.c_str()), nullptr);
             },
             [&](const grpc_core::SpiffeBundleMap& spiffe_bundle_map) {
+              X509_STORE* cert_store = SSL_CTX_get_cert_store(ssl_context);
+              X509_STORE_set_flags(cert_store, X509_V_FLAG_PARTIAL_CHAIN |
+                                                   X509_V_FLAG_TRUSTED_FIRST);
               const void* p = &spiffe_bundle_map;
               void* map = const_cast<void*>(p);
               SSL_CTX_set_ex_data(ssl_context,
@@ -2814,6 +2818,10 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
                 }
               },
               [&](const grpc_core::SpiffeBundleMap& spiffe_bundle_map) {
+                X509_STORE* cert_store =
+                    SSL_CTX_get_cert_store(impl->ssl_contexts[i]);
+                X509_STORE_set_flags(cert_store, X509_V_FLAG_PARTIAL_CHAIN |
+                                                     X509_V_FLAG_TRUSTED_FIRST);
                 const void* p = &spiffe_bundle_map;
                 void* map = const_cast<void*>(p);
                 SSL_CTX_set_ex_data(impl->ssl_contexts[i],
