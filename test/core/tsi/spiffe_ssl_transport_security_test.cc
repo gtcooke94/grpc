@@ -107,15 +107,13 @@ class SpiffeSslTransportSecurityTest
         auto server_map =
             grpc_core::SpiffeBundleMap::FromFile(server_spiffe_bundle_map_path);
         EXPECT_TRUE(server_map.ok());
-        server_spiffe_bundle_map_ =
-            std::make_shared<RootCertInfo>(std::move(*server_map));
+        server_spiffe_bundle_map_ = std::make_shared<RootCertInfo>(*server_map);
       }
       if (!client_spiffe_bundle_map_path.empty()) {
         auto client_map =
             grpc_core::SpiffeBundleMap::FromFile(client_spiffe_bundle_map_path);
         EXPECT_TRUE(client_map.ok());
-        client_spiffe_bundle_map_ =
-            std::make_shared<RootCertInfo>(std::move(*client_map));
+        client_spiffe_bundle_map_ = std::make_shared<RootCertInfo>(*client_map);
       }
       expect_server_success_ = expect_server_success;
       expect_client_success_1_2_ = expect_client_success_1_2;
@@ -308,12 +306,12 @@ TEST_P(SpiffeSslTransportSecurityTest, MTLSSpiffeChain) {
 // Just Spiffe bundles on the client side - the server side has the root
 // configured as a certificate
 TEST_P(SpiffeSslTransportSecurityTest, ClientSideSpiffeBundle) {
-  auto* fixture = new SslTsiTestFixture(kServerKeyPath, kServerCertPath,
-                                        kClientKeyPath, kClientCertPath, "",
-                                        kClientSpiffeBundleMapPath, kCaPemPath,
-                                        /*expect_server_success=*/true,
-                                        /*expect_client_success_1_2=*/true,
-                                        /*expected_client_success_1_3=*/true);
+  auto* fixture = new SslTsiTestFixture(
+      kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath, "",
+      kClientSpiffeBundleMapPath, kNonSpiffeCAPath,
+      /*expect_server_success=*/true,
+      /*expect_client_success_1_2=*/true,
+      /*expected_client_success_1_3=*/true);
   fixture->Run();
 }
 
@@ -322,7 +320,7 @@ TEST_P(SpiffeSslTransportSecurityTest, ClientSideSpiffeBundle) {
 TEST_P(SpiffeSslTransportSecurityTest, ServerSideSpiffeBundle) {
   auto* fixture = new SslTsiTestFixture(
       kServerKeyPath, kServerCertPath, kClientKeyPath, kClientCertPath,
-      kServerSpiffeBundleMapPath, "", kCaPemPath,
+      kServerSpiffeBundleMapPath, "", kNonSpiffeCAPath,
       /*expect_server_success=*/true,
       /*expect_client_success_1_2=*/true,
       /*expected_client_success_1_3=*/true);

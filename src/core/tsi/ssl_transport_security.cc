@@ -1352,7 +1352,13 @@ absl::Status ConfigureSpiffeRoots(
   // Set the root certs for this handshake
   auto root_stack = spiffe_bundle_map->GetRootStack(*trust_domain);
   GRPC_RETURN_IF_ERROR(root_stack.status());
-  X509_STORE_CTX_set0_trusted_stack(ctx, *root_stack);
+  if (*root_stack == nullptr) {
+    return absl::InvalidArgumentError(
+        "spiffe: root stack in the SPIFFE Bundle Map is nullptr.");
+  }
+  std::cout << "GREG: in verification stack size is "
+            << sk_X509_num(**root_stack) << "\n";
+  X509_STORE_CTX_set0_trusted_stack(ctx, **root_stack);
   return absl::OkStatus();
 }
 
@@ -1372,6 +1378,7 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
   // STACK_OF(X509)* root_stack = nullptr;
   grpc_core::SpiffeBundleMap* spiffe_bundle_map = GetSpiffeBundleMap(ctx);
   if (spiffe_bundle_map != nullptr) {
+    std::cout << "GREG: Configuring SPIFFE roots\n";
     absl::Status status = ConfigureSpiffeRoots(ctx, spiffe_bundle_map);
     if (!status.ok()) {
       VLOG(2) << "Failed to configure SPIFFE roots: " << status.message();
@@ -1384,7 +1391,6 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
     // Verification failed. We shouldn't expect to have a verified chain, so
     // there is no need to attempt to extract the root cert from it, check
     // for revocation, or check anything else.
-    // sk_X509_pop_free(root_stack, X509_free);
     return ret;
   }
   grpc_core::experimental::CrlProvider* provider = GetCrlProvider(ctx);
@@ -1395,8 +1401,7 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
       return ret;
     }
   }
-  ret = RootCertExtractCallback(ctx, arg);
-  return ret;
+  return RootCertExtractCallback(ctx, arg);
 }
 
 // Sets the min and max TLS version of |ssl_context| to |min_tls_version|
@@ -2297,7 +2302,7 @@ static void tsi_ssl_client_handshaker_factory_destroy(
   if (self->alpn_protocol_list != nullptr) gpr_free(self->alpn_protocol_list);
   self->session_cache.reset();
   self->key_logger.reset();
-  self->root_cert_info.reset();
+  self->root_cert_info = nullptr;
   gpr_free(self);
 }
 
@@ -2348,7 +2353,7 @@ static void tsi_ssl_server_handshaker_factory_destroy(
   }
   if (self->alpn_protocol_list != nullptr) gpr_free(self->alpn_protocol_list);
   self->key_logger.reset();
-  self->root_cert_info.reset();
+  self->root_cert_info = nullptr;
   gpr_free(self);
 }
 
@@ -2561,7 +2566,6 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
       SSL_CTX_set_cert_store(ssl_context, options->root_store->store);
     }
 #endif
-
     const bool custom_roots_configured = options->root_cert_info != nullptr ||
                                          options->pem_root_certs != nullptr;
     if (OPENSSL_VERSION_NUMBER < 0x10100000 ||
@@ -2581,9 +2585,11 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
                                   g_ssl_ctx_ex_spiffe_bundle_map_index, map);
             });
       } else if (options->pem_root_certs != nullptr) {
+        result = ssl_ctx_load_verification_certs(
+            ssl_context, options->pem_root_certs,
+            strlen(options->pem_root_certs), nullptr);
       }
       X509_STORE* cert_store = SSL_CTX_get_cert_store(ssl_context);
-
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
       X509_VERIFY_PARAM* param = X509_STORE_get0_param(cert_store);
 
@@ -2798,7 +2804,8 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
                 STACK_OF(X509_NAME)* root_names = nullptr;
                 result = ssl_ctx_load_verification_certs(
                     impl->ssl_contexts[i], pem_root_certs.c_str(),
-                    strlen(pem_root_certs.c_str()), nullptr);
+                    strlen(pem_root_certs.c_str()),
+                    options->send_client_ca_list ? &root_names : nullptr);
                 if (result != TSI_OK) {
                   LOG(ERROR) << "Invalid verification certs.";
                 }
