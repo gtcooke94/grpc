@@ -111,8 +111,6 @@ constexpr char kClientCertPath[] = "src/core/tsi/test_creds/client.pem";
 constexpr char kClientKeyPath[] = "src/core/tsi/test_creds/client.key";
 constexpr char kBadClientCertPath[] = "src/core/tsi/test_creds/badclient.pem";
 constexpr char kBadClientKeyPath[] = "src/core/tsi/test_creds/badclient.key";
-constexpr char kClientSpiffeBundleMapPath[] =
-    "test/core/tsi/test_creds/spiffe_end2end/client_spiffebundle.json";
 
 // Based on StaticDataCertificateProvider, but provides alternate certificates
 // if the certificate name is not empty.
@@ -121,7 +119,6 @@ class FakeCertificateProvider final : public grpc_tls_certificate_provider {
   struct CertData {
     std::string root_certificate;
     grpc_core::PemKeyCertPairList identity_key_cert_pairs;
-    grpc_core::SpiffeBundleMap spiffe_bundle_map;
   };
 
   using CertDataMap = std::map<std::string /*cert_name */, CertData>;
@@ -159,13 +156,8 @@ class FakeCertificateProvider final : public grpc_tls_certificate_provider {
         std::shared_ptr<RootCertInfo> root_cert_info;
         std::optional<grpc_core::PemKeyCertPairList> pem_key_cert_pairs;
         if (root_being_watched) {
-          if (it->second.spiffe_bundle_map.size() != 0) {
-            root_cert_info =
-                std::make_shared<RootCertInfo>(it->second.spiffe_bundle_map);
-          } else {
-            root_cert_info =
-                std::make_shared<RootCertInfo>(it->second.root_certificate);
-          }
+          root_cert_info =
+              std::make_shared<RootCertInfo>(it->second.root_certificate);
         }
         if (identity_being_watched) {
           pem_key_cert_pairs = it->second.identity_key_cert_pairs;
@@ -279,11 +271,6 @@ class XdsSecurityTest : public XdsEnd2endTest {
     root_cert_ = grpc_core::testing::GetFileContents(kCaCertPath);
     bad_root_cert_ = grpc_core::testing::GetFileContents(kBadClientCertPath);
     identity_pair_ = ReadTlsIdentityPair(kClientKeyPath, kClientCertPath);
-    auto spiffe_bundle_map =
-        grpc_core::SpiffeBundleMap::FromFile(kClientSpiffeBundleMapPath);
-    CHECK(spiffe_bundle_map.ok());
-    spiffe_bundle_map_ = *spiffe_bundle_map;
-
     // TODO(yashykt): Use different client certs here instead of reusing
     // server certs after https://github.com/grpc/grpc/pull/24876 is merged
     fallback_identity_pair_ =
@@ -420,7 +407,6 @@ class XdsSecurityTest : public XdsEnd2endTest {
   grpc_core::PemKeyCertPairList identity_pair_;
   grpc_core::PemKeyCertPairList fallback_identity_pair_;
   grpc_core::PemKeyCertPairList bad_identity_pair_;
-  grpc_core::SpiffeBundleMap spiffe_bundle_map_;
   StringMatcher server_san_exact_;
   StringMatcher server_san_prefix_;
   StringMatcher server_san_suffix_;
@@ -1044,7 +1030,6 @@ class XdsServerSecurityTest : public XdsEnd2endTest {
   std::vector<std::string> server_authenticated_identity_;
   std::vector<std::string> server_authenticated_identity_2_;
   std::vector<std::string> client_authenticated_identity_;
-  grpc_core::SpiffeBundleMap spiffe_bundle_map_;
 };
 
 // We are only testing the server here.
@@ -1091,16 +1076,6 @@ TEST_P(XdsServerSecurityTest, CertificatesNotAvailable) {
 }
 
 TEST_P(XdsServerSecurityTest, TestMtls) {
-  g_fake1_cert_data_map->Set({{"", {root_cert_, identity_pair_}}});
-  SetLdsUpdate("fake_plugin1", "", "fake_plugin1", "", true);
-  StartBackend(0);
-  ASSERT_TRUE(backends_[0]->WaitOnServingStatusChange(grpc::StatusCode::OK));
-  SendRpc([this]() { return CreateMtlsChannel(); },
-          RpcOptions().set_wait_for_ready(true), server_authenticated_identity_,
-          client_authenticated_identity_);
-}
-
-TEST_P(XdsServerSecurityTest, TestMtlsSpiffe) {
   g_fake1_cert_data_map->Set({{"", {root_cert_, identity_pair_}}});
   SetLdsUpdate("fake_plugin1", "", "fake_plugin1", "", true);
   StartBackend(0);
