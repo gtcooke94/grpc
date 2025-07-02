@@ -1358,8 +1358,8 @@ absl::Status ConfigureSpiffeRoots(
         "spiffe: root stack in the SPIFFE Bundle Map is nullptr.");
   }
   std::cout << "GREG: in verification stack size is "
-            << sk_X509_num(**root_stack) << "\n";
-  X509_STORE_CTX_set0_trusted_stack(ctx, **root_stack);
+            << sk_X509_num(*root_stack) << "\n";
+  X509_STORE_CTX_set0_trusted_stack(ctx, *root_stack);
   return absl::OkStatus();
 }
 

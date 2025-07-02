@@ -244,21 +244,40 @@ void SpiffeBundle::JsonPostLoad(const Json& json, const JsonArgs& args,
 }
 
 SpiffeBundle::~SpiffeBundle() {
-  std::cout << "GREG: ~SpiffeBundle()\n";
   if (root_stack_ != nullptr) {
-    std::cout << "GREG: stack size " << sk_X509_num(*root_stack_) << "\n";
-    std::cout << "GREG: use count " << root_stack_.use_count() << "\n";
-    STACK_OF(X509)* ptr = *root_stack_;
-    if (root_stack_.use_count() == 1) {
-      std::cout << "GREG: freeing the X509 stack\n";
-      sk_X509_pop_free(ptr, X509_free);
-      root_stack_.reset();
+    sk_X509_pop_free(*root_stack_, X509_free);
+  }
+}
+
+SpiffeBundle::SpiffeBundle(const SpiffeBundle& other) {
+  roots_ = other.roots_;
+  if (other.root_stack_ != nullptr) {
+    root_stack_ =
+        std::make_unique<STACK_OF(X509)*>(sk_X509_dup(*other.root_stack_));
+    for (int i = 0; i < sk_X509_num(*root_stack_); i++) {
+      X509* x = sk_X509_value(*root_stack_, i);
+      CHECK(X509_up_ref(x));
     }
   }
 }
 
+SpiffeBundle& SpiffeBundle::operator=(const SpiffeBundle& other) {
+  if (this != &other) {
+    roots_ = other.roots_;
+    if (other.root_stack_ != nullptr) {
+      root_stack_ =
+          std::make_unique<STACK_OF(X509)*>(sk_X509_dup(*other.root_stack_));
+      for (int i = 0; i < sk_X509_num(*root_stack_); i++) {
+        X509* x = sk_X509_value(*root_stack_, i);
+        CHECK(X509_up_ref(x));
+      }
+    }
+  }
+  return *this;
+}
+
 absl::Status SpiffeBundle::CreateX509Stack() {
-  root_stack_ = std::make_shared<STACK_OF(X509)*>(sk_X509_new_null());
+  root_stack_ = std::make_unique<STACK_OF(X509)*>(sk_X509_new_null());
   for (const auto& pem_cert : roots_) {
     auto cert = ParsePemCertificateChain(SpiffeBundleRootToPem(pem_cert));
     GRPC_RETURN_IF_ERROR(cert.status());
@@ -306,7 +325,7 @@ absl::StatusOr<absl::Span<const std::string>> SpiffeBundleMap::GetRoots(
       "No spiffe bundle found for trust domain %s", trust_domain));
 }
 
-absl::StatusOr<std::shared_ptr<STACK_OF(X509) *>> SpiffeBundleMap::GetRootStack(
+absl::StatusOr<STACK_OF(X509) *> SpiffeBundleMap::GetRootStack(
     const absl::string_view trust_domain) {
   if (auto it = bundles_.find(trust_domain); it != bundles_.end()) {
     return it->second.GetRootStack();

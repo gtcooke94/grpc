@@ -86,7 +86,11 @@ class SpiffeBundle final {
     return kLoader;
   }
 
+  // Needed to handle the root stack
+  SpiffeBundle() = default;
   ~SpiffeBundle();
+  SpiffeBundle(const SpiffeBundle& other);
+  SpiffeBundle& operator=(const SpiffeBundle& other);
 
   void JsonPostLoad(const Json& json, const JsonArgs&,
                     ValidationErrors* errors);
@@ -94,7 +98,7 @@ class SpiffeBundle final {
   // Returns a vector of the roots in this SPIFFE Bundle.
   absl::Span<const std::string> GetRoots();
 
-  std::shared_ptr<STACK_OF(X509) *> GetRootStack() { return root_stack_; }
+  STACK_OF(X509) * GetRootStack() { return *root_stack_; }
 
   bool operator==(const SpiffeBundle& other) const {
     return roots_ == other.roots_;
@@ -106,7 +110,7 @@ class SpiffeBundle final {
 
  private:
   std::vector<std::string> roots_;
-  std::shared_ptr<STACK_OF(X509)*> root_stack_;
+  std::unique_ptr<STACK_OF(X509)*> root_stack_;
   absl::Status CreateX509Stack();
 };
 
@@ -137,7 +141,7 @@ class SpiffeBundleMap final {
   // Returns the roots for a given trust domain in the SPIFFE Bundle Map.
   absl::StatusOr<absl::Span<const std::string>> GetRoots(absl::string_view trust_domain);
 
-  absl::StatusOr<std::shared_ptr<STACK_OF(X509) *>> GetRootStack(absl::string_view trust_domain);
+  absl::StatusOr<STACK_OF(X509) *> GetRootStack(absl::string_view trust_domain);
 
   size_t size() const { return bundles_.size(); }
 
