@@ -165,13 +165,26 @@ grpc_cc_test(
         "//src/core/tsi/test_creds:client.pem",
         "//src/core/tsi/test_creds:server1.key",
         "//src/core/tsi/test_creds:server1.pem",
+        "//test/core/tsi/test_creds/spiffe_end2end:ca.pem",
+        "//test/core/tsi/test_creds/spiffe_end2end:client.key",
         "//test/core/tsi/test_creds/spiffe_end2end:client_spiffebundle.json",
+        "//test/core/tsi/test_creds/spiffe_end2end:client_spiffe.pem",
+        "//test/core/tsi/test_creds/spiffe_end2end:intermediate_ca.key",
+        "//test/core/tsi/test_creds/spiffe_end2end:intermediate_ca.pem",
+        "//test/core/tsi/test_creds/spiffe_end2end:intermediate.cnf",
+        "//test/core/tsi/test_creds/spiffe_end2end:intermediate_gen.sh",
+        "//test/core/tsi/test_creds/spiffe_end2end:leaf_and_intermediate_chain.pem",
+        "//test/core/tsi/test_creds/spiffe_end2end:leaf_signed_by_intermediate.key",
+        "//test/core/tsi/test_creds/spiffe_end2end:leaf_signed_by_intermediate.pem",
+        "//test/core/tsi/test_creds/spiffe_end2end:server.key",
+        "//test/core/tsi/test_creds/spiffe_end2end:server_spiffebundle.json",
+        "//test/core/tsi/test_creds/spiffe_end2end:server_spiffe.pem",
     ],
     external_deps = [
         "absl/log:check",
         "gtest",
     ],
-    flaky = True,  # TODO(b/144705388)
+    # flaky = True,  # TODO(b/144705388)
     linkstatic = True,  # Fixes dyld error on MacOS
     # shard_count = 25,
     tags = [

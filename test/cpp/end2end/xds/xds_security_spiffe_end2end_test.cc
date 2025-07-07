@@ -107,12 +107,24 @@ using ::grpc_core::experimental::AuditLoggerRegistry;
 using ::grpc_core::testing::ScopedExperimentalEnvVar;
 using ::grpc_core::testing::TestAuditLoggerFactory;
 
-constexpr char kClientCertPath[] = "src/core/tsi/test_creds/client.pem";
-constexpr char kClientKeyPath[] = "src/core/tsi/test_creds/client.key";
-constexpr char kBadClientCertPath[] = "src/core/tsi/test_creds/badclient.pem";
-constexpr char kBadClientKeyPath[] = "src/core/tsi/test_creds/badclient.key";
+constexpr char kClientKeyPath[] =
+    "test/core/tsi/test_creds/spiffe_end2end/client.key";
+constexpr char kClientCertPath[] =
+    "test/core/tsi/test_creds/spiffe_end2end/client_spiffe.pem";
+constexpr char kServerKeyPath[] =
+    "test/core/tsi/test_creds/spiffe_end2end/server.key";
+constexpr char kServerCertPath[] =
+    "test/core/tsi/test_creds/spiffe_end2end/server_spiffe.pem";
+constexpr char kServerChainKeyPath[] =
+    "test/core/tsi/test_creds/spiffe_end2end/leaf_signed_by_intermediate.key";
+constexpr char kServerChainCertPath[] =
+    "test/core/tsi/test_creds/spiffe_end2end/leaf_and_intermediate_chain.pem";
 constexpr char kClientSpiffeBundleMapPath[] =
     "test/core/tsi/test_creds/spiffe_end2end/client_spiffebundle.json";
+constexpr char kServerSpiffeBundleMapPath[] =
+    "test/core/tsi/test_creds/spiffe_end2end/server_spiffebundle.json";
+constexpr char kBadClientCertPath[] = "src/core/tsi/test_creds/badclient.pem";
+constexpr char kBadClientKeyPath[] = "src/core/tsi/test_creds/badclient.key";
 
 // Based on StaticDataCertificateProvider, but provides alternate certificates
 // if the certificate name is not empty.
@@ -255,6 +267,8 @@ FakeCertificateProvider::CertDataMapWrapper* g_fake2_cert_data_map = nullptr;
 // Client-side mTLS tests
 //
 
+// Client gets certificate provider with InitClient
+// fallback_identity_pair is the server creds
 class XdsSecurityTest : public XdsEnd2endTest {
  protected:
   void SetUp() override {
@@ -266,23 +280,24 @@ class XdsSecurityTest : public XdsEnd2endTest {
                                      kClientCertPath));
     fields.push_back(absl::StrFormat("        \"private_key_file\": \"%s\"",
                                      kClientKeyPath));
-    fields.push_back(absl::StrFormat("        \"ca_certificate_file\": \"%s\"",
-                                     kCaCertPath));
+    fields.push_back(absl::StrFormat("        \"spiffe_bundle_map_file\": \"%s\"",
+                                     kServerSpiffeBundleMapPath));
     builder.AddCertificateProviderPlugin("file_plugin", "file_watcher",
                                          absl::StrJoin(fields, ",\n"));
+
     InitClient(builder, /*lb_expected_authority=*/"",
                /*xds_resource_does_not_exist_timeout_ms=*/0,
                /*balancer_authority_override=*/"", /*args=*/nullptr,
-               CreateXdsChannelCredentials());
+               CreateSpiffeXdsChannelCredentials());
     CreateAndStartBackends(2, /*xds_enabled=*/false,
-                           CreateMtlsServerCredentials());
-    root_cert_ = grpc_core::testing::GetFileContents(kCaCertPath);
+                           CreateMtlsSpiffeServerCredentials());
+    root_cert_ = grpc_core::testing::GetFileContents(kSpiffeCaCertPath);
     bad_root_cert_ = grpc_core::testing::GetFileContents(kBadClientCertPath);
     identity_pair_ = ReadTlsIdentityPair(kClientKeyPath, kClientCertPath);
-    auto spiffe_bundle_map =
-        grpc_core::SpiffeBundleMap::FromFile(kClientSpiffeBundleMapPath);
-    CHECK(spiffe_bundle_map.ok());
-    spiffe_bundle_map_ = *spiffe_bundle_map;
+    // auto spiffe_bundle_map =
+    //     grpc_core::SpiffeBundleMap::FromFile(kClientSpiffeBundleMapPath);
+    // CHECK(spiffe_bundle_map.ok());
+    // spiffe_bundle_map_ = *spiffe_bundle_map;
 
     // TODO(yashykt): Use different client certs here instead of reusing
     // server certs after https://github.com/grpc/grpc/pull/24876 is merged
@@ -299,7 +314,7 @@ class XdsSecurityTest : public XdsEnd2endTest {
         "(foo|waterzooi).test.google.(fr|be)");
     bad_san_1_.set_exact("192.168.1.4");
     bad_san_2_.set_exact("foo.test.google.in");
-    authenticated_identity_ = {"testclient"};
+    authenticated_identity_ = {"spiffe://foo.bar.com/9eebccd2-12bf-40a6-b262-65fe0487d453"};
     fallback_authenticated_identity_ = {"*.test.google.fr",
                                         "waterzooi.test.google.be",
                                         "*.test.youtube.com", "192.168.1.3"};
@@ -437,18 +452,22 @@ INSTANTIATE_TEST_SUITE_P(XdsTest, XdsSecurityTest,
                          ::testing::Values(XdsTestType()), &XdsTestType::Name);
 
 TEST_P(XdsSecurityTest, TestMtlsConfigurationWithRootPluginUpdateSpiffe) {
+  auto map = grpc_core::SpiffeBundleMap::FromFile(kClientSpiffeBundleMapPath);
+  ASSERT_TRUE(map.ok());
+  auto bad_map = grpc_core::SpiffeBundleMap::FromFile(kServerSpiffeBundleMapPath);
+  ASSERT_TRUE(bad_map.ok());
   g_fake1_cert_data_map->Set(
-      {{"", {root_cert_, identity_pair_}}});
-  // g_fake2_cert_data_map->Set({{"", {bad_root_cert_, bad_identity_pair_}}});
+      {{"", {"", identity_pair_, *map}}});
+  g_fake2_cert_data_map->Set({{"", {"", bad_identity_pair_, *bad_map}}});
   UpdateAndVerifyXdsSecurityConfiguration("fake_plugin1", "", "fake_plugin1",
                                           "", {server_san_exact_},
                                           authenticated_identity_);
-  // UpdateAndVerifyXdsSecurityConfiguration("fake_plugin2" /* bad root */, "",
-  //                                         "fake_plugin1", "", {}, {},
-  //                                         true /* failure */);
-  // UpdateAndVerifyXdsSecurityConfiguration("fake_plugin1", "", "fake_plugin1",
-  //                                         "", {server_san_exact_},
-  //                                         authenticated_identity_);
+  UpdateAndVerifyXdsSecurityConfiguration("fake_plugin2" /* bad root */, "",
+                                          "fake_plugin1", "", {}, {},
+                                          true /* failure */);
+  UpdateAndVerifyXdsSecurityConfiguration("fake_plugin1", "", "fake_plugin1",
+                                          "", {server_san_exact_},
+                                          authenticated_identity_);
 }
 
 }  // namespace
