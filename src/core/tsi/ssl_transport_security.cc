@@ -1342,23 +1342,12 @@ absl::Status ConfigureSpiffeRoots(
   absl::StatusOr<std::string> trust_domain =
       SpiffeTrustDomainFromCert(leaf_cert);
   GRPC_RETURN_IF_ERROR(trust_domain.status());
-  // absl::StatusOr<absl::Span<const std::string>> roots =
-  //     spiffe_bundle_map->GetRoots(*trust_domain);
-  // GRPC_RETURN_IF_ERROR(roots.status());
-  // std::vector<std::string> pem_roots;
-  // for (const auto& root : *roots) {
-  //   pem_roots.emplace_back(grpc_core::SpiffeBundleRootToPem(root));
-  // }
-  // GRPC_RETURN_IF_ERROR(PemCertsToX509Stack(pem_roots, root_stack));
-  // Set the root certs for this handshake
   auto root_stack = spiffe_bundle_map->GetRootStack(*trust_domain);
   GRPC_RETURN_IF_ERROR(root_stack.status());
   if (*root_stack == nullptr) {
     return absl::InvalidArgumentError(
         "spiffe: root stack in the SPIFFE Bundle Map is nullptr.");
   }
-  std::cout << "GREG: in verification stack size is "
-            << sk_X509_num(*root_stack) << "\n";
   X509_STORE_CTX_set0_trusted_stack(ctx, *root_stack);
   return absl::OkStatus();
 }
@@ -1379,7 +1368,6 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
   // STACK_OF(X509)* root_stack = nullptr;
   grpc_core::SpiffeBundleMap* spiffe_bundle_map = GetSpiffeBundleMap(ctx);
   if (spiffe_bundle_map != nullptr) {
-    std::cout << "GREG: Configuring SPIFFE roots\n";
     absl::Status status = ConfigureSpiffeRoots(ctx, spiffe_bundle_map);
     if (!status.ok()) {
       VLOG(2) << "Failed to configure SPIFFE roots: " << status;

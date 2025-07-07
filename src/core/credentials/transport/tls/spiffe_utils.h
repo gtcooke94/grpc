@@ -86,7 +86,7 @@ class SpiffeBundle final {
     return kLoader;
   }
 
-  // Needed to handle the root stack
+  // Needed to handle the STACK_OF(X509)* root stack
   SpiffeBundle() = default;
   ~SpiffeBundle();
   SpiffeBundle(const SpiffeBundle& other);

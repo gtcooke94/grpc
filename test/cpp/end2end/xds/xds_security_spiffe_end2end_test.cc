@@ -111,14 +111,6 @@ constexpr char kClientKeyPath[] =
     "test/core/tsi/test_creds/spiffe_end2end/client.key";
 constexpr char kClientCertPath[] =
     "test/core/tsi/test_creds/spiffe_end2end/client_spiffe.pem";
-constexpr char kServerKeyPath[] =
-    "test/core/tsi/test_creds/spiffe_end2end/server.key";
-constexpr char kServerCertPath[] =
-    "test/core/tsi/test_creds/spiffe_end2end/server_spiffe.pem";
-constexpr char kServerChainKeyPath[] =
-    "test/core/tsi/test_creds/spiffe_end2end/leaf_signed_by_intermediate.key";
-constexpr char kServerChainCertPath[] =
-    "test/core/tsi/test_creds/spiffe_end2end/leaf_and_intermediate_chain.pem";
 constexpr char kClientSpiffeBundleMapPath[] =
     "test/core/tsi/test_creds/spiffe_end2end/client_spiffebundle.json";
 constexpr char kServerSpiffeBundleMapPath[] =
@@ -267,8 +259,6 @@ FakeCertificateProvider::CertDataMapWrapper* g_fake2_cert_data_map = nullptr;
 // Client-side mTLS tests
 //
 
-// Client gets certificate provider with InitClient
-// fallback_identity_pair is the server creds
 class XdsSecurityTest : public XdsEnd2endTest {
  protected:
   void SetUp() override {
@@ -295,10 +285,6 @@ class XdsSecurityTest : public XdsEnd2endTest {
     root_cert_ = grpc_core::testing::GetFileContents(kSpiffeCaCertPath);
     bad_root_cert_ = grpc_core::testing::GetFileContents(kBadClientCertPath);
     identity_pair_ = ReadTlsIdentityPair(kClientKeyPath, kClientCertPath);
-    // auto spiffe_bundle_map =
-    //     grpc_core::SpiffeBundleMap::FromFile(kClientSpiffeBundleMapPath);
-    // CHECK(spiffe_bundle_map.ok());
-    // spiffe_bundle_map_ = *spiffe_bundle_map;
 
     // TODO(yashykt): Use different client certs here instead of reusing
     // server certs after https://github.com/grpc/grpc/pull/24876 is merged
