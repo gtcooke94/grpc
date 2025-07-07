@@ -280,8 +280,9 @@ class XdsSecurityTest : public XdsEnd2endTest {
                                      kClientCertPath));
     fields.push_back(absl::StrFormat("        \"private_key_file\": \"%s\"",
                                      kClientKeyPath));
-    fields.push_back(absl::StrFormat("        \"spiffe_bundle_map_file\": \"%s\"",
-                                     kServerSpiffeBundleMapPath));
+    fields.push_back(
+        absl::StrFormat("        \"spiffe_bundle_map_file\": \"%s\"",
+                        kClientSpiffeBundleMapPath));
     builder.AddCertificateProviderPlugin("file_plugin", "file_watcher",
                                          absl::StrJoin(fields, ",\n"));
 
