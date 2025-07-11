@@ -2295,6 +2295,8 @@ static void tsi_ssl_client_handshaker_factory_destroy(
   self->key_logger.reset();
   self->root_cert_info = nullptr;
   gpr_free(self);
+  self->root_cert_info = nullptr;
+  delete self;
 }
 
 static int client_handshaker_factory_npn_callback(
@@ -2345,7 +2347,7 @@ static void tsi_ssl_server_handshaker_factory_destroy(
   if (self->alpn_protocol_list != nullptr) gpr_free(self->alpn_protocol_list);
   self->key_logger.reset();
   self->root_cert_info = nullptr;
-  gpr_free(self);
+  delete self;
 }
 
 static int does_entry_match_name(absl::string_view entry,
@@ -2468,7 +2470,9 @@ tsi_result tsi_create_ssl_client_handshaker_factory(
     tsi_ssl_client_handshaker_factory** factory) {
   tsi_ssl_client_handshaker_options options;
   options.pem_key_cert_pair = pem_key_cert_pair;
-  options.pem_root_certs = pem_root_certs;
+  if (pem_root_certs != nullptr) {
+    options.root_cert_info = std::make_shared<RootCertInfo>(pem_root_certs);
+  }
   options.cipher_suites = cipher_suites;
   options.alpn_protocols = alpn_protocols;
   options.num_alpn_protocols = num_alpn_protocols;
@@ -2487,8 +2491,7 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
 
   if (factory == nullptr) return TSI_INVALID_ARGUMENT;
   *factory = nullptr;
-  if (options->pem_root_certs == nullptr && options->root_store == nullptr &&
-      options->root_cert_info == nullptr &&
+  if (options->root_store == nullptr && options->root_cert_info == nullptr &&
       !options->skip_server_certificate_verification) {
     return TSI_INVALID_ARGUMENT;
   }
@@ -2511,8 +2514,7 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
       ssl_context, options->min_tls_version, options->max_tls_version);
   if (result != TSI_OK) return result;
 
-  impl = static_cast<tsi_ssl_client_handshaker_factory*>(
-      gpr_zalloc(sizeof(*impl)));
+  impl = new tsi_ssl_client_handshaker_factory();
   tsi_ssl_handshaker_factory_init(&impl->base);
   impl->base.vtable = &client_handshaker_factory_vtable;
   impl->ssl_context = ssl_context;
@@ -2557,19 +2559,17 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
       SSL_CTX_set_cert_store(ssl_context, options->root_store->store);
     }
 #endif
-    const bool custom_roots_configured = options->root_cert_info != nullptr ||
-                                         options->pem_root_certs != nullptr;
     if (OPENSSL_VERSION_NUMBER < 0x10100000 ||
-        (options->root_store == nullptr && custom_roots_configured)) {
-      if (options->root_cert_info != nullptr) {
-        Match(
-            *options->root_cert_info,
-            [&](const std::string& pem_root_certs) {
-              result = ssl_ctx_load_verification_certs(
-                  ssl_context, pem_root_certs.c_str(),
-                  strlen(pem_root_certs.c_str()), nullptr);
-            },
-            [&](const grpc_core::SpiffeBundleMap& spiffe_bundle_map) {
+        (options->root_store == nullptr &&
+         options->root_cert_info != nullptr)) {
+      Match(
+          *options->root_cert_info,
+          [&](const std::string& pem_root_certs) {
+            result = ssl_ctx_load_verification_certs(
+                ssl_context, pem_root_certs.c_str(), pem_root_certs.size(),
+                nullptr);
+          },
+          [&](const grpc_core::SpiffeBundleMap& spiffe_bundle_map) {
               X509_STORE* cert_store = SSL_CTX_get_cert_store(ssl_context);
               X509_STORE_set_flags(cert_store, X509_V_FLAG_PARTIAL_CHAIN |
                                                    X509_V_FLAG_TRUSTED_FIRST);
@@ -2577,12 +2577,7 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
               void* map = const_cast<void*>(p);
               SSL_CTX_set_ex_data(ssl_context,
                                   g_ssl_ctx_ex_spiffe_bundle_map_index, map);
-            });
-      } else if (options->pem_root_certs != nullptr) {
-        result = ssl_ctx_load_verification_certs(
-            ssl_context, options->pem_root_certs,
-            strlen(options->pem_root_certs), nullptr);
-      }
+          });
       X509_STORE* cert_store = SSL_CTX_get_cert_store(ssl_context);
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
       X509_VERIFY_PARAM* param = X509_STORE_get0_param(cert_store);
@@ -2680,7 +2675,9 @@ tsi_result tsi_create_ssl_server_handshaker_factory_ex(
   tsi_ssl_server_handshaker_options options;
   options.pem_key_cert_pairs = pem_key_cert_pairs;
   options.num_key_cert_pairs = num_key_cert_pairs;
-  options.pem_client_root_certs = pem_client_root_certs;
+  if (pem_client_root_certs != nullptr) {
+    options.root_cert_info = std::make_shared<RootCertInfo>(pem_client_root_certs);
+  }
   options.client_certificate_request = client_certificate_request;
   options.cipher_suites = cipher_suites;
   options.alpn_protocols = alpn_protocols;
@@ -2705,8 +2702,7 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
     return TSI_INVALID_ARGUMENT;
   }
 
-  impl = static_cast<tsi_ssl_server_handshaker_factory*>(
-      gpr_zalloc(sizeof(*impl)));
+  impl = new tsi_ssl_server_handshaker_factory();
   tsi_ssl_handshaker_factory_init(&impl->base);
   impl->base.vtable = &server_handshaker_factory_vtable;
 
@@ -2787,27 +2783,22 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
           break;
         }
       }
-      const bool custom_roots_configured =
-          options->pem_client_root_certs != nullptr ||
-          options->root_cert_info != nullptr;
-      if (custom_roots_configured) {
-        if (options->root_cert_info != nullptr) {
-          Match(
-              *options->root_cert_info,
-              [&](const std::string& pem_root_certs) {
-                STACK_OF(X509_NAME)* root_names = nullptr;
-                result = ssl_ctx_load_verification_certs(
-                    impl->ssl_contexts[i], pem_root_certs.c_str(),
-                    strlen(pem_root_certs.c_str()),
-                    options->send_client_ca_list ? &root_names : nullptr);
-                if (result != TSI_OK) {
-                  LOG(ERROR) << "Invalid verification certs.";
-                }
-                if (options->send_client_ca_list) {
-                  SSL_CTX_set_client_CA_list(impl->ssl_contexts[i], root_names);
-                }
-              },
-              [&](const grpc_core::SpiffeBundleMap& spiffe_bundle_map) {
+      if (options->root_cert_info != nullptr) {
+        Match(
+            *options->root_cert_info,
+            [&](const std::string& pem_root_certs) {
+              STACK_OF(X509_NAME)* root_names = nullptr;
+              result = ssl_ctx_load_verification_certs(
+                  impl->ssl_contexts[i], pem_root_certs.c_str(),
+                  pem_root_certs.size(), nullptr);
+              if (result != TSI_OK) {
+                LOG(ERROR) << "Invalid verification certs.";
+              }
+              if (options->send_client_ca_list) {
+                SSL_CTX_set_client_CA_list(impl->ssl_contexts[i], root_names);
+              }
+            },
+            [&](const grpc_core::SpiffeBundleMap& spiffe_bundle_map) {
                 X509_STORE* cert_store =
                     SSL_CTX_get_cert_store(impl->ssl_contexts[i]);
                 X509_STORE_set_flags(cert_store, X509_V_FLAG_PARTIAL_CHAIN |
@@ -2816,23 +2807,9 @@ tsi_result tsi_create_ssl_server_handshaker_factory_with_options(
                 void* map = const_cast<void*>(p);
                 SSL_CTX_set_ex_data(impl->ssl_contexts[i],
                                     g_ssl_ctx_ex_spiffe_bundle_map_index, map);
-              });
-          if (result != TSI_OK) {
-            break;
-          }
-        } else if (options->pem_client_root_certs != nullptr) {
-          STACK_OF(X509_NAME)* root_names = nullptr;
-          result = ssl_ctx_load_verification_certs(
-              impl->ssl_contexts[i], options->pem_client_root_certs,
-              strlen(options->pem_client_root_certs),
-              options->send_client_ca_list ? &root_names : nullptr);
-          if (result != TSI_OK) {
-            LOG(ERROR) << "Invalid verification certs.";
-            break;
-          }
-          if (options->send_client_ca_list) {
-            SSL_CTX_set_client_CA_list(impl->ssl_contexts[i], root_names);
-          }
+            });
+        if (result != TSI_OK) {
+          break;
         }
       }
       switch (options->client_certificate_request) {
