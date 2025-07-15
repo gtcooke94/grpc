@@ -65,9 +65,9 @@ absl::Status ValidateRootCertificates(const RootCertInfo* root_cert_info) {
         }
         return absl::OkStatus();
       },
-      [&](const SpiffeBundleMap& spiffe_bundle_map) {
-        // SPIFFE Bundle Maps are validated when they are loaded
-        // TODO(gtcooke94) double check this
+      [&](const SpiffeBundleMap&) {
+        // SPIFFE Bundle Maps validation is held in the `StatusOr` and would
+        // already be returned here.
         return absl::OkStatus();
       });
 }
@@ -381,7 +381,7 @@ void FileWatcherCertificateProvider::ForceUpdate() {
       // Report errors to the distributor if the contents are empty.
       const bool report_root_error =
           info.root_being_watched &&
-          (!root_cert_info.ok() || *root_cert_info_ == nullptr);
+          (!root_cert_info_.ok() || *root_cert_info_ == nullptr);
       const bool report_identity_error =
           info.identity_being_watched && pem_key_cert_pairs_.empty();
       if (report_root_error || report_identity_error) {
@@ -517,7 +517,8 @@ grpc_tls_certificate_provider_file_watcher_create(
   return new grpc_core::FileWatcherCertificateProvider(
       private_key_path == nullptr ? "" : private_key_path,
       identity_certificate_path == nullptr ? "" : identity_certificate_path,
-      root_cert_path == nullptr ? "" : root_cert_path, /*spiffe_bundle_map_path=*/"", refresh_interval_sec);
+      root_cert_path == nullptr ? "" : root_cert_path,
+      /*spiffe_bundle_map_path=*/"", refresh_interval_sec);
 }
 
 grpc_tls_certificate_provider*
