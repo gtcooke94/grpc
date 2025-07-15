@@ -884,7 +884,6 @@ TEST(ParseUriString, WrongType) {
 TEST(ParseUriString, DontSetASN1String) {
   GENERAL_NAME* subject_alt_name = GENERAL_NAME_new();
   ASN1_UTF8STRING* other = ASN1_UTF8STRING_new();
-  ASN1_STRING_set(other, "foo", -1);
   GENERAL_NAME_set0_value(subject_alt_name, GEN_DNS, other);
   absl::StatusOr<std::string> parsed_uri = ParseUriString(subject_alt_name);
   EXPECT_EQ(parsed_uri.status().code(), absl::StatusCode::kInvalidArgument);
