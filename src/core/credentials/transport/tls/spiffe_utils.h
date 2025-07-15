@@ -98,6 +98,7 @@ class SpiffeBundle final {
   // Returns a vector of the roots in this SPIFFE Bundle.
   absl::Span<const std::string> GetRoots();
 
+  // The caller does not take ownership of the stack of roots.
   STACK_OF(X509) * GetRootStack() { return *root_stack_; }
 
   bool operator==(const SpiffeBundle& other) const {
@@ -109,9 +110,11 @@ class SpiffeBundle final {
   }
 
  private:
+  // Constructs the `root_stack_` OpenSSL representation of the roots.
+  absl::Status CreateX509Stack();
+
   std::vector<std::string> roots_;
   std::unique_ptr<STACK_OF(X509)*> root_stack_;
-  absl::Status CreateX509Stack();
 };
 
 // A map of SPIFFE bundles keyed to trust domains. This functions as a map of a
@@ -141,6 +144,7 @@ class SpiffeBundleMap final {
   // Returns the roots for a given trust domain in the SPIFFE Bundle Map.
   absl::StatusOr<absl::Span<const std::string>> GetRoots(absl::string_view trust_domain);
 
+  // The caller does not take ownership of the stack of roots.
   absl::StatusOr<STACK_OF(X509) *> GetRootStack(absl::string_view trust_domain);
 
   size_t size() const { return bundles_.size(); }

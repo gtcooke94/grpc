@@ -193,27 +193,6 @@ class SpiffeSslTransportSecurityTest
     }
 
     void CheckHandshakerPeers() {
-      // In TLS 1.3, the client-side handshake succeeds even if the client
-      // sends a revoked certificate. In such a case, the server would fail
-      // the TLS handshake and send an alert to the client as the first
-      // application data message. In TLS 1.2, the client-side handshake will
-      // fail if the client sends a revoked certificate.
-      //
-      // For OpenSSL versions < 1.1, TLS 1.3 is not supported, so the
-      // client-side handshake should succeed precisely when the server-side
-      // handshake succeeds.
-      //
-      // For the intermediate cases, we have a CA -> Intermediate CA -> Leaf
-      // Cert chain in which the Intermediate CA cert is revoked by the CA. We
-      // test 3 cases. Note: A CRL not existing should not make the handshake
-      // fail
-      // 1. CRL Directory with CA's CRL and Intermediate CA's CRL -> Handshake
-      // fails due to revoked cert
-      // 2. CRL Directory with CA's CRL but missing Intermediate CA's CRL ->
-      // Handshake fails due to revoked cert
-      // 3. CRL Directory without CA's CRL with but Intermediate CA's CRL ->
-      // Handshake succeeds because the CRL that revokes the cert is not
-      // present.
       bool expect_server_success = expect_server_success_;
       bool expect_client_success = false;
 #if OPENSSL_VERSION_NUMBER >= 0x10100000

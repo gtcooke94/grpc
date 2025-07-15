@@ -1268,7 +1268,8 @@ static absl::StatusOr<std::string> GetSpiffeUriFromCert(X509* cert) {
   GENERAL_NAMES* subject_alt_names = static_cast<GENERAL_NAMES*>(
       X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr));
   int uri_count = 0;
-  absl::StatusOr<std::string> spiffe_uri;
+  absl::StatusOr<std::string> spiffe_uri = absl::InvalidArgumentError(
+      "spiffe: no SPIFFE ID found in leaf certificate.");
   if (subject_alt_names != nullptr) {
     size_t subject_alt_name_count = sk_GENERAL_NAME_num(subject_alt_names);
     for (size_t i = 0; i < subject_alt_name_count; i++) {
@@ -1307,26 +1308,6 @@ static absl::StatusOr<std::string> SpiffeTrustDomainFromCert(X509* cert) {
   return std::string(spiffe_id->trust_domain());
 }
 
-absl::Status PemCertsToX509Stack(const absl::Span<const std::string> pem_certs,
-                                 STACK_OF(X509) * cert_stack) {
-  CHECK(cert_stack != nullptr);
-  for (const auto& pem_cert : pem_certs) {
-    X509* cert = nullptr;
-    BIO* pem =
-        BIO_new_mem_buf(pem_cert.data(), static_cast<int>(pem_cert.length()));
-    if (pem == nullptr) {
-      return absl::InvalidArgumentError("Could not parse certificate to BIO");
-    }
-    cert = PEM_read_bio_X509(pem, nullptr, nullptr, nullptr);
-    BIO_free(pem);
-    if (cert == nullptr) {
-      return absl::InvalidArgumentError("Could not parse certificate PEM");
-    }
-    sk_X509_push(cert_stack, cert);
-  }
-  return absl::OkStatus();
-}
-
 // Fills ctx's trusted roots with the roots in the SPIFFE Bundle Map that
 // are associated with the to-be-verified leaf certificate's trust domain.
 // For more detail see
@@ -1334,6 +1315,9 @@ absl::Status PemCertsToX509Stack(const absl::Span<const std::string> pem_certs,
 absl::Status ConfigureSpiffeRoots(
     X509_STORE_CTX* ctx, grpc_core::SpiffeBundleMap* spiffe_bundle_map) {
   CHECK(ctx != nullptr);
+  if (spiffe_bundle_map == nullptr) {
+    return absl::InvalidArgumentError("cannot configure spiffe roots with a nullptr spiffe_bundle_map.");
+  }
   X509* leaf_cert = X509_STORE_CTX_get0_cert(ctx);
   if (leaf_cert == nullptr) {
     return absl::InvalidArgumentError(
@@ -1365,7 +1349,6 @@ static int CustomVerificationFunction(X509_STORE_CTX* ctx, void* arg) {
   // for verification, which does not take ownership. We must ensure the
   // lifetime of this object is long enough, thus the declaration here.
   CHECK(ctx != nullptr);
-  // STACK_OF(X509)* root_stack = nullptr;
   grpc_core::SpiffeBundleMap* spiffe_bundle_map = GetSpiffeBundleMap(ctx);
   if (spiffe_bundle_map != nullptr) {
     absl::Status status = ConfigureSpiffeRoots(ctx, spiffe_bundle_map);

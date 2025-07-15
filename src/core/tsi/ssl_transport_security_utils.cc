@@ -429,8 +429,7 @@ absl::StatusOr<EVP_PKEY*> ParsePemPrivateKey(
 }
 
 absl::StatusOr<std::string> ParseUriString(GENERAL_NAME* subject_alt_name) {
-  CHECK(subject_alt_name != nullptr);
-  if (subject_alt_name->type != GEN_URI) {
+  if (subject_alt_name == nullptr || subject_alt_name->type != GEN_URI) {
     return absl::InvalidArgumentError("Could not parse ASN1 string to UTF8");
   }
   // This shouldn't be a possible if statement to enter because if the type is
@@ -442,7 +441,7 @@ absl::StatusOr<std::string> ParseUriString(GENERAL_NAME* subject_alt_name) {
   unsigned char* name = nullptr;
   int name_size =
       ASN1_STRING_to_UTF8(&name, subject_alt_name->d.uniformResourceIdentifier);
-  if (name_size < 0) {
+  if (name_size < 0 || name == nullptr) {
     OPENSSL_free(name);
     return absl::InvalidArgumentError("Could not parse ASN1 string to UTF8");
   }

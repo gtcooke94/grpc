@@ -234,9 +234,7 @@ void SpiffeBundle::JsonPostLoad(const Json& json, const JsonArgs& args,
   for (size_t i = 0; i < keys->size(); ++i) {
     roots_.emplace_back((*keys)[i].GetRoot());
   }
-  // root_stack_ = std::make_shared<STACK_OF(X509)*>(sk_X509_new_null());
   ValidationErrors::ScopedField field(errors, "keys");
-  // absl::Status status = PemCertsToX509Stack(roots_, root_stack_);
   absl::Status status = CreateX509Stack();
   if (!status.ok()) {
     errors->AddError(status.ToString());
@@ -285,7 +283,6 @@ absl::Status SpiffeBundle::CreateX509Stack() {
       return absl::InvalidArgumentError("Got an invalid root certificate.");
     }
     sk_X509_push(*root_stack_, (*cert)[0]);
-    // X509_free((*cert)[0]);
   }
   return absl::OkStatus();
 }
