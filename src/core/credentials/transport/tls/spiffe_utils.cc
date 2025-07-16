@@ -274,20 +274,27 @@ SpiffeBundle& SpiffeBundle::operator=(const SpiffeBundle& other) {
   return *this;
 }
 
+absl::Span<const std::string> SpiffeBundle::GetRoots() { return roots_; }
+
+absl::StatusOr<STACK_OF(X509) *> SpiffeBundle::GetRootStack() {
+  if (root_stack_ == nullptr) {
+    return absl::FailedPreconditionError("root_stack_ has not been initialized");
+  }
+  return *root_stack_;
+}
+
 absl::Status SpiffeBundle::CreateX509Stack() {
   root_stack_ = std::make_unique<STACK_OF(X509)*>(sk_X509_new_null());
   for (const auto& pem_cert : roots_) {
     auto cert = ParsePemCertificateChain(SpiffeBundleRootToPem(pem_cert));
     GRPC_RETURN_IF_ERROR(cert.status());
     if (cert->size() != 1) {
-      return absl::InvalidArgumentError("Got an invalid root certificate.");
+      return absl::InvalidArgumentError("Got a malformed root certificate.");
     }
     sk_X509_push(*root_stack_, (*cert)[0]);
   }
   return absl::OkStatus();
 }
-
-absl::Span<const std::string> SpiffeBundle::GetRoots() { return roots_; }
 
 void SpiffeBundleMap::JsonPostLoad(const Json&, const JsonArgs&,
                                    ValidationErrors* errors) {

@@ -527,6 +527,13 @@ TEST(SpiffeBundle, MultipleRootsSuccess) {
   X509_free(*certificate2);
 }
 
+TEST(SpiffeBundle, BundleRootToPem) {
+  const absl::string_view base = "foo";
+  EXPECT_EQ(SpiffeBundleRootToPem(base),
+            absl::StrCat("--------BEGIN CERTIFICATE--------\n", base,
+                         "\n--------END CERTIFICATE--------"));
+}
+
 }  // namespace testing
 }  // namespace grpc_core
 

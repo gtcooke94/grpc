@@ -86,7 +86,8 @@ class SpiffeBundle final {
     return kLoader;
   }
 
-  // Needed to handle the STACK_OF(X509)* root stack
+  // Do not use - only exists to work with the JSON library.
+  // SpiffeBundles should be used by loading a SpiffeBundleMap via SpiffeBundleMap::FromFile
   SpiffeBundle() = default;
   ~SpiffeBundle();
   SpiffeBundle(const SpiffeBundle& other);
@@ -99,9 +100,11 @@ class SpiffeBundle final {
   absl::Span<const std::string> GetRoots();
 
   // The caller does not take ownership of the stack of roots.
-  STACK_OF(X509) * GetRootStack() { return *root_stack_; }
+  // The caller MUST NOT mutate this value.
+  absl::StatusOr<STACK_OF(X509) *> GetRootStack();
 
   bool operator==(const SpiffeBundle& other) const {
+    // For our purposes SPIFFE Bundles are equal if their roots are the same.
     return roots_ == other.roots_;
   }
 

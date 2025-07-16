@@ -672,7 +672,7 @@ grpc_tls_certificate_provider_file_watcher_create(
  * changes on the file system. This provider will always return the up-to-date
  * cert data for all the cert names callers set through
  * |grpc_tls_credentials_options|. Note that this API only supports one key-cert
- * file and hence one set of identity key-cert pair, so SNI(Server Name
+ * file and hence one set of identity key-cert pair, so SNI (Server Name
  * Indication) is not supported.
  * - private_key_path is the file path of the private key. This must be set if
  *   |identity_certificate_path| is set. Otherwise, it could be null if no
