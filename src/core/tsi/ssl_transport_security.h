@@ -190,6 +190,7 @@ struct tsi_ssl_client_handshaker_options {
   // options as a shared_ptr.
   std::shared_ptr<grpc_core::experimental::CrlProvider> crl_provider;
 
+  // TODO(gtcooke94) Remove pem_root_certs and replace with root_cert_info
   // root_cert_info is either the string containing the PEM encoding of the
   // client root certificates or a SPIFFE bundle map.
   std::shared_ptr<RootCertInfo> root_cert_info;
