@@ -36,7 +36,8 @@
 namespace grpc_core {
 namespace {
 constexpr absl::string_view kAllowedUse = "x509-svid";
-constexpr absl::string_view kAllowedKtys[] = {"RSA", "EC"};
+// constexpr absl::string_view kAllowedKtys[] = {"RSA", "EC"};
+const std::set<absl::string_view> kAllowedKtys = {"RSA", "EC"};
 constexpr absl::string_view kCertificatePrefix =
     "-----BEGIN CERTIFICATE-----\n";
 constexpr absl::string_view kCertificateSuffix = "\n-----END CERTIFICATE-----";
@@ -194,14 +195,8 @@ void SpiffeBundleKey::JsonPostLoad(const Json& json, const JsonArgs& args,
   {
     ValidationErrors::ScopedField field(errors, ".kty");
     if (kty.has_value()) {
-      bool found = false;
-      for (const auto& allowed_kty : kAllowedKtys) {
-        if (*kty == allowed_kty) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
+      auto found = kAllowedKtys.find(*kty);
+      if (found == kAllowedKtys.end()) {
         errors->AddError(
             absl::StrFormat("value must be one of \"%s\", got \"%s\"",
                             absl::StrJoin(kAllowedKtys, "\", \""), *kty));
