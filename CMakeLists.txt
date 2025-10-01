@@ -1601,6 +1601,7 @@ if(gRPC_BUILD_TESTS)
   add_dependencies(buildtests_cxx latch_test)
   add_dependencies(buildtests_cxx latent_see_service_test)
   add_dependencies(buildtests_cxx latent_see_test)
+  add_dependencies(buildtests_cxx latent_see_tool_test)
   add_dependencies(buildtests_cxx layout_test)
   add_dependencies(buildtests_cxx lb_get_cpu_stats_test)
   add_dependencies(buildtests_cxx lb_load_data_store_test)
@@ -2131,6 +2132,7 @@ target_link_libraries(gpr
   absl::flags
   absl::flags_marshalling
   absl::any_invocable
+  absl::bind_front
   absl::check
   absl::log_globals
   absl::log
@@ -2153,12 +2155,10 @@ if(_gRPC_PLATFORM_ANDROID)
 endif()
 
 foreach(_hdr
-  include/grpc/impl/call.h
   include/grpc/impl/codegen/atm.h
   include/grpc/impl/codegen/atm_gcc_atomic.h
   include/grpc/impl/codegen/atm_gcc_sync.h
   include/grpc/impl/codegen/atm_windows.h
-  include/grpc/impl/codegen/fork.h
   include/grpc/impl/codegen/gpr_types.h
   include/grpc/impl/codegen/log.h
   include/grpc/impl/codegen/port_platform.h
@@ -3139,7 +3139,6 @@ target_link_libraries(grpc
   absl::flat_hash_set
   absl::inlined_vector
   absl::node_hash_map
-  absl::bind_front
   absl::function_ref
   absl::hash
   absl::type_traits
@@ -3183,11 +3182,13 @@ foreach(_hdr
   include/grpc/grpc_posix.h
   include/grpc/grpc_security.h
   include/grpc/grpc_security_constants.h
+  include/grpc/impl/call.h
   include/grpc/impl/channel_arg_names.h
   include/grpc/impl/codegen/byte_buffer.h
   include/grpc/impl/codegen/byte_buffer_reader.h
   include/grpc/impl/codegen/compression_types.h
   include/grpc/impl/codegen/connectivity_state.h
+  include/grpc/impl/codegen/fork.h
   include/grpc/impl/codegen/grpc_types.h
   include/grpc/impl/codegen/propagation_bits.h
   include/grpc/impl/codegen/slice.h
@@ -3870,7 +3871,6 @@ target_link_libraries(grpc_unsecure
   absl::flat_hash_set
   absl::inlined_vector
   absl::node_hash_map
-  absl::bind_front
   absl::function_ref
   absl::hash
   absl::type_traits
@@ -3913,11 +3913,13 @@ foreach(_hdr
   include/grpc/grpc_posix.h
   include/grpc/grpc_security.h
   include/grpc/grpc_security_constants.h
+  include/grpc/impl/call.h
   include/grpc/impl/channel_arg_names.h
   include/grpc/impl/codegen/byte_buffer.h
   include/grpc/impl/codegen/byte_buffer_reader.h
   include/grpc/impl/codegen/compression_types.h
   include/grpc/impl/codegen/connectivity_state.h
+  include/grpc/impl/codegen/fork.h
   include/grpc/impl/codegen/grpc_types.h
   include/grpc/impl/codegen/propagation_bits.h
   include/grpc/impl/codegen/slice.h
@@ -5624,8 +5626,12 @@ target_include_directories(grpc++_unsecure
 )
 target_link_libraries(grpc++_unsecure
   ${_gRPC_ALLTARGETS_LIBRARIES}
+  absl::dynamic_annotations
+  absl::prefetch
+  absl::layout
   absl::absl_check
   absl::absl_log
+  absl::strings_internal
   grpc_unsecure
   ${_gRPC_PROTOBUF_LIBRARIES}
 )
@@ -6247,11 +6253,13 @@ foreach(_hdr
   include/grpc/grpc_posix.h
   include/grpc/grpc_security.h
   include/grpc/grpc_security_constants.h
+  include/grpc/impl/call.h
   include/grpc/impl/channel_arg_names.h
   include/grpc/impl/codegen/byte_buffer.h
   include/grpc/impl/codegen/byte_buffer_reader.h
   include/grpc/impl/codegen/compression_types.h
   include/grpc/impl/codegen/connectivity_state.h
+  include/grpc/impl/codegen/fork.h
   include/grpc/impl/codegen/grpc_types.h
   include/grpc/impl/codegen/propagation_bits.h
   include/grpc/impl/codegen/slice.h
@@ -11303,6 +11311,10 @@ add_executable(channelz_tool_test
   ${_gRPC_PROTO_GENS_DIR}/src/core/ext/transport/chaotic_good/chaotic_good_frame.grpc.pb.cc
   ${_gRPC_PROTO_GENS_DIR}/src/core/ext/transport/chaotic_good/chaotic_good_frame.pb.h
   ${_gRPC_PROTO_GENS_DIR}/src/core/ext/transport/chaotic_good/chaotic_good_frame.grpc.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/latent_see.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/latent_see.grpc.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/latent_see.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/latent_see.grpc.pb.h
   ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/promise.pb.cc
   ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/promise.grpc.pb.cc
   ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/promise.pb.h
@@ -11348,6 +11360,7 @@ add_executable(channelz_tool_test
   src/core/ext/transport/chaotic_good_legacy/server/chaotic_good_server.cc
   src/core/ext/transport/chaotic_good_legacy/server_transport.cc
   src/core/util/seq_bit_set.cc
+  src/cpp/latent_see/latent_see_client.cc
   test/cpp/sleuth/channelz_tool.cc
   test/cpp/sleuth/channelz_tool_test.cc
   test/cpp/sleuth/client.cc
@@ -12378,6 +12391,11 @@ endif()
 if(gRPC_BUILD_TESTS)
 
 add_executable(client_test
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/latent_see.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/latent_see.grpc.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/latent_see.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/latent_see.grpc.pb.h
+  src/cpp/latent_see/latent_see_client.cc
   test/cpp/sleuth/client.cc
   test/cpp/sleuth/client_test.cc
   third_party/googletest/googlemock/src/gmock_main.cc
@@ -22534,6 +22552,107 @@ target_link_libraries(latent_see_test
 endif()
 if(gRPC_BUILD_TESTS)
 
+add_executable(latent_see_tool_test
+  ${_gRPC_PROTO_GENS_DIR}/src/core/ext/transport/chaotic_good/chaotic_good_frame.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/core/ext/transport/chaotic_good/chaotic_good_frame.grpc.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/core/ext/transport/chaotic_good/chaotic_good_frame.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/src/core/ext/transport/chaotic_good/chaotic_good_frame.grpc.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/channelz.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/channelz.grpc.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/channelz.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/channelz.grpc.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/latent_see.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/latent_see.grpc.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/latent_see.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/latent_see.grpc.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/service.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/service.grpc.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/service.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/service.grpc.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/reflection/v1alpha/reflection.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/reflection/v1alpha/reflection.grpc.pb.cc
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/reflection/v1alpha/reflection.pb.h
+  ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/reflection/v1alpha/reflection.grpc.pb.h
+  src/core/ext/transport/chaotic_good/chaotic_good.cc
+  src/core/ext/transport/chaotic_good/client/chaotic_good_connector.cc
+  src/core/ext/transport/chaotic_good/client_transport.cc
+  src/core/ext/transport/chaotic_good/control_endpoint.cc
+  src/core/ext/transport/chaotic_good/data_endpoints.cc
+  src/core/ext/transport/chaotic_good/frame.cc
+  src/core/ext/transport/chaotic_good/frame_header.cc
+  src/core/ext/transport/chaotic_good/scheduler.cc
+  src/core/ext/transport/chaotic_good/send_rate.cc
+  src/core/ext/transport/chaotic_good/server/chaotic_good_server.cc
+  src/core/ext/transport/chaotic_good/server_transport.cc
+  src/core/ext/transport/chaotic_good/tcp_frame_header.cc
+  src/core/ext/transport/chaotic_good/tcp_frame_transport.cc
+  src/core/ext/transport/chaotic_good/tcp_ztrace_collector.cc
+  src/core/ext/transport/chaotic_good_legacy/client/chaotic_good_connector.cc
+  src/core/ext/transport/chaotic_good_legacy/client_transport.cc
+  src/core/ext/transport/chaotic_good_legacy/control_endpoint.cc
+  src/core/ext/transport/chaotic_good_legacy/data_endpoints.cc
+  src/core/ext/transport/chaotic_good_legacy/frame.cc
+  src/core/ext/transport/chaotic_good_legacy/frame_header.cc
+  src/core/ext/transport/chaotic_good_legacy/server/chaotic_good_server.cc
+  src/core/ext/transport/chaotic_good_legacy/server_transport.cc
+  src/core/util/seq_bit_set.cc
+  src/cpp/latent_see/latent_see_client.cc
+  src/cpp/latent_see/latent_see_service.cc
+  test/cpp/sleuth/client.cc
+  test/cpp/sleuth/latent_see_tool.cc
+  test/cpp/sleuth/latent_see_tool_test.cc
+  test/cpp/sleuth/tool_credentials.cc
+  test/cpp/sleuth/tool_options.cc
+  test/cpp/sleuth/tool_test.cc
+  test/cpp/util/cli_call.cc
+  test/cpp/util/cli_credentials.cc
+  test/cpp/util/proto_file_parser.cc
+  test/cpp/util/proto_reflection_descriptor_database.cc
+  test/cpp/util/service_describer.cc
+  third_party/googletest/googlemock/src/gmock_main.cc
+)
+if(WIN32 AND MSVC)
+  if(BUILD_SHARED_LIBS)
+    target_compile_definitions(latent_see_tool_test
+    PRIVATE
+      "GPR_DLL_IMPORTS"
+      "GRPC_DLL_IMPORTS"
+      "GRPCXX_DLL_IMPORTS"
+    )
+  endif()
+endif()
+target_compile_features(latent_see_tool_test PUBLIC cxx_std_17)
+target_include_directories(latent_see_tool_test
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${_gRPC_ADDRESS_SORTING_INCLUDE_DIR}
+    ${_gRPC_RE2_INCLUDE_DIR}
+    ${_gRPC_SSL_INCLUDE_DIR}
+    ${_gRPC_UPB_GENERATED_DIR}
+    ${_gRPC_UPB_GRPC_GENERATED_DIR}
+    ${_gRPC_UPB_INCLUDE_DIR}
+    ${_gRPC_XXHASH_INCLUDE_DIR}
+    ${_gRPC_ZLIB_INCLUDE_DIR}
+    third_party/googletest/googletest/include
+    third_party/googletest/googletest
+    third_party/googletest/googlemock/include
+    third_party/googletest/googlemock
+    ${_gRPC_PROTO_GENS_DIR}
+)
+
+target_link_libraries(latent_see_tool_test
+  ${_gRPC_ALLTARGETS_LIBRARIES}
+  gtest
+  grpc++
+  ${_gRPC_PROTOBUF_PROTOC_LIBRARIES}
+  grpc_test_util
+)
+
+
+endif()
+if(gRPC_BUILD_TESTS)
+
 add_executable(layout_test
   ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/channelz.pb.cc
   ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/v2/channelz.grpc.pb.cc
@@ -27336,7 +27455,6 @@ target_link_libraries(promise_factory_test
   absl::btree
   absl::flat_hash_map
   absl::inlined_vector
-  absl::bind_front
   absl::function_ref
   absl::hash
   absl::type_traits
@@ -31099,9 +31217,6 @@ target_link_libraries(slice_string_helpers_test
   gtest
   absl::flat_hash_map
   absl::hash
-  absl::statusor
-  absl::span
-  absl::utility
   gpr
 )
 
@@ -37540,8 +37655,12 @@ target_include_directories(xds_client_test
 target_link_libraries(xds_client_test
   ${_gRPC_ALLTARGETS_LIBRARIES}
   gtest
+  absl::dynamic_annotations
+  absl::prefetch
+  absl::layout
   absl::absl_check
   absl::absl_log
+  absl::strings_internal
   ${_gRPC_PROTOBUF_LIBRARIES}
   grpc_test_util
 )
@@ -38583,8 +38702,12 @@ target_include_directories(xds_cluster_resource_type_test
 target_link_libraries(xds_cluster_resource_type_test
   ${_gRPC_ALLTARGETS_LIBRARIES}
   gtest
+  absl::dynamic_annotations
+  absl::prefetch
+  absl::layout
   absl::absl_check
   absl::absl_log
+  absl::strings_internal
   ${_gRPC_PROTOBUF_LIBRARIES}
   grpc_test_util
 )
@@ -41665,8 +41788,12 @@ target_include_directories(xds_endpoint_resource_type_test
 target_link_libraries(xds_endpoint_resource_type_test
   ${_gRPC_ALLTARGETS_LIBRARIES}
   gtest
+  absl::dynamic_annotations
+  absl::prefetch
+  absl::layout
   absl::absl_check
   absl::absl_log
+  absl::strings_internal
   ${_gRPC_PROTOBUF_LIBRARIES}
   grpc_test_util
 )
@@ -51965,7 +52092,7 @@ generate_pkgconfig(
   "gpr"
   "gRPC platform support library"
   "${gRPC_CORE_VERSION}"
-  "absl_any_invocable absl_base absl_bits absl_check absl_cleanup absl_config absl_cord absl_core_headers absl_flags absl_flags_marshalling absl_log absl_log_globals absl_log_severity absl_memory absl_optional absl_random_random absl_status absl_str_format absl_strings absl_synchronization absl_time"
+  "absl_any_invocable absl_base absl_bind_front absl_bits absl_check absl_cleanup absl_config absl_cord absl_core_headers absl_flags absl_flags_marshalling absl_log absl_log_globals absl_log_severity absl_memory absl_optional absl_random_random absl_status absl_str_format absl_strings absl_synchronization absl_time"
   ""
   "-lgpr"
   ""
@@ -52009,7 +52136,7 @@ generate_pkgconfig(
   "gRPC++ unsecure"
   "C++ wrapper for gRPC without SSL"
   "${gRPC_CPP_VERSION}"
-  "absl_absl_check absl_absl_log absl_algorithm_container absl_any_invocable absl_base absl_bind_front absl_bits absl_btree absl_check absl_cleanup absl_config absl_cord absl_core_headers absl_flags absl_flags_marshalling absl_flat_hash_map absl_flat_hash_set absl_function_ref absl_hash absl_inlined_vector absl_log absl_log_globals absl_log_severity absl_memory absl_no_destructor absl_node_hash_map absl_optional absl_random_bit_gen_ref absl_random_distributions absl_random_random absl_span absl_status absl_statusor absl_str_format absl_string_view absl_strings absl_synchronization absl_time absl_type_traits absl_utility gpr grpc_unsecure"
+  "absl_absl_check absl_absl_log absl_algorithm_container absl_any_invocable absl_base absl_bind_front absl_bits absl_btree absl_check absl_cleanup absl_config absl_cord absl_core_headers absl_dynamic_annotations absl_flags absl_flags_marshalling absl_flat_hash_map absl_flat_hash_set absl_function_ref absl_hash absl_inlined_vector absl_layout absl_log absl_log_globals absl_log_severity absl_memory absl_no_destructor absl_node_hash_map absl_optional absl_prefetch absl_random_bit_gen_ref absl_random_distributions absl_random_random absl_span absl_status absl_statusor absl_str_format absl_string_view absl_strings absl_strings_internal absl_synchronization absl_time absl_type_traits absl_utility gpr grpc_unsecure"
   "libcares zlib"
   "-lgrpc++_unsecure"
   "-laddress_sorting -lupb_textformat_lib -lupb_reflection_lib -lupb_wire_lib -lupb_message_lib -lutf8_range_lib -lupb_mini_descriptor_lib -lupb_mini_table_lib -lupb_hash_lib -lupb_mem_lib -lupb_base_lib -lupb_lex_lib"
