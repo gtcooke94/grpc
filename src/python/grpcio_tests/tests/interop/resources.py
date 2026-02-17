@@ -122,7 +122,7 @@ def sync_client_private_key_signer(
     return signature
 
 
-def bad_async_signer_worker(data_to_sign, signature_algorithm, on_complete):
+def _bad_async_signer_worker(data_to_sign, signature_algorithm, on_complete):
     """
     A signing function that uses a mismatched private key and certificate.
     Specifically, this is used on the client side and should use the client.key
@@ -140,20 +140,21 @@ def bad_async_client_private_key_signer(data_to_sign, signature_algorithm, on_co
     Takes in data_to_sign and signs it using the wrong private key, resulting in handshake failure
     """
     signer_thread = threading.Thread(
-        target=bad_async_signer_worker,
+        target=_bad_async_signer_worker,
         args=(data_to_sign, signature_algorithm, on_complete),
     ).start()
     # Add something where we put something cancellable on this handle
     return no_op_cancel
 
 
-def async_signer_worker(data_to_sign, signature_algorithm, on_complete):
+def _async_signer_worker(data_to_sign, signature_algorithm, on_complete):
     """
     Meant to be used as an async function for a thread, for example
     """
     private_key_bytes = client_private_key()
     signature = sign_private_key(data_to_sign, private_key_bytes, signature_algorithm)
     on_complete(signature)
+
 
 def no_op_cancel():
     pass
@@ -164,7 +165,7 @@ def async_client_private_key_signer(data_to_sign, signature_algorithm, on_comple
     Takes in data_to_sign and signs it using the test private key
     """
     signer_thread = threading.Thread(
-        target=async_signer_worker,
+        target=_async_signer_worker,
         args=(data_to_sign, signature_algorithm, on_complete),
     ).start()
     # Add something where we put something cancellable on this handle
@@ -190,7 +191,7 @@ class CancelCallable:
         self.cancel_event.set()
 
 
-def async_signer_worker_until_cancel(
+def _async_signer_worker_until_cancel(
     data_to_sign,
     signature_algorithm,
     on_complete,
@@ -219,7 +220,7 @@ def async_signer_with_cancel_injection(
     handle.cancel_event set
     """
     signer_thread = threading.Thread(
-        target=async_signer_worker_until_cancel,
+        target=_async_signer_worker_until_cancel,
         args=(
             data_to_sign,
             signature_algorithm,
@@ -241,7 +242,7 @@ def async_client_private_key_signer_with_cancel(
     """
     cancel = CancelCallable()
     signer_thread = threading.Thread(
-        target=async_signer_worker_until_cancel,
+        target=_async_signer_worker_until_cancel,
         args=(
             data_to_sign,
             signature_algorithm,
