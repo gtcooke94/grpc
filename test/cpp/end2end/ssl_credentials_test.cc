@@ -29,7 +29,6 @@
 
 // Take dependency to cast to impl for caching tests
 #include "src/core/tsi/ssl/session_cache/ssl_session_cache.h"
-
 #include "test/core/test_util/port.h"
 #include "test/core/test_util/postmortem.h"
 #include "test/core/test_util/test_config.h"
@@ -91,8 +90,9 @@ class SslCredentialsTest : public ::testing::Test {
 };
 
 std::shared_ptr<Channel> DoRpc(const std::string& server_addr,
-           const SslCredentialsOptions& ssl_options,
-           grpc_ssl_session_cache* cache, bool expect_session_reuse) {
+                               const SslCredentialsOptions& ssl_options,
+                               grpc_ssl_session_cache* cache,
+                               bool expect_session_reuse) {
   ChannelArguments channel_args;
   channel_args.SetPointer(std::string(GRPC_SSL_SESSION_CACHE_ARG), cache);
   channel_args.SetSslTargetNameOverride("foo.test.google.fr");
@@ -143,13 +143,15 @@ TEST_F(SslCredentialsTest, SequentialResumption) {
 
   grpc_ssl_session_cache* cache = grpc_ssl_session_cache_create_lru(16);
 
-  auto first_channel = DoRpc(server_addr_, ssl_options, cache, /*expect_session_reuse=*/false);
+  auto first_channel =
+      DoRpc(server_addr_, ssl_options, cache, /*expect_session_reuse=*/false);
 
   // Need to cast to impl so we can see the size of the cache
   // Does hard-tie to the cache impl for this test
   auto* cache_impl = reinterpret_cast<tsi::SslSessionLRUCache*>(cache);
   auto start = std::chrono::steady_clock::now();
-  // In TLS1.3, the cache updates async from the RPC, wait for it to hae content.
+  // In TLS1.3, the cache updates async from the RPC, wait for it to hae
+  // content.
   while (cache_impl->Size() == 0) {
     if (std::chrono::steady_clock::now() - start > std::chrono::seconds(5)) {
       FAIL() << "Timed out waiting for session ticket to be cached.";
