@@ -13,25 +13,26 @@
 // limitations under the License.
 
 #include "src/core/handshaker/security/security_handshaker.h"
-#include "src/core/handshaker/security/security_telemetry.h"
+
+#include <grpc/event_engine/event_engine.h>
 #include <grpc/grpc.h>
 #include <grpc/support/alloc.h>
 #include <grpc/support/log.h>
 #include <stdlib.h>
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include "src/core/handshaker/security/security_telemetry.h"
 #include "src/core/lib/iomgr/exec_ctx.h"
 #include "src/core/tsi/fake_transport_security.h"
 #include "test/core/test_util/mock_endpoint.h"
-#include <grpc/event_engine/event_engine.h>
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 #include "absl/synchronization/notification.h"
 
 namespace grpc_core {
 namespace {
 
-using grpc_event_engine::experimental::MockEndpointController;
 using grpc_event_engine::experimental::GetDefaultEventEngine;
+using grpc_event_engine::experimental::MockEndpointController;
 
 class MockSecurityConnector : public grpc_security_connector {
  public:
@@ -45,25 +46,28 @@ class MockSecurityConnector : public grpc_security_connector {
                   grpc_closure* on_peer_checked) override {
     abort();
   }
-  void cancel_check_peer(grpc_closure* on_peer_checked, grpc_error_handle error) override {}
+  void cancel_check_peer(grpc_closure* on_peer_checked,
+                         grpc_error_handle error) override {}
   int cmp(const grpc_security_connector* other) const override { return 0; }
 };
 
 TEST(SecurityHandshakerTest, MetricEmissionOnFailure) {
-  ExecCtx exec_ctx; // Needed for gRPC core operations
-  
+  ExecCtx exec_ctx;  // Needed for gRPC core operations
+
   // Register hook
   bool hook_called = false;
-  RegisterHistogramCollectionHook([&hook_called](const InstrumentMetadata::Description* instrument,
-                                                  absl::Span<const std::string> labels, int64_t value) {
-    if (instrument->name == "grpc.security.handshaker.duration") {
-      hook_called = true;
-      // We expect 3 labels: status, error_details, protocol
-      ASSERT_EQ(labels.size(), 3);
-      // Status should be non-OK, protocol should be "fake" (from tsi_create_fake_handshaker)
-      EXPECT_EQ(labels[2], "mock");
-    }
-  });
+  RegisterHistogramCollectionHook(
+      [&hook_called](const InstrumentMetadata::Description* instrument,
+                     absl::Span<const std::string> labels, int64_t value) {
+        if (instrument->name == "grpc.security.handshaker.duration") {
+          hook_called = true;
+          // We expect 3 labels: status, error_details, protocol
+          ASSERT_EQ(labels.size(), 3);
+          // Status should be non-OK, protocol should be "fake" (from
+          // tsi_create_fake_handshaker)
+          EXPECT_EQ(labels[2], "mock");
+        }
+      });
 
   // Create mock endpoint to avoid segfaults on read/write
   auto engine = GetDefaultEventEngine();
@@ -72,7 +76,9 @@ TEST(SecurityHandshakerTest, MetricEmissionOnFailure) {
 
   // Create handshaker using fake TSI handshaker
   auto connector = MakeRefCounted<MockSecurityConnector>();
-  auto handshaker = SecurityHandshakerCreate(tsi_create_fake_handshaker(1 /* is_client */), connector.get(), ChannelArgs());
+  auto handshaker =
+      SecurityHandshakerCreate(tsi_create_fake_handshaker(1 /* is_client */),
+                               connector.get(), ChannelArgs());
 
   // Force read failure to trigger handshake failure and metric emission
   mock_ctrl->NoMoreReads();
@@ -82,11 +88,10 @@ TEST(SecurityHandshakerTest, MetricEmissionOnFailure) {
   args.args = ChannelArgs();
   args.endpoint = OrphanablePtr<grpc_endpoint>(mock_ep);
   args.event_engine = engine.get();
-  
+
   absl::Notification done;
-  handshaker->DoHandshake(&args, [&done](absl::Status status) {
-    done.Notify();
-  });
+  handshaker->DoHandshake(&args,
+                          [&done](absl::Status status) { done.Notify(); });
 
   // Wait for it to complete. It should fail due to NoMoreReads.
   // We give it a timeout to avoid hangs if it stalls.
@@ -98,7 +103,7 @@ TEST(SecurityHandshakerTest, MetricEmissionOnFailure) {
 }  // namespace grpc_core
 
 int main(int argc, char** argv) {
-  grpc_init(); // Needed to initialize gRPC types and systems
+  grpc_init();  // Needed to initialize gRPC types and systems
   ::testing::InitGoogleTest(&argc, argv);
   int result = RUN_ALL_TESTS();
   grpc_shutdown();

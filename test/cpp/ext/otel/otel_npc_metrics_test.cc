@@ -706,16 +706,15 @@ TEST_F(OpenTelemetryPluginNPCMetricsTest, InstrumentsEnabledTest) {
 
 TEST_F(OpenTelemetryPluginNPCMetricsTest, RecordSecurityHandshakerDuration) {
   grpc::ChannelArguments args;
-  Init(std::move(
-      Options()
-          .set_metric_names({"grpc.security.handshaker.duration"})
-          .set_channel_credentials(
-              GetCredentialsProvider()->GetChannelCredentials(
-                  kAltsCredentialsType, &args))
-          .set_server_credentials(
-              GetCredentialsProvider()->GetServerCredentials(
-                  kAltsCredentialsType))));
-  
+  Init(std::move(Options()
+                     .set_metric_names({"grpc.security.handshaker.duration"})
+                     .set_channel_credentials(
+                         GetCredentialsProvider()->GetChannelCredentials(
+                             kAltsCredentialsType, &args))
+                     .set_server_credentials(
+                         GetCredentialsProvider()->GetServerCredentials(
+                             kAltsCredentialsType))));
+
   SendRPC();
   auto data = ReadCurrentMetricsData(
       [](const absl::flat_hash_map<
@@ -732,10 +731,11 @@ TEST_F(OpenTelemetryPluginNPCMetricsTest, RecordSecurityHandshakerDuration) {
   // Verify labels
   const auto& point = it->second[0];
   const auto& attributes = point.attributes.GetAttributes();
-  
+
   auto protocol_it = attributes.find("grpc.security.handshaker.protocol");
   ASSERT_NE(protocol_it, attributes.end());
-  EXPECT_EQ(opentelemetry::nostd::get<std::string>(protocol_it->second), "alts");
+  EXPECT_EQ(opentelemetry::nostd::get<std::string>(protocol_it->second),
+            "alts");
 
   auto status_it = attributes.find("grpc.security.handshaker.status");
   ASSERT_NE(status_it, attributes.end());

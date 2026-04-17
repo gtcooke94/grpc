@@ -73,15 +73,17 @@ namespace grpc_core {
 
 namespace {
 
-constexpr absl::string_view kMetricLabelStatus = "grpc.security.handshaker.status";
-constexpr absl::string_view kMetricLabelErrorDetails = "grpc.security.handshaker.error_details";
-constexpr absl::string_view kMetricLabelProtocol = "grpc.security.handshaker.protocol";
+constexpr absl::string_view kMetricLabelStatus =
+    "grpc.security.handshaker.status";
+constexpr absl::string_view kMetricLabelErrorDetails =
+    "grpc.security.handshaker.error_details";
+constexpr absl::string_view kMetricLabelProtocol =
+    "grpc.security.handshaker.protocol";
 
 const auto kMetricHandshakerDuration =
     GlobalInstrumentsRegistry::RegisterDoubleHistogram(
         "grpc.security.handshaker.duration",
-        "Handshake duration in milliseconds.",
-        "ms", false)
+        "Handshake duration in milliseconds.", "ms", false)
         .Labels(kMetricLabelStatus, kMetricLabelProtocol)
         .OptionalLabels(kMetricLabelErrorDetails)
         .Build();
@@ -200,7 +202,8 @@ void SecurityHandshaker::HandshakeFailedLocked(absl::Status error) {
 
 void SecurityHandshaker::Finish(absl::Status status) {
   int64_t duration_us = (Timestamp::Now() - start_time_).millis() * 1000;
-  std::string status_str = status.ok() ? "OK" : absl::StatusCodeToString(status.code());
+  std::string status_str =
+      status.ok() ? "OK" : absl::StatusCodeToString(status.code());
   std::string error_details = status.ok() ? "NONE" : "AUTH_ERROR";
   std::string protocol = std::string(connector_->type().name());
 

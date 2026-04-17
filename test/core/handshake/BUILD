@@ -257,10 +257,9 @@ grpc_cc_test(
         "absl/status",
     ],
     deps = [
+        "//:exec_ctx",
         "//:grpc",
         "//:grpc_security_base",
-        "//:exec_ctx",
         "//test/core/test_util:grpc_test_util",
     ],
 )
-
