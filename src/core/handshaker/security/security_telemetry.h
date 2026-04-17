@@ -15,12 +15,13 @@
 #ifndef GRPC_SRC_CORE_HANDSHAKER_SECURITY_SECURITY_TELEMETRY_H
 #define GRPC_SRC_CORE_HANDSHAKER_SECURITY_SECURITY_TELEMETRY_H
 
-#include "src/core/telemetry/instrument.h"
 #include "src/core/telemetry/histogram.h"
+#include "src/core/telemetry/instrument.h"
 
 namespace grpc_core {
 
-class HandshakeTelemetryDomain final : public InstrumentDomain<HandshakeTelemetryDomain> {
+class HandshakeTelemetryDomain final
+    : public InstrumentDomain<HandshakeTelemetryDomain> {
  public:
   using Backend = LowContentionBackend;
   static constexpr absl::string_view kName = "security_handshaker";
@@ -28,9 +29,10 @@ class HandshakeTelemetryDomain final : public InstrumentDomain<HandshakeTelemetr
                                 "grpc.security.handshaker.error_details",
                                 "grpc.security.handshaker.protocol");
 
-  static inline const auto kDuration = RegisterHistogram<ExponentialHistogramShape>(
-      "grpc.security.handshaker.duration",
-      "Duration of security handshake", "us", 1e6, 20);
+  static inline const auto kDuration =
+      RegisterHistogram<ExponentialHistogramShape>(
+          "grpc.security.handshaker.duration", "Duration of security handshake",
+          "us", 1e6, 20);
 };
 
 }  // namespace grpc_core

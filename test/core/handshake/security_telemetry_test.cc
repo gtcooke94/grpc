@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "src/core/handshaker/security/security_telemetry.h"
+
 #include "src/core/telemetry/instrument.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -56,26 +57,31 @@ class MockMetricsSink : public MetricsSink {
 };
 
 TEST(SecurityTelemetryTest, RecordAndQuery) {
-  auto scope = CreateCollectionScope({}, {"grpc.security.handshaker.status",
-                                          "grpc.security.handshaker.error_details",
-                                          "grpc.security.handshaker.protocol"});
-  auto storage = HandshakeTelemetryDomain::GetStorage(scope, "OK", "NONE", "TLS");
-  
-  std::vector<std::string> label_keys = {"grpc.security.handshaker.status",
-                                         "grpc.security.handshaker.error_details",
-                                         "grpc.security.handshaker.protocol"};
+  auto scope =
+      CreateCollectionScope({}, {"grpc.security.handshaker.status",
+                                 "grpc.security.handshaker.error_details",
+                                 "grpc.security.handshaker.protocol"});
+  auto storage =
+      HandshakeTelemetryDomain::GetStorage(scope, "OK", "NONE", "TLS");
+
+  std::vector<std::string> label_keys = {
+      "grpc.security.handshaker.status",
+      "grpc.security.handshaker.error_details",
+      "grpc.security.handshaker.protocol"};
   std::vector<std::string> label_values = {"OK", "NONE", "TLS"};
 
   ::testing::StrictMock<MockMetricsSink> sink;
-  
+
   // Initially should be 0 or empty counts.
   EXPECT_CALL(sink,
-              Histogram(::testing::_,
-                        ::testing::ElementsAreArray(label_values),
-                        "grpc.security.handshaker.duration", ::testing::_, ::testing::_))
+              Histogram(::testing::_, ::testing::ElementsAreArray(label_values),
+                        "grpc.security.handshaker.duration", ::testing::_,
+                        ::testing::_))
       .Times(1);
-  
-  MetricsQuery().OnlyMetrics({"grpc.security.handshaker.duration"}).Run(scope, sink);
+
+  MetricsQuery()
+      .OnlyMetrics({"grpc.security.handshaker.duration"})
+      .Run(scope, sink);
   ::testing::Mock::VerifyAndClearExpectations(&sink);
 
   // Increment.
@@ -83,12 +89,14 @@ TEST(SecurityTelemetryTest, RecordAndQuery) {
 
   // Now should have 1 count.
   EXPECT_CALL(sink,
-              Histogram(::testing::_,
-                        ::testing::ElementsAreArray(label_values),
-                        "grpc.security.handshaker.duration", ::testing::_, ::testing::_))
+              Histogram(::testing::_, ::testing::ElementsAreArray(label_values),
+                        "grpc.security.handshaker.duration", ::testing::_,
+                        ::testing::_))
       .Times(1);
-  
-  MetricsQuery().OnlyMetrics({"grpc.security.handshaker.duration"}).Run(scope, sink);
+
+  MetricsQuery()
+      .OnlyMetrics({"grpc.security.handshaker.duration"})
+      .Run(scope, sink);
 }
 
 }  // namespace
@@ -98,4 +106,3 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-

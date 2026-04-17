@@ -922,6 +922,7 @@ libs:
   - src/core/handshaker/security/pipelining_heuristic_selector.h
   - src/core/handshaker/security/secure_endpoint.h
   - src/core/handshaker/security/security_handshaker.h
+  - src/core/handshaker/security/security_telemetry.h
   - src/core/handshaker/tcp_connect/tcp_connect_handshaker.h
   - src/core/lib/address_utils/parse_address.h
   - src/core/lib/address_utils/sockaddr_utils.h
@@ -2665,6 +2666,7 @@ libs:
   - src/core/handshaker/security/pipelining_heuristic_selector.h
   - src/core/handshaker/security/secure_endpoint.h
   - src/core/handshaker/security/security_handshaker.h
+  - src/core/handshaker/security/security_telemetry.h
   - src/core/handshaker/tcp_connect/tcp_connect_handshaker.h
   - src/core/lib/address_utils/parse_address.h
   - src/core/lib/address_utils/sockaddr_utils.h
@@ -4782,6 +4784,7 @@ libs:
   - src/core/handshaker/security/pipelining_heuristic_selector.h
   - src/core/handshaker/security/secure_endpoint.h
   - src/core/handshaker/security/security_handshaker.h
+  - src/core/handshaker/security/security_telemetry.h
   - src/core/lib/address_utils/parse_address.h
   - src/core/lib/address_utils/sockaddr_utils.h
   - src/core/lib/channel/channel_args.h
@@ -22569,6 +22572,26 @@ targets:
   headers: []
   src:
   - test/core/credentials/transport/security_connector_test.cc
+  deps:
+  - gtest
+  - grpc_test_util
+- name: security_handshaker_test
+  gtest: true
+  build: test
+  language: c++
+  headers: []
+  src:
+  - test/core/handshake/security_handshaker_test.cc
+  deps:
+  - gtest
+  - grpc_test_util
+- name: security_telemetry_test
+  gtest: true
+  build: test
+  language: c++
+  headers: []
+  src:
+  - test/core/handshake/security_telemetry_test.cc
   deps:
   - gtest
   - grpc_test_util

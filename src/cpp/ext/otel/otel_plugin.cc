@@ -313,11 +313,16 @@ OpenTelemetryPluginImpl::CallbackMetricReporter::CallbackMetricReporter(
     if (handle.index >= ot_plugin_->instruments_data_.size()) {
       continue;
     }
-    auto& instrument_variant = ot_plugin_->instruments_data_[handle.index].instrument;
+    auto& instrument_variant =
+        ot_plugin_->instruments_data_[handle.index].instrument;
     switch (descriptor.value_type) {
       case grpc_core::GlobalInstrumentsRegistry::ValueType::kInt64: {
-        if (std::holds_alternative<std::unique_ptr<CallbackGaugeState<int64_t>>>(instrument_variant)) {
-          auto& callback_gauge_state = std::get<std::unique_ptr<CallbackGaugeState<int64_t>>>(instrument_variant);
+        if (std::holds_alternative<
+                std::unique_ptr<CallbackGaugeState<int64_t>>>(
+                instrument_variant)) {
+          auto& callback_gauge_state =
+              std::get<std::unique_ptr<CallbackGaugeState<int64_t>>>(
+                  instrument_variant);
           if (callback_gauge_state != nullptr) {
             callback_gauge_state->caches[key].clear();
           }
@@ -325,8 +330,11 @@ OpenTelemetryPluginImpl::CallbackMetricReporter::CallbackMetricReporter(
         break;
       }
       case grpc_core::GlobalInstrumentsRegistry::ValueType::kDouble: {
-        if (std::holds_alternative<std::unique_ptr<CallbackGaugeState<double>>>(instrument_variant)) {
-          auto& callback_gauge_state = std::get<std::unique_ptr<CallbackGaugeState<double>>>(instrument_variant);
+        if (std::holds_alternative<std::unique_ptr<CallbackGaugeState<double>>>(
+                instrument_variant)) {
+          auto& callback_gauge_state =
+              std::get<std::unique_ptr<CallbackGaugeState<double>>>(
+                  instrument_variant);
           if (callback_gauge_state != nullptr) {
             callback_gauge_state->caches[key].clear();
           }
@@ -803,7 +811,8 @@ OpenTelemetryPluginImpl::OpenTelemetryPluginImpl(
               optional_labels_bits.set(i);
             }
           }
-          instruments_data_[descriptor.index].optional_labels_bits = optional_labels_bits;
+          instruments_data_[descriptor.index].optional_labels_bits =
+              optional_labels_bits;
 
           switch (descriptor.instrument_type) {
             case grpc_core::GlobalInstrumentsRegistry::InstrumentType::kCounter:

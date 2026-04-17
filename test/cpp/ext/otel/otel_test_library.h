@@ -162,8 +162,7 @@ class OpenTelemetryPluginEnd2EndTest : public ::testing::Test {
       channel_credentials = std::move(creds);
       return *this;
     }
-    Options& set_server_credentials(
-        std::shared_ptr<ServerCredentials> creds) {
+    Options& set_server_credentials(std::shared_ptr<ServerCredentials> creds) {
       server_credentials = std::move(creds);
       return *this;
     }
