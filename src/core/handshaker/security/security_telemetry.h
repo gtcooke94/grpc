@@ -15,8 +15,8 @@
 #ifndef GRPC_SRC_CORE_HANDSHAKER_SECURITY_SECURITY_TELEMETRY_H
 #define GRPC_SRC_CORE_HANDSHAKER_SECURITY_SECURITY_TELEMETRY_H
 
-#include "src/core/telemetry/instrument.h"
 #include "src/core/telemetry/histogram.h"
+#include "src/core/telemetry/instrument.h"
 
 namespace grpc_core {
 

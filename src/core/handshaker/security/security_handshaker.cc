@@ -36,13 +36,13 @@
 #include <utility>
 
 #include "src/core/channelz/channelz.h"
+#include "src/core/client_channel/client_channel_args.h"
 #include "src/core/config/core_configuration.h"
 #include "src/core/handshaker/handshaker.h"
 #include "src/core/handshaker/handshaker_factory.h"
 #include "src/core/handshaker/handshaker_registry.h"
 #include "src/core/handshaker/security/secure_endpoint.h"
 #include "src/core/handshaker/security/security_telemetry.h"
-#include "src/core/client_channel/client_channel_args.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/iomgr/closure.h"
 #include "src/core/lib/iomgr/endpoint.h"
@@ -74,25 +74,26 @@ namespace grpc_core {
 
 namespace {
 
-constexpr absl::string_view kMetricLabelStatus = "grpc.security.handshaker.status";
-constexpr absl::string_view kMetricLabelProtocol = "grpc.security.handshaker.protocol";
+constexpr absl::string_view kMetricLabelStatus =
+    "grpc.security.handshaker.status";
+constexpr absl::string_view kMetricLabelProtocol =
+    "grpc.security.handshaker.protocol";
 constexpr absl::string_view kMetricLabelTarget = "grpc.target";
-constexpr absl::string_view kMetricLabelResumed = "grpc.security.handshaker.resumed";
+constexpr absl::string_view kMetricLabelResumed =
+    "grpc.security.handshaker.resumed";
 
 const auto kMetricClientHandshakerDuration =
     GlobalInstrumentsRegistry::RegisterDoubleHistogram(
         "grpc.security.client.handshaker.duration",
-        "Client-side handshake duration in milliseconds.",
-        "ms", false)
-        .Labels(kMetricLabelStatus, kMetricLabelTarget,
-                kMetricLabelProtocol, kMetricLabelResumed)
+        "Client-side handshake duration in milliseconds.", "ms", false)
+        .Labels(kMetricLabelStatus, kMetricLabelTarget, kMetricLabelProtocol,
+                kMetricLabelResumed)
         .Build();
 
 const auto kMetricServerHandshakerDuration =
     GlobalInstrumentsRegistry::RegisterDoubleHistogram(
         "grpc.security.server.handshaker.duration",
-        "Server-side handshake duration in milliseconds.",
-        "ms", false)
+        "Server-side handshake duration in milliseconds.", "ms", false)
         .Labels(kMetricLabelStatus, kMetricLabelProtocol, kMetricLabelResumed)
         .Build();
 
@@ -210,7 +211,8 @@ void SecurityHandshaker::HandshakeFailedLocked(absl::Status error) {
 
 void SecurityHandshaker::Finish(absl::Status status) {
   int64_t duration_us = (Timestamp::Now() - start_time_).millis() * 1000;
-  std::string status_str = status.ok() ? "OK" : absl::StatusCodeToString(status.code());
+  std::string status_str =
+      status.ok() ? "OK" : absl::StatusCodeToString(status.code());
   std::string protocol = std::string(connector_->type().name());
 
   std::string resumed = "false";
@@ -224,18 +226,21 @@ void SecurityHandshaker::Finish(absl::Status status) {
     }
   }
 
-  std::shared_ptr<GlobalStatsPluginRegistry::StatsPluginGroup> stats_plugin_group;
+  std::shared_ptr<GlobalStatsPluginRegistry::StatsPluginGroup>
+      stats_plugin_group;
   if (args_ != nullptr) {
     stats_plugin_group =
-        args_->args
-            .GetObjectRef<GlobalStatsPluginRegistry::StatsPluginGroup>();
+        args_->args.GetObjectRef<GlobalStatsPluginRegistry::StatsPluginGroup>();
   }
   auto scope = stats_plugin_group != nullptr
                    ? stats_plugin_group->GetCollectionScope()
                    : GlobalCollectionScope();
 
   if (connector_->is_client()) {
-    std::string target = std::string(args_ != nullptr ? args_->args.GetString(GRPC_ARG_SERVER_URI).value_or("unknown") : "unknown");
+    std::string target = std::string(
+        args_ != nullptr
+            ? args_->args.GetString(GRPC_ARG_SERVER_URI).value_or("unknown")
+            : "unknown");
     auto storage = ClientHandshakeTelemetryDomain::GetStorage(
         std::move(scope), status_str, target, protocol, resumed);
     storage->Increment(ClientHandshakeTelemetryDomain::kDuration, duration_us);
