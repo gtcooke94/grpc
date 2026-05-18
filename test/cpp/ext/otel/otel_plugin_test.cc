@@ -1362,20 +1362,20 @@ TEST_F(OpenTelemetryPluginEnd2EndTest, ClientHandshakerDuration) {
   ASSERT_EQ(point_data->count_, 1);
   const auto& attributes = data[kMetricName][0].attributes.GetAttributes();
   EXPECT_EQ(attributes.size(), 4);
-  const auto* status_value =
-      std::get_if<std::string>(&attributes.at("grpc.security.handshaker.status"));
+  const auto* status_value = std::get_if<std::string>(
+      &attributes.at("grpc.security.handshaker.status"));
   ASSERT_NE(status_value, nullptr);
   EXPECT_EQ(*status_value, "OK");
   const auto* target_value =
       std::get_if<std::string>(&attributes.at("grpc.target"));
   ASSERT_NE(target_value, nullptr);
   EXPECT_EQ(*target_value, canonical_server_address_);
-  const auto* protocol_value =
-      std::get_if<std::string>(&attributes.at("grpc.security.handshaker.protocol"));
+  const auto* protocol_value = std::get_if<std::string>(
+      &attributes.at("grpc.security.handshaker.protocol"));
   ASSERT_NE(protocol_value, nullptr);
   EXPECT_EQ(*protocol_value, "insecure");
-  const auto* resumed_value =
-      std::get_if<std::string>(&attributes.at("grpc.security.handshaker.resumed"));
+  const auto* resumed_value = std::get_if<std::string>(
+      &attributes.at("grpc.security.handshaker.resumed"));
   ASSERT_NE(resumed_value, nullptr);
   EXPECT_EQ(*resumed_value, "false");
 }
@@ -1399,16 +1399,16 @@ TEST_F(OpenTelemetryPluginEnd2EndTest, ServerHandshakerDuration) {
   ASSERT_EQ(point_data->count_, 1);
   const auto& attributes = data[kMetricName][0].attributes.GetAttributes();
   EXPECT_EQ(attributes.size(), 3);
-  const auto* status_value =
-      std::get_if<std::string>(&attributes.at("grpc.security.handshaker.status"));
+  const auto* status_value = std::get_if<std::string>(
+      &attributes.at("grpc.security.handshaker.status"));
   ASSERT_NE(status_value, nullptr);
   EXPECT_EQ(*status_value, "OK");
-  const auto* protocol_value =
-      std::get_if<std::string>(&attributes.at("grpc.security.handshaker.protocol"));
+  const auto* protocol_value = std::get_if<std::string>(
+      &attributes.at("grpc.security.handshaker.protocol"));
   ASSERT_NE(protocol_value, nullptr);
   EXPECT_EQ(*protocol_value, "insecure");
-  const auto* resumed_value =
-      std::get_if<std::string>(&attributes.at("grpc.security.handshaker.resumed"));
+  const auto* resumed_value = std::get_if<std::string>(
+      &attributes.at("grpc.security.handshaker.resumed"));
   ASSERT_NE(resumed_value, nullptr);
   EXPECT_EQ(*resumed_value, "false");
 }
