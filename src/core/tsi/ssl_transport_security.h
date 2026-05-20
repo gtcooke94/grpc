@@ -464,7 +464,7 @@ namespace tsi {
 bool IsRootCertInfoEmpty(const RootCertInfo* root_cert_info);
 
 enum class TlsTelemetryResult {
-  UNKNOWN_FAILURE,  
+  UNKNOWN_FAILURE,
   SUCCESS,
   // Peer certificate verification failures.
   CERTIFICATE_VERIFICATION_FAILED,
