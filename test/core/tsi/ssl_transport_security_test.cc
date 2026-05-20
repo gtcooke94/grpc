@@ -17,7 +17,6 @@
 //
 
 #include "src/core/tsi/ssl_transport_security.h"
-#include "src/core/tsi/ssl_telemetry_utils.h"
 
 #include <grpc/grpc.h>
 #include <grpc/support/alloc.h>
@@ -37,6 +36,7 @@
 #include <tuple>
 #include <vector>
 
+#include "src/core/tsi/ssl_telemetry_utils.h"
 #include "src/core/tsi/transport_security.h"
 #include "src/core/tsi/transport_security_interface.h"
 #include "src/core/util/memory.h"
