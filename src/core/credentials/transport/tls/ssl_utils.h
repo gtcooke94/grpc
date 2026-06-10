@@ -188,7 +188,6 @@ class PemKeyCertPair {
     return !(*this == other);
   }
 
-
   const PrivateKey& private_key() const { return private_key_; }
   const std::string& cert_chain() const { return cert_chain_; }
 
