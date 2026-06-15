@@ -1613,14 +1613,14 @@ TEST_P(SslTransportSecurityTest, TestHandshakeMetricsIncremented) {
   EXPECT_EQ(sink_after.client_handshakes, sink_before.client_handshakes + 1);
   EXPECT_EQ(sink_after.server_handshakes, sink_before.server_handshakes + 1);
 
-  auto client_labels = GetDeltaLabels(
-      sink_before, sink_after, "grpc.client.tls.handshakes");
+  auto client_labels =
+      GetDeltaLabels(sink_before, sink_after, "grpc.client.tls.handshakes");
   ASSERT_TRUE(client_labels.has_value());
   EXPECT_EQ(client_labels->at("grpc.security.handshaker.status"), "OK");
   EXPECT_EQ(client_labels->at("grpc.security.handshaker.resumed"), "false");
 
-  auto server_labels = GetDeltaLabels(
-      sink_before, sink_after, "grpc.server.tls.handshakes");
+  auto server_labels =
+      GetDeltaLabels(sink_before, sink_after, "grpc.server.tls.handshakes");
   ASSERT_TRUE(server_labels.has_value());
   EXPECT_EQ(server_labels->at("grpc.security.handshaker.status"), "OK");
   EXPECT_EQ(server_labels->at("grpc.security.handshaker.resumed"), "false");
@@ -1649,12 +1649,11 @@ TEST_P(SslTransportSecurityTest, TestFailedClientHandshakeMetricsIncremented) {
 
   EXPECT_EQ(sink_after.client_handshakes, sink_before.client_handshakes + 1);
 
-  auto client_labels = GetDeltaLabels(
-      sink_before, sink_after, "grpc.client.tls.handshakes");
+  auto client_labels =
+      GetDeltaLabels(sink_before, sink_after, "grpc.client.tls.handshakes");
   ASSERT_TRUE(client_labels.has_value());
-  EXPECT_EQ(
-      client_labels->at("grpc.security.handshaker.status"),
-      "CERTIFICATE_AUTHORITY_INVALID");
+  EXPECT_EQ(client_labels->at("grpc.security.handshaker.status"),
+            "CERTIFICATE_AUTHORITY_INVALID");
 }
 
 TEST_P(SslTransportSecurityTest, TestFailedServerHandshakeMetricsIncremented) {
@@ -1681,12 +1680,11 @@ TEST_P(SslTransportSecurityTest, TestFailedServerHandshakeMetricsIncremented) {
 
   EXPECT_EQ(sink_after.server_handshakes, sink_before.server_handshakes + 1);
 
-  auto server_labels = GetDeltaLabels(
-      sink_before, sink_after, "grpc.server.tls.handshakes");
+  auto server_labels =
+      GetDeltaLabels(sink_before, sink_after, "grpc.server.tls.handshakes");
   ASSERT_TRUE(server_labels.has_value());
-  EXPECT_EQ(
-      server_labels->at("grpc.security.handshaker.status"),
-      "CERTIFICATE_AUTHORITY_INVALID");
+  EXPECT_EQ(server_labels->at("grpc.security.handshaker.status"),
+            "CERTIFICATE_AUTHORITY_INVALID");
 }
 #endif
 #if defined(OPENSSL_IS_BORINGSSL)
