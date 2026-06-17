@@ -23,7 +23,9 @@
 #include <string>
 #include <utility>
 
+#include "src/core/handshaker/security/security_telemetry.h"
 #include "src/core/lib/iomgr/timer_manager.h"
+#include "src/core/telemetry/instrument.h"
 #include "src/core/tsi/ssl_transport_security.h"
 #include "src/core/tsi/transport_security.h"
 #include "src/core/util/wait_for_single_owner.h"
@@ -32,11 +34,9 @@
 #include "test/core/test_util/tls_utils.h"
 #include "test/core/tsi/transport_security_test_lib.h"
 #include "gtest/gtest.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/notification.h"
-#include "absl/container/flat_hash_map.h"
-#include "src/core/telemetry/instrument.h"
-#include "src/core/handshaker/security/security_telemetry.h"
 
 #if defined(OPENSSL_IS_BORINGSSL)
 #if OPENSSL_VERSION_NUMBER >= 0x10100000
@@ -197,7 +197,9 @@ class AsyncTestPrivateKeySigner final
     was_cancelled_.store(true);
   }
 
-  absl::string_view Name() const override { return "AsyncTestPrivateKeySigner"; }
+  absl::string_view Name() const override {
+    return "AsyncTestPrivateKeySigner";
+  }
 
   bool WasCancelled() { return was_cancelled_.load(); }
 
@@ -214,7 +216,7 @@ enum class OffloadParty {
   kServer,
 };
 
-class TestMetricsSink : public grpc_core::MetricsSink {
+class TestMetricsSink : public MetricsSink {
  public:
   struct CounterData {
     std::vector<std::string> labels;
@@ -225,30 +227,30 @@ class TestMetricsSink : public grpc_core::MetricsSink {
     std::vector<uint64_t> counts;
   };
 
-  void Counter(grpc_core::InstrumentLabelList /*label_keys*/,
+  void Counter(InstrumentLabelList /*label_keys*/,
                absl::Span<const std::string> label, absl::string_view name,
                uint64_t value) override {
     counters_[std::string(name)].push_back(
         {std::vector<std::string>(label.begin(), label.end()), value});
   }
-  void UpDownCounter(grpc_core::InstrumentLabelList /*label_keys*/,
-                     absl::Span<const std::string> label, absl::string_view name,
-                     uint64_t value) override {}
-  void Histogram(grpc_core::InstrumentLabelList /*label_keys*/,
+  void UpDownCounter(InstrumentLabelList /*label_keys*/,
+                     absl::Span<const std::string> label,
+                     absl::string_view name, uint64_t value) override {}
+  void Histogram(InstrumentLabelList /*label_keys*/,
                  absl::Span<const std::string> label, absl::string_view name,
-                 grpc_core::HistogramBuckets /*bounds*/,
+                 HistogramBuckets /*bounds*/,
                  absl::Span<const uint64_t> counts) override {
     histograms_[std::string(name)].push_back(
         {std::vector<std::string>(label.begin(), label.end()),
          std::vector<uint64_t>(counts.begin(), counts.end())});
   }
-  void DoubleGauge(grpc_core::InstrumentLabelList /*label_keys*/,
+  void DoubleGauge(InstrumentLabelList /*label_keys*/,
                    absl::Span<const std::string> /*labels*/,
                    absl::string_view /*name*/, double /*value*/) override {}
-  void IntGauge(grpc_core::InstrumentLabelList /*label_keys*/,
+  void IntGauge(InstrumentLabelList /*label_keys*/,
                 absl::Span<const std::string> /*labels*/,
                 absl::string_view /*name*/, int64_t /*value*/) override {}
-  void UintGauge(grpc_core::InstrumentLabelList /*label_keys*/,
+  void UintGauge(InstrumentLabelList /*label_keys*/,
                  absl::Span<const std::string> /*labels*/,
                  absl::string_view /*name*/, uint64_t /*value*/) override {}
 
@@ -292,11 +294,11 @@ class SslOffloadTsiTestFixture {
     client_cert_ =
         GetFileContents(absl::StrCat(kTestCredsRelativePath, "client.pem"));
 
-    client_collection_scope_ = grpc_core::CreateCollectionScope(
+    client_collection_scope_ = CreateCollectionScope(
         {}, {"grpc.status", "grpc.target", "grpc.security.offload.provider",
              "grpc.security.offload.algorithm", "grpc.lb.locality",
              "grpc.lb.backend_service"});
-    server_collection_scope_ = grpc_core::CreateCollectionScope(
+    server_collection_scope_ = CreateCollectionScope(
         {}, {"grpc.status", "grpc.security.offload.provider",
              "grpc.security.offload.algorithm"});
 
@@ -336,7 +338,7 @@ class SslOffloadTsiTestFixture {
   void AssertMetrics() {
     if (expect_success_) {
       TestMetricsSink server_sink;
-      grpc_core::MetricsQuery().Run(server_collection_scope_, server_sink);
+      MetricsQuery().Run(server_collection_scope_, server_sink);
       const auto& server_histograms = server_sink.histograms();
 
       // Check Private Key Signing on Server
@@ -359,7 +361,7 @@ class SslOffloadTsiTestFixture {
       // Check Private Key Signing on Client
       if (offload_party_ == OffloadParty::kClient) {
         TestMetricsSink client_sink;
-        grpc_core::MetricsQuery().Run(client_collection_scope_, client_sink);
+        MetricsQuery().Run(client_collection_scope_, client_sink);
         const auto& client_histograms = client_sink.histograms();
         auto client_signing_it = client_histograms.find(
             "grpc.client.tls.offload_private_key_signing_duration");
@@ -433,8 +435,8 @@ class SslOffloadTsiTestFixture {
             /*backend_service=*/"", &client_hs),
         TSI_OK);
     ASSERT_EQ(tsi_ssl_server_handshaker_factory_create_handshaker(
-                  server_handshaker_factory_, 0, 0,
-                  server_collection_scope_, &server_hs),
+                  server_handshaker_factory_, 0, 0, server_collection_scope_,
+                  &server_hs),
               TSI_OK);
     base_.client_handshaker = client_hs;
     base_.server_handshaker = server_hs;
@@ -483,8 +485,8 @@ class SslOffloadTsiTestFixture {
   tsi_ssl_pem_key_cert_pair client_pem_key_cert_pair_;
   OffloadParty offload_party_;
   std::shared_ptr<PrivateKeySigner> signer_;
-  grpc_core::RefCountedPtr<grpc_core::CollectionScope> client_collection_scope_;
-  grpc_core::RefCountedPtr<grpc_core::CollectionScope> server_collection_scope_;
+  RefCountedPtr<CollectionScope> client_collection_scope_;
+  RefCountedPtr<CollectionScope> server_collection_scope_;
   tsi_tls_version tls_version_;
   std::string sni_;
   bool expect_success_ = false;

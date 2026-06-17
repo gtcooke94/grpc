@@ -53,10 +53,10 @@ class ClientTlsPrivateKeySigningTelemetryDomain final
  public:
   using Backend = LowContentionBackend;
   static constexpr absl::string_view kName = "client_tls_private_key_signing";
-  GRPC_INSTRUMENT_DOMAIN_LABELS(
-      "grpc.status", "grpc.target", "grpc.security.offload.provider",
-      "grpc.security.offload.algorithm", "grpc.lb.locality",
-      "grpc.lb.backend_service");
+  GRPC_INSTRUMENT_DOMAIN_LABELS("grpc.status", "grpc.target",
+                                "grpc.security.offload.provider",
+                                "grpc.security.offload.algorithm",
+                                "grpc.lb.locality", "grpc.lb.backend_service");
 
   static inline const auto kOffloadPrivateKeySigningDuration =
       RegisterHistogram<ExponentialHistogramShape>(
@@ -65,8 +65,6 @@ class ClientTlsPrivateKeySigningTelemetryDomain final
           "private key signing operation.",
           "s", 100000000, 100);
 };
-
-
 
 class ServerTlsPrivateKeySigningTelemetryDomain final
     : public InstrumentDomain<ServerTlsPrivateKeySigningTelemetryDomain> {

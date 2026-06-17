@@ -19,7 +19,6 @@
 #include "src/core/tsi/ssl_transport_security.h"
 
 #include <grpc/private_key_signer.h>
-#include "absl/status/status.h"
 #include <grpc/support/port_platform.h>
 #include <limits.h>
 #include <string.h>
@@ -27,6 +26,8 @@
 #include <cstddef>
 #include <cstdlib>
 #include <utility>
+
+#include "absl/status/status.h"
 
 // TODO(jboeuf): refactor inet_ntop into a portability header.
 // Note: for whomever reads this and tries to refactor this, this

@@ -396,7 +396,9 @@ class AsyncTestPrivateKeySigner final
     }
   }
 
-  absl::string_view Name() const override { return "AsyncTestPrivateKeySigner"; }
+  absl::string_view Name() const override {
+    return "AsyncTestPrivateKeySigner";
+  }
 
   bool WasCancelled() { return was_cancelled_.load(); }
 
