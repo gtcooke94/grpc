@@ -327,6 +327,8 @@ class SyncTestPrivateKeySigner final
   void Cancel(std::shared_ptr<grpc_core::PrivateKeySigner::AsyncSigningHandle>
               /*handle*/) override {}
 
+  absl::string_view Name() const override { return "SyncTestPrivateKeySigner"; }
+
  private:
   bssl::UniquePtr<EVP_PKEY> pkey_;
   Mode mode_;
@@ -393,6 +395,8 @@ class AsyncTestPrivateKeySigner final
       event_engine->Cancel(internal_handle->task_handle);
     }
   }
+
+  absl::string_view Name() const override { return "AsyncTestPrivateKeySigner"; }
 
   bool WasCancelled() { return was_cancelled_.load(); }
 

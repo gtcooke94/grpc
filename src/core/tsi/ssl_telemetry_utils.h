@@ -19,8 +19,6 @@
 #ifndef GRPC_SRC_CORE_TSI_SSL_TELEMETRY_UTILS_H
 #define GRPC_SRC_CORE_TSI_SSL_TELEMETRY_UTILS_H
 
-#include <grpc/support/port_platform.h>
-
 #include "absl/strings/string_view.h"
 
 namespace grpc_core {

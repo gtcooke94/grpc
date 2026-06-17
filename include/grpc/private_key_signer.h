@@ -69,6 +69,10 @@ class PrivateKeySigner {
 
   virtual ~PrivateKeySigner() = default;
 
+  // Returns a string identifying the private key signer implementation.
+  // This must be low-cardinality.
+  virtual absl::string_view Name() const { return "unknown"; }
+
   // Signs data_to_sign.
   // May return either synchronously or asynchronously.
   // For synchronous returns, directly returns either the signed bytes

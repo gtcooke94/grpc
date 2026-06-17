@@ -15,6 +15,7 @@
 #ifndef GRPC_SRC_CORE_HANDSHAKER_SECURITY_SECURITY_TELEMETRY_H
 #define GRPC_SRC_CORE_HANDSHAKER_SECURITY_SECURITY_TELEMETRY_H
 
+#include "src/core/telemetry/histogram.h"
 #include "src/core/telemetry/instrument.h"
 
 namespace grpc_core {
@@ -45,6 +46,42 @@ class ServerHandshakeTelemetryDomain final
   static inline const auto kHandshakes = RegisterCounter(
       "grpc.server.tls.handshakes",
       "Total number of server-side TLS handshakes", "{handshake}");
+};
+
+class ClientTlsPrivateKeySigningTelemetryDomain final
+    : public InstrumentDomain<ClientTlsPrivateKeySigningTelemetryDomain> {
+ public:
+  using Backend = LowContentionBackend;
+  static constexpr absl::string_view kName = "client_tls_private_key_signing";
+  GRPC_INSTRUMENT_DOMAIN_LABELS(
+      "grpc.status", "grpc.target", "grpc.security.offload.provider",
+      "grpc.security.offload.algorithm", "grpc.lb.locality",
+      "grpc.lb.backend_service");
+
+  static inline const auto kOffloadPrivateKeySigningDuration =
+      RegisterHistogram<ExponentialHistogramShape>(
+          "grpc.client.tls.offload_private_key_signing_duration",
+          "EXPERIMENTAL: Measures the duration of the offloaded client "
+          "private key signing operation.",
+          "s", 100000000, 100);
+};
+
+
+
+class ServerTlsPrivateKeySigningTelemetryDomain final
+    : public InstrumentDomain<ServerTlsPrivateKeySigningTelemetryDomain> {
+ public:
+  using Backend = LowContentionBackend;
+  static constexpr absl::string_view kName = "server_tls_private_key_signing";
+  GRPC_INSTRUMENT_DOMAIN_LABELS("grpc.status", "grpc.security.offload.provider",
+                                "grpc.security.offload.algorithm");
+
+  static inline const auto kOffloadPrivateKeySigningDuration =
+      RegisterHistogram<ExponentialHistogramShape>(
+          "grpc.server.tls.offload_private_key_signing_duration",
+          "EXPERIMENTAL: Measures the duration of the offloaded private key "
+          "signing operation.",
+          "s", 100000000, 100);
 };
 
 }  // namespace grpc_core
