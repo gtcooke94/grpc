@@ -3107,7 +3107,6 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
                 nullptr);
           },
           [&](const grpc_core::SpiffeBundleMap& spiffe_bundle_map) {
-
             X509_STORE* cert_store = SSL_CTX_get_cert_store(ssl_context);
             X509_STORE_set_flags(cert_store, X509_V_FLAG_PARTIAL_CHAIN |
                                                  X509_V_FLAG_TRUSTED_FIRST);

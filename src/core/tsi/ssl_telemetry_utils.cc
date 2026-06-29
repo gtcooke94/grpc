@@ -142,7 +142,7 @@ TlsTelemetryHandshakeResult MapSslErrorToTlsTelemetryHandshakeResult(
           result = TlsTelemetryHandshakeResult::kInappropriateFallback;
           break;
 
-        // No application protocol
+          // No application protocol
 #if defined(OPENSSL_IS_BORINGSSL) || defined(SSL_R_NO_APPLICATION_PROTOCOL)
         case SSL_R_NO_APPLICATION_PROTOCOL:
 #endif
