@@ -28890,6 +28890,7 @@ add_executable(private_key_offload_test
   ${_gRPC_PROTO_GENS_DIR}/test/core/event_engine/fuzzing_event_engine/fuzzing_event_engine.grpc.pb.h
   test/core/event_engine/event_engine_test_utils.cc
   test/core/event_engine/fuzzing_event_engine/fuzzing_event_engine.cc
+  test/core/test_util/fake_stats_plugin.cc
   test/core/tsi/private_key_offload_test.cc
   test/core/tsi/private_key_signer_test_util.cc
   test/core/tsi/transport_security_test_lib.cc

@@ -16,10 +16,9 @@
 //
 //
 
-#include <grpc/support/port_platform.h>
-
 #include "src/core/tsi/ssl_telemetry_utils.h"
 
+#include <grpc/support/port_platform.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
