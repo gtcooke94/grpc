@@ -39,7 +39,6 @@
 #include "src/core/client_channel/retry_throttle.h"
 #include "src/core/client_channel/subchannel.h"
 #include "src/core/client_channel/subchannel_pool_interface.h"
-#include "src/core/filter/blackboard.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/channel/channel_fwd.h"
 #include "src/core/lib/channel/channel_stack.h"
@@ -303,8 +302,6 @@ class ClientChannelFilter final {
       ABSL_GUARDED_BY(*work_serializer_);
   RetryThrottlerChannelArgsUpdater retry_throttler_updater_
       ABSL_GUARDED_BY(*work_serializer_);
-  RefCountedPtr<const Blackboard> blackboard_
-      ABSL_GUARDED_BY(*work_serializer_);
   OrphanablePtr<LoadBalancingPolicy> lb_policy_
       ABSL_GUARDED_BY(*work_serializer_);
   RefCountedPtr<SubchannelPoolInterface> subchannel_pool_
@@ -453,8 +450,8 @@ class ClientChannelFilter::LoadBalancedCall final
   // Set when we get a cancel_stream op.
   grpc_error_handle cancel_error_;
 
-  // Set when we fail inside the LB call.
-  grpc_error_handle failure_error_;
+  // Set when the LB picker returns a drop result.
+  bool is_drop_ = false;
 
   LbQueuedCallCanceller* lb_call_canceller_
       ABSL_GUARDED_BY(&ClientChannelFilter::lb_mu_) = nullptr;
