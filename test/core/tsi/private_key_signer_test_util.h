@@ -76,7 +76,9 @@ class AsyncTestPrivateKeySigner final
 
   void Cancel(std::shared_ptr<AsyncSigningHandle> /*handle*/) override;
 
-  absl::string_view Name() const override { return "AsyncTestPrivateKeySigner"; }
+  absl::string_view Name() const override {
+    return "AsyncTestPrivateKeySigner";
+  }
 
   bool WasCancelled();
 

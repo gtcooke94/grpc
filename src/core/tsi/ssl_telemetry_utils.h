@@ -20,7 +20,6 @@
 #define GRPC_SRC_CORE_TSI_SSL_TELEMETRY_UTILS_H
 
 #include <grpc/support/port_platform.h>
-
 #include <openssl/ssl.h>
 
 #if defined(OPENSSL_IS_BORINGSSL)

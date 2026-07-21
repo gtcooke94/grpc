@@ -695,8 +695,8 @@ enum ssl_private_key_result_t TlsPrivateKeySignWrapper(
         algorithm.status());
     return ssl_private_key_failure;
   }
-  handshaker->signing_algorithm_str = std::string(
-      PrivateKeySignerSignatureAlgorithmToString(*algorithm));
+  handshaker->signing_algorithm_str =
+      std::string(PrivateKeySignerSignatureAlgorithmToString(*algorithm));
   if (handshaker->key_signer == nullptr) {
     handshaker->MaybeSetError("PrivateKeySigner is null");
     handshaker->MaybeRecordOffloadPrivateKeySigningTelemetry(

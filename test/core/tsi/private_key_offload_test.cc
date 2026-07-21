@@ -222,15 +222,16 @@ class SslOffloadTsiTestFixture {
   bool expect_success_ = false;
   bool expect_success_on_client_ = false;
   RefCountedPtr<CollectionScope> client_collection_scope_ =
-      grpc_core::CreateCollectionScope(
-          {}, {"grpc.status", "grpc.target",
-               "grpc.tls.private_key.offloader_name",
-               "grpc.tls.private_key_algorithm", "grpc.lb.locality",
-               "grpc.lb.backend_service"});
+      CreateCollectionScope(
+          {},
+          {"grpc.status", "grpc.target", "grpc.tls.private_key.offloader_name",
+           "grpc.tls.private_key_algorithm", "grpc.lb.locality",
+           "grpc.lb.backend_service"});
   RefCountedPtr<CollectionScope> server_collection_scope_ =
-      grpc_core::CreateCollectionScope(
+      CreateCollectionScope(
           {}, {"grpc.status", "grpc.tls.private_key.offloader_name",
                "grpc.tls.private_key_algorithm"});
+
  public:
   RefCountedPtr<CollectionScope> client_collection_scope() const {
     return client_collection_scope_;
