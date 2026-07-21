@@ -371,14 +371,11 @@ absl::string_view PrivateKeySignerSignatureAlgorithmToString(
       return "RsaPkcs1Sha384";
     case grpc_core::PrivateKeySigner::SignatureAlgorithm::kRsaPkcs1Sha512:
       return "RsaPkcs1Sha512";
-    case grpc_core::PrivateKeySigner::SignatureAlgorithm::
-        kEcdsaSecp256r1Sha256:
+    case grpc_core::PrivateKeySigner::SignatureAlgorithm::kEcdsaSecp256r1Sha256:
       return "EcdsaSecp256r1Sha256";
-    case grpc_core::PrivateKeySigner::SignatureAlgorithm::
-        kEcdsaSecp384r1Sha384:
+    case grpc_core::PrivateKeySigner::SignatureAlgorithm::kEcdsaSecp384r1Sha384:
       return "EcdsaSecp384r1Sha384";
-    case grpc_core::PrivateKeySigner::SignatureAlgorithm::
-        kEcdsaSecp521r1Sha512:
+    case grpc_core::PrivateKeySigner::SignatureAlgorithm::kEcdsaSecp521r1Sha512:
       return "EcdsaSecp521r1Sha512";
     case grpc_core::PrivateKeySigner::SignatureAlgorithm::kRsaPssRsaeSha256:
       return "RsaPssRsaeSha256";
@@ -399,8 +396,7 @@ void tsi_ssl_handshaker::MaybeRecordOffloadPrivateKeySigningTelemetry(
   std::string status_str = absl::StatusCodeToString(status.code());
   std::string offloader_name =
       key_signer != nullptr ? std::string(key_signer->Name()) : "";
-  int64_t duration_sec =
-      absl::ToInt64Seconds(absl::Now() - signing_start_time);
+  int64_t duration_sec = absl::ToInt64Seconds(absl::Now() - signing_start_time);
 
   if (is_client) {
     auto storage =
@@ -724,8 +720,8 @@ enum ssl_private_key_result_t TlsPrivateKeySignWrapper(
         algorithm.status());
     return ssl_private_key_failure;
   }
-  handshaker->signing_algorithm_str = std::string(
-      PrivateKeySignerSignatureAlgorithmToString(*algorithm));
+  handshaker->signing_algorithm_str =
+      std::string(PrivateKeySignerSignatureAlgorithmToString(*algorithm));
   if (handshaker->key_signer == nullptr) {
     handshaker->MaybeSetError("PrivateKeySigner is null");
     handshaker->MaybeRecordOffloadPrivateKeySigningTelemetry(
