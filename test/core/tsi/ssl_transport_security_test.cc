@@ -1321,15 +1321,15 @@ TEST(SslTransportSecurityTest, TestClientHandshakerFactoryMultipleCerts) {
   std::string root_cert =
       GetFileContents(absl::StrCat(kSslTsiTestCredentialsDir, "ca.pem"));
   tsi_ssl_pem_key_cert_pair cert_pair_0;
-  cert_pair_0.cert_chain = GetFileContents(
-      absl::StrCat(kSslTsiTestCredentialsDir, "client.pem"));
-  cert_pair_0.private_key = GetFileContents(
-      absl::StrCat(kSslTsiTestCredentialsDir, "client.key"));
+  cert_pair_0.cert_chain =
+      GetFileContents(absl::StrCat(kSslTsiTestCredentialsDir, "client.pem"));
+  cert_pair_0.private_key =
+      GetFileContents(absl::StrCat(kSslTsiTestCredentialsDir, "client.key"));
   tsi_ssl_pem_key_cert_pair cert_pair_1;
-  cert_pair_1.cert_chain = GetFileContents(
-      absl::StrCat(kSslTsiTestCredentialsDir, "server0.pem"));
-  cert_pair_1.private_key = GetFileContents(
-      absl::StrCat(kSslTsiTestCredentialsDir, "server0.key"));
+  cert_pair_1.cert_chain =
+      GetFileContents(absl::StrCat(kSslTsiTestCredentialsDir, "server0.pem"));
+  cert_pair_1.private_key =
+      GetFileContents(absl::StrCat(kSslTsiTestCredentialsDir, "server0.key"));
 
   tsi_ssl_client_handshaker_factory* client_handshaker_factory;
   tsi_ssl_client_handshaker_options options;
