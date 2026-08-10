@@ -84,12 +84,11 @@ class NoOpCertificateVerifier : public ExternalCertificateVerifier {
 
 class TlsCredentialsTest : public ::testing::Test {
  protected:
-  void RunServer(
-      absl::Notification* notification,
-      grpc_ssl_client_certificate_request_type cert_request_type =
-          GRPC_SSL_DONT_REQUEST_CLIENT_CERTIFICATE,
-      const std::vector<grpc_tls_key_exchange_group>* key_exchange_groups =
-          nullptr) {
+  void RunServer(absl::Notification* notification,
+                 grpc_ssl_client_certificate_request_type cert_request_type =
+                     GRPC_SSL_DONT_REQUEST_CLIENT_CERTIFICATE,
+                 const std::vector<grpc_tls_key_exchange_group>*
+                     key_exchange_groups = nullptr) {
     std::string root_cert = grpc_core::testing::GetFileContents(kCaCertPath);
     std::string server_key =
         grpc_core::testing::GetFileContents(kServerKeyPath);
@@ -98,12 +97,11 @@ class TlsCredentialsTest : public ::testing::Test {
     auto certificate_provider =
         std::make_shared<grpc::experimental::InMemoryCertificateProvider>();
     ASSERT_TRUE(certificate_provider->UpdateRoot(root_cert).ok());
-    ASSERT_TRUE(
-        certificate_provider
-            ->UpdateIdentityKeyCertPair(
-                {grpc::experimental::IdentityKeyOrSignerCertPair{server_key,
-                                                                 server_cert}})
-            .ok());
+    ASSERT_TRUE(certificate_provider
+                    ->UpdateIdentityKeyCertPair(
+                        {grpc::experimental::IdentityKeyOrSignerCertPair{
+                            server_key, server_cert}})
+                    .ok());
     auto server_options_or =
         grpc::experimental::TlsServerCredentialsOptions::Create(
             certificate_provider);
@@ -306,8 +304,7 @@ TEST_F(TlsCredentialsTest, ServerMultipleCertsSelectFirstPasses) {
     RunServerWithMultipleCerts(
         &notification,
         {grpc::experimental::IdentityKeyOrSignerCertPair{sni1_key, sni1_cert},
-         grpc::experimental::IdentityKeyOrSignerCertPair{sni2_key,
-                                                         sni2_cert}});
+         grpc::experimental::IdentityKeyOrSignerCertPair{sni2_key, sni2_cert}});
   });
   notification.WaitForNotification();
 
@@ -342,8 +339,7 @@ TEST_F(TlsCredentialsTest, ServerMultipleCertsSelectSecondPasses) {
     RunServerWithMultipleCerts(
         &notification,
         {grpc::experimental::IdentityKeyOrSignerCertPair{sni1_key, sni1_cert},
-         grpc::experimental::IdentityKeyOrSignerCertPair{sni2_key,
-                                                         sni2_cert}});
+         grpc::experimental::IdentityKeyOrSignerCertPair{sni2_key, sni2_cert}});
   });
   notification.WaitForNotification();
 
@@ -378,8 +374,7 @@ TEST_F(TlsCredentialsTest, ServerMultipleCertsUnmatchedFails) {
     RunServerWithMultipleCerts(
         &notification,
         {grpc::experimental::IdentityKeyOrSignerCertPair{sni1_key, sni1_cert},
-         grpc::experimental::IdentityKeyOrSignerCertPair{sni2_key,
-                                                         sni2_cert}});
+         grpc::experimental::IdentityKeyOrSignerCertPair{sni2_key, sni2_cert}});
   });
   notification.WaitForNotification();
 
@@ -416,12 +411,11 @@ TEST_F(TlsCredentialsTest, ClientSingleValidCertPasses) {
   auto client_certificate_provider =
       std::make_shared<grpc::experimental::InMemoryCertificateProvider>();
   ASSERT_TRUE(client_certificate_provider->UpdateRoot(root_cert).ok());
-  ASSERT_TRUE(
-      client_certificate_provider
-          ->UpdateIdentityKeyCertPair(
-              {grpc::experimental::IdentityKeyOrSignerCertPair{
-                   valid_client_key, valid_client_cert}})
-          .ok());
+  ASSERT_TRUE(client_certificate_provider
+                  ->UpdateIdentityKeyCertPair(
+                      {grpc::experimental::IdentityKeyOrSignerCertPair{
+                          valid_client_key, valid_client_cert}})
+                  .ok());
 
   TlsChannelCredentialsOptions tls_options;
   tls_options.set_certificate_verifier(
@@ -456,12 +450,11 @@ TEST_F(TlsCredentialsTest, ClientSingleBadCertFails) {
   auto client_certificate_provider =
       std::make_shared<grpc::experimental::InMemoryCertificateProvider>();
   ASSERT_TRUE(client_certificate_provider->UpdateRoot(root_cert).ok());
-  ASSERT_TRUE(
-      client_certificate_provider
-          ->UpdateIdentityKeyCertPair(
-              {grpc::experimental::IdentityKeyOrSignerCertPair{bad_client_key,
-                                                               bad_client_cert}})
-          .ok());
+  ASSERT_TRUE(client_certificate_provider
+                  ->UpdateIdentityKeyCertPair(
+                      {grpc::experimental::IdentityKeyOrSignerCertPair{
+                          bad_client_key, bad_client_cert}})
+                  .ok());
 
   TlsChannelCredentialsOptions tls_options;
   tls_options.set_certificate_verifier(
@@ -499,14 +492,13 @@ TEST_F(TlsCredentialsTest,
   auto client_certificate_provider =
       std::make_shared<grpc::experimental::InMemoryCertificateProvider>();
   ASSERT_TRUE(client_certificate_provider->UpdateRoot(root_cert).ok());
-  ASSERT_TRUE(
-      client_certificate_provider
-          ->UpdateIdentityKeyCertPair(
-              {grpc::experimental::IdentityKeyOrSignerCertPair{bad_rsa_key,
-                                                               bad_rsa_cert},
-               grpc::experimental::IdentityKeyOrSignerCertPair{
-                   valid_ecdsa_key, valid_ecdsa_cert}})
-          .ok());
+  ASSERT_TRUE(client_certificate_provider
+                  ->UpdateIdentityKeyCertPair(
+                      {grpc::experimental::IdentityKeyOrSignerCertPair{
+                           bad_rsa_key, bad_rsa_cert},
+                       grpc::experimental::IdentityKeyOrSignerCertPair{
+                           valid_ecdsa_key, valid_ecdsa_cert}})
+                  .ok());
 
   TlsChannelCredentialsOptions tls_options;
   tls_options.set_certificate_verifier(
@@ -545,14 +537,13 @@ TEST_F(TlsCredentialsTest, ClientMultipleCertsAllInvalidFails) {
   auto client_certificate_provider =
       std::make_shared<grpc::experimental::InMemoryCertificateProvider>();
   ASSERT_TRUE(client_certificate_provider->UpdateRoot(root_cert).ok());
-  ASSERT_TRUE(
-      client_certificate_provider
-          ->UpdateIdentityKeyCertPair(
-              {grpc::experimental::IdentityKeyOrSignerCertPair{bad_rsa_key,
-                                                               bad_rsa_cert},
-               grpc::experimental::IdentityKeyOrSignerCertPair{bad_ecdsa_key,
-                                                               bad_ecdsa_cert}})
-          .ok());
+  ASSERT_TRUE(client_certificate_provider
+                  ->UpdateIdentityKeyCertPair(
+                      {grpc::experimental::IdentityKeyOrSignerCertPair{
+                           bad_rsa_key, bad_rsa_cert},
+                       grpc::experimental::IdentityKeyOrSignerCertPair{
+                           bad_ecdsa_key, bad_ecdsa_cert}})
+                  .ok());
 
   TlsChannelCredentialsOptions tls_options;
   tls_options.set_certificate_verifier(
