@@ -563,7 +563,7 @@ TlsChannelSecurityConnector::UpdateHandshakerFactoryLocked() {
   if (client_handshaker_factory_ != nullptr) {
     tsi_ssl_client_handshaker_factory_unref(client_handshaker_factory_);
   }
-  grpc_core::KeyCertPairsOrSelector key_cert_pairs;
+  KeyCertPairsOrSelector key_cert_pairs;
   if (key_cert_pairs_or_selector_.has_value()) {
     key_cert_pairs = *key_cert_pairs_or_selector_;
   }

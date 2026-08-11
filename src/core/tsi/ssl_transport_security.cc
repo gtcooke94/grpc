@@ -3355,17 +3355,17 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
                                         options->key_exchange_groups);
           }
           for (const auto& pair : pem_key_cert_pairs) {
-            tsi_result res = populate_ssl_context(
-                ssl_context, &pair, options->cipher_suites,
-                options->key_exchange_groups);
+            tsi_result res =
+                populate_ssl_context(ssl_context, &pair, options->cipher_suites,
+                                     options->key_exchange_groups);
             if (res != TSI_OK) return res;
 #if defined(OPENSSL_IS_BORINGSSL)
             grpc_core::Match(
                 pair.private_key(), [](const std::string&) {},
                 [&](const std::shared_ptr<grpc_core::PrivateKeySigner>&
                         key_signer) {
-                  // The Handshaker Factory will own a shared copy of the reference
-                  // passed through the options.
+                  // The Handshaker Factory will own a shared copy of the
+                  // reference passed through the options.
                   impl->key_signer = key_signer;
                 });
 #endif
@@ -3373,7 +3373,7 @@ tsi_result tsi_create_ssl_client_handshaker_factory_with_options(
           return TSI_OK;
         },
         [&](const std::shared_ptr<grpc_core::CertificateSelector>&
-                /*cert_selector*/) {
+            /*cert_selector*/) {
           return populate_ssl_context(ssl_context, nullptr,
                                       options->cipher_suites,
                                       options->key_exchange_groups);
