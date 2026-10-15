@@ -2000,15 +2000,15 @@ TEST_P(SslTransportSecurityTest, SuccessfulRoundTripMldsa87Chain) {
       tsi_ssl_root_certs_store_create(key_cert_lib->root_cert.c_str());
   key_cert_lib->server_pem_key_cert_pairs.clear();
   key_cert_lib->server_pem_key_cert_pairs.emplace_back(
-      GetFileContents(
-          absl::StrCat(kSslTsiMldsaTestCredentialsDir, "server_chain_mldsa87.key")),
-      GetFileContents(
-          absl::StrCat(kSslTsiMldsaTestCredentialsDir, "server_chain_mldsa87.pem")));
+      GetFileContents(absl::StrCat(kSslTsiMldsaTestCredentialsDir,
+                                   "server_chain_mldsa87.key")),
+      GetFileContents(absl::StrCat(kSslTsiMldsaTestCredentialsDir,
+                                   "server_chain_mldsa87.pem")));
   key_cert_lib->client_pem_key_cert_pair = PemKeyCertPair(
-      GetFileContents(
-          absl::StrCat(kSslTsiMldsaTestCredentialsDir, "client_chain_mldsa87.key")),
-      GetFileContents(
-          absl::StrCat(kSslTsiMldsaTestCredentialsDir, "client_chain_mldsa87.pem")));
+      GetFileContents(absl::StrCat(kSslTsiMldsaTestCredentialsDir,
+                                   "client_chain_mldsa87.key")),
+      GetFileContents(absl::StrCat(kSslTsiMldsaTestCredentialsDir,
+                                   "client_chain_mldsa87.pem")));
   ssl_fixture_->SetServerNameIndication("foo.test.google.fr");
   ssl_fixture_->SetForceClientAuth(true);
   ssl_fixture_->OverrideClientSignatureAlgorithms(
