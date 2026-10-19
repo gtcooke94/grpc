@@ -100,15 +100,14 @@ class KeyExchangeGroupCheckingVerifier : public ExternalCertificateVerifier {
 
 class TlsCredentialsTest : public ::testing::Test {
  protected:
-  void RunServer(
-      absl::Notification* notification,
-      const std::vector<grpc_tls_key_exchange_group>* key_exchange_groups =
-          nullptr,
-      const char* ca_cert_path = kCaCertPath,
-      const char* server_cert_path = kServerCertPath,
-      const char* server_key_path = kServerKeyPath,
-      grpc_ssl_client_certificate_request_type cert_request_type =
-          GRPC_SSL_DONT_REQUEST_CLIENT_CERTIFICATE) {
+  void RunServer(absl::Notification* notification,
+                 const std::vector<grpc_tls_key_exchange_group>*
+                     key_exchange_groups = nullptr,
+                 const char* ca_cert_path = kCaCertPath,
+                 const char* server_cert_path = kServerCertPath,
+                 const char* server_key_path = kServerKeyPath,
+                 grpc_ssl_client_certificate_request_type cert_request_type =
+                     GRPC_SSL_DONT_REQUEST_CLIENT_CERTIFICATE) {
     std::string root_cert = grpc_core::testing::GetFileContents(ca_cert_path);
     std::string server_key =
         grpc_core::testing::GetFileContents(server_key_path);
